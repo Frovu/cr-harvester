@@ -13,4 +13,4 @@ app.use(express.static('public'));
 
 app.use('/api', require('./modules/api.js'));
 
-app.listen(process.env.PORT, () => global.log(`listening to port ${process.env.PORT}`));
+app.listen(process.env.PORT, () => global.log(`Listening to port ${process.env.PORT}`));

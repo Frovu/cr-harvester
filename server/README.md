@@ -48,7 +48,7 @@ CREATE TABLE data (
 	c8 integer,
 	c9 integer,
 	c10 integer,
-	c11 integer,
+	c11 integer
 );
 
 CREATE TABLE sections (

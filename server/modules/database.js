@@ -15,4 +15,4 @@ async function getSections() {
 	return sections;
 }
 
-global.log(`Sections auth keys: ${Object.keys(getSections()).join()}`);
+getSections().then(s => global.log(`Sections auth keys: ${Object.keys(s).join()}`));
