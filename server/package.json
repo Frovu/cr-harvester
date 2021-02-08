@@ -1,0 +1,27 @@
+{
+  "name": "neutron-monitor",
+  "version": "1.0.0",
+  "description": "Backend for embedded system",
+  "main": "server.js",
+  "scripts": {
+    "test": "jest --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Frovu/neutron-monitor.git"
+  },
+  "author": "Frovy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Frovu/neutron-monitor/issues"
+  },
+  "homepage": "https://github.com/Frovu/neutron-monitor#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "pg": "^8.5.1"
+  },
+  "devDependencies": {
+    "jest": "^26.6.3"
+  }
+}
