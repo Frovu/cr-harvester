@@ -51,7 +51,7 @@ CREATE TABLE data (
 	c11 integer,
 );
 
-CREATE TABLE devices (
+CREATE TABLE sections (
 	id SERIAL PRIMARY KEY,
 	key TEXT NOT NULL,
 	channels INTEGER,
