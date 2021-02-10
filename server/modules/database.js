@@ -16,3 +16,7 @@ async function getSections() {
 }
 
 getSections().then(s => global.log(`Sections auth keys: ${Object.keys(s).join()}`));
+
+module.exports = {
+	getSections: getSections
+};
