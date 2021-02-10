@@ -1,5 +1,5 @@
 const Pool = require('pg').Pool;
-let pool, sections = {};
+let pool = {}, sections = {};
 
 function connect() {
 	module.exports.pool = pool = new Pool({
@@ -22,7 +22,7 @@ async function getSections() {
 }
 
 function validate(data) {
-	return Object.keys(sections).includes(data.k)
+	return data.k && Object.keys(sections).includes(data.k)
 		&& typeof data.c === 'object' && data.dt;
 }
 
@@ -32,7 +32,7 @@ async function insert(data) {
 	for(const f in TO_URLENCODED) row[f] = data[TO_URLENCODED[f]];
 	for(const i in data.c) row['c'+i] = data.c[i];
 	row.section = sections[data.k];
-	row.dt = new Date(row.dt.toString().includes('T') ? row.dt : row.dt.toNumber() * 1000);
+	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : data.dt.toNumber() * 1000);
 	const placeholders = Object.keys(Object.keys(row)).map(i=>'$'+i).join();
 	const q = `INSERT INTO data (${Object.keys(row).join()}) VALUES (${placeholders})`;
 	await pool.query(q, Object.values(row));
