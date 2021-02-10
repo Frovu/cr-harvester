@@ -30,9 +30,9 @@ function validate(data) {
 async function insert(data) {
 	const row = {};
 	for(const f in TO_URLENCODED) row[f] = data[TO_URLENCODED[f]];
-	for(const i in data.c) row['c'+i] = data.c[i];
+	for(const i in data.c) row['c'+i] = parseInt(data.c[i]);
 	row.section = sections[data.k];
-	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : data.dt.toNumber() * 1000);
+	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
 	const placeholders = Object.keys(Object.keys(row)).map(i=>'$'+i).join();
 	const q = `INSERT INTO data (${Object.keys(row).join()}) VALUES (${placeholders})`;
 	await pool.query(q, Object.values(row));
