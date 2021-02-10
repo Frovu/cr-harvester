@@ -14,8 +14,16 @@ router.get('/data', (req, res) => {
 	return res.sendStatus(501);
 });
 
-router.post('/data', (req, res) => {
-	return res.sendStatus(501);
+router.post('/data', async (req, res) => {
+	if(!req.body || !db.validate(req.body))
+		return res.sendStatus(400);
+	try {
+		await db.insert(req.body);
+		return res.sendStatus(200);
+	} catch(e) {
+		global.log(`Exception inserting data: ${e}`);
+		return res.sendStatus(500);
+	}
 });
 
 module.exports = router;
