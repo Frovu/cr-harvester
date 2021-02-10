@@ -1,5 +1,6 @@
 const Pool = require('pg').Pool;
-let pool;
+let pool, sections;
+
 function connect() {
 	pool = new Pool({
 		user: process.env.DB_USER,
@@ -8,17 +9,15 @@ function connect() {
 		password: process.env.DB_PASSWORD,
 		port: process.env.DB_PORT,
 	});
+	getSections().then(s => global.log(`DB connected, auth keys: ${Object.keys(s).join()}`));
 }
 
-let sections;
 async function getSections() {
 	const res = await pool.query('SELECT * from sections');
 	sections = {};
 	res.rows.forEach(r => sections[r.key] = r);
 	return sections;
 }
-
-getSections().then(s => global.log(`Sections auth keys: ${Object.keys(s).join()}`));
 
 module.exports = {
 	connect: connect,
