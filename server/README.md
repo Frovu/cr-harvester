@@ -14,6 +14,11 @@ TBD
 ##### `GET /api/data`
 
 ##### `POST /api/data`
+short (required) value naming:
++ `t` for `temperature`
++ `p` for `pressure`
++ `c` for `counts` (or data)
++ `k` for `key`
 
 ##### `GET /api/sections`
 
@@ -34,7 +39,7 @@ CREATE TABLE data (
 	id SERIAL PRIMARY KEY,
 	at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	section integer NOT NULL,
-	t TIMESTAMP NOT NULL,
+	dt TIMESTAMP NOT NULL,
 	temperature real,
 	pressure real,
 	c0 integer,
