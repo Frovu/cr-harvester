@@ -21,7 +21,7 @@ router.post('/data', async (req, res) => {
 		await db.insert(req.body);
 		return res.sendStatus(200);
 	} catch(e) {
-		global.log(`Exception inserting data: ${e}`);
+		global.log(`Exception inserting data: ${e}\n${req.body}`);
 		return res.sendStatus(500);
 	}
 });
