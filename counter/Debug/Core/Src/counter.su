@@ -1,0 +1,4 @@
+counter.c:14:6:event_loop	8	static
+counter.c:25:6:data_collection_event	4	static
+counter.c:29:6:base_clock_event	8	static
+counter.c:38:6:base_clock_interrupt_handler	4	static

@@ -209,7 +209,7 @@ void RTC_IRQHandler(void)
   /* USER CODE END RTC_IRQn 0 */
   HAL_RTCEx_RTCIRQHandler(&hrtc);
   /* USER CODE BEGIN RTC_IRQn 1 */
-
+  base_clock_interrupt_handler();
   /* USER CODE END RTC_IRQn 1 */
 }
 
