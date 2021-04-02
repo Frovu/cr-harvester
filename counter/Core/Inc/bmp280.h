@@ -118,9 +118,9 @@ typedef struct {
 /**
  * Initialize default parameters.
  * Default configuration:
- *      mode: NORAML
- *      filter: OFF
- *      oversampling: x4
+ *      mode: FORCED
+ *      filter: \4
+ *      oversampling: x2/x8/x4
  *      standby time: 250ms
  */
 void bmp280_init_default_params(bmp280_params_t *params);
