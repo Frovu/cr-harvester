@@ -65,6 +65,14 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void debug_printf(const char * fmt, ...) {
+  char buf[DEBUG_FMT_MAX_SIZE];
+  va_list argptr;
+  va_start(argptr, fmt);
+  int len = vsnprintf(buf, DEBUG_FMT_MAX_SIZE, fmt, argptr);
+  va_end(argptr);
+  HAL_UART_Transmit(&huart2, buf, len, 300);
+}
 
 /* USER CODE END 0 */
 
@@ -101,7 +109,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
-
+  debug_printf("INIT\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */

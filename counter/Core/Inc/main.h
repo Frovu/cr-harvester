@@ -32,6 +32,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include <stdarg.h>
 #include "counter.h"
 
 /* USER CODE END Includes */
@@ -55,7 +57,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void debug_printf(const char * fmt, ...);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -64,6 +66,9 @@ void Error_Handler(void);
 #define AT25_CS_Pin GPIO_PIN_0
 #define AT25_CS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+#define DEBUG
+
+#define DEBUG_FMT_MAX_SIZE 256
 
 /* USER CODE END Private defines */
 

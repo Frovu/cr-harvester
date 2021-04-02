@@ -6,3 +6,5 @@ server/logs
 .settings
 /Debug/
 /Release/
+
+counter/Debug
