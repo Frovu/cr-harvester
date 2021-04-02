@@ -1,10 +1,6 @@
 server/node_modules
 server/.env
 server/logs
-.project
-.cproject
-.settings
-/Debug/
-/Release/
 
+counter/Release
 counter/Debug
