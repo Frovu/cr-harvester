@@ -6,10 +6,33 @@
 */
 #include "counter.h"
 
+extern I2C_HandleTypeDef hi2c2;
+BMP280_HandleTypedef bmp280;
+
 uint16_t flags = 0;
-uint16_t seconds_counter = 0;
+uint16_t seconds_counter = COUNTER_DATA_RATE - 4;
 uint32_t cycle_counter = 0;
 
+
+void counter_init() {
+  debug_printf("INIT\r\n");
+
+  bmp280_init_default_params(&bmp280.params);
+  bmp280.addr = BMP280_I2C_ADDRESS_0;
+  bmp280.i2c = &hi2c2;
+  // try to init bmp280 3 times with 1 second delay
+  for (int i=0; i < 3; ++i) {
+    if (bmp280_init(&bmp280, &bmp280.params)) {
+      flags |= FLAG_BMP_OK;
+      debug_printf("BMP280 init success, id = %x\r\n", bmp280.id);
+      bmp280_force_measurement(&bmp280);
+      break;
+    } else {
+      debug_printf("BMP280 init failed\r\n");
+      HAL_Delay(1000);
+    }
+  }
+}
 
 void event_loop() {
   if (flags & FLAG_EVENT_DATA) {
@@ -23,15 +46,26 @@ void event_loop() {
 }
 
 void data_collection_event() {
+  float t, p;
+  if (flags & FLAG_BMP_OK) {
+    for (int i=0; i<3; ++i) {
+      if (bmp280_read_float(&bmp280, &t, &p, NULL))
+        break;
+      debug_printf("BMP280 read failed\r\n");
+      HAL_Delay(500);
+    }
+    bmp280_force_measurement(&bmp280);
+  }
 
+  debug_printf("%.2f hPa / %.2f C\r\n", p/100, t);
 }
 
 void base_clock_event() {
   // blink onboard led to show that we are alive
-HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_RESET);
-HAL_Delay(5);
-HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
-//  HAL_GPIO_TogglePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin);
+  HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_RESET);
+  HAL_Delay(3);
+  HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
+
 
 }
 
