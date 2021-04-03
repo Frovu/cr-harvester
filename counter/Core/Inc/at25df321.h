@@ -7,8 +7,12 @@
 
 #include "stm32f1xx_hal.h"
 
+#define AT25_BIT_WRITE_OK        (1 << 5)
+#define AT25_BIT_READY           (1 << 0)
+
 #define AT25_CMD_READ_STATUS     0x05
 #define AT25_CMD_READ_DEV_ID     0x9f
+#define AT25_CMD_WRITE_STATUS_1  0x01
 #define AT25_CMD_WRITE_ENABLE    0x06
 #define AT25_CMD_WRITE_DISABLE   0x04
 
@@ -53,8 +57,9 @@ uint8_t at25_is_ready();
 uint8_t at25_write_ok();
 uint8_t at25_is_valid();
 
-// protection and block erase operations are not used hence not implemented here
+// block protection and erase operations are not used hence not implemented here
 
+void at25_global_unprotect();
 void at25_erase_all();
 uint8_t at25_write_block(uint32_t address, const uint8_t *data, uint16_t count);
 uint16_t at25_read_block(uint32_t address, const uint8_t *data, uint16_t count);
