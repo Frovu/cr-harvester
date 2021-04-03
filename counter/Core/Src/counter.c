@@ -16,10 +16,6 @@ uint32_t cycle_counter = 0;
 
 void counter_init() {
   debug_printf("INIT\r\n");
-  // ******************* AT25DF321 ******************
-  at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
-  // TODO: check status
-
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
@@ -33,7 +29,18 @@ void counter_init() {
       break;
     } else {
       debug_printf("BMP280 init failed\r\n");
-      HAL_Delay(1000);
+      HAL_Delay(500);
+    }
+  }
+  // ******************* AT25DF321 ******************
+  at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
+  for (int i=0; i < 3; ++i) {
+    if (at25_is_valid()) {
+      debug_printf("AT25DF321 init success\r\n");
+      break;
+    } else {
+      debug_printf("AT25DF321 invalid\r\n");
+      HAL_Delay(300);
     }
   }
 }
@@ -70,13 +77,7 @@ void base_clock_event() {
   HAL_Delay(3);
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
 
-  debug_printf("at25df321 validity = %x\r\n", at25_is_valid());
   debug_printf("at25df321 status = 0x%x\r\n", at25_read_status_register());
-  at25_write_enable();
-  debug_printf("write enable\r\n");
-  debug_printf("at25df321 status = 0x%x\r\n", at25_read_status_register());
-  at25_write_disable();
-  debug_printf("write disable\r\n");
 
 }
 

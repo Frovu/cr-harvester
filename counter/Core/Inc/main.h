@@ -66,7 +66,7 @@ void debug_printf(const char * fmt, ...);
 #define AT25_CS_Pin GPIO_PIN_0
 #define AT25_CS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-#define DEBUG
+#define DEBUG_UART
 
 #define DEBUG_FMT_MAX_SIZE 256
 
