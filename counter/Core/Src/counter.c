@@ -7,16 +7,20 @@
 #include "counter.h"
 
 extern I2C_HandleTypeDef hi2c2;
+extern SPI_HandleTypeDef hspi1;
 BMP280_HandleTypedef bmp280;
 
 uint16_t flags = 0;
 uint16_t seconds_counter = COUNTER_DATA_RATE - 4;
 uint32_t cycle_counter = 0;
 
-
 void counter_init() {
   debug_printf("INIT\r\n");
+  // ******************* AT25DF321 ******************
+  at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
+  // TODO: check status
 
+  // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
   bmp280.i2c = &hi2c2;
@@ -24,7 +28,7 @@ void counter_init() {
   for (int i=0; i < 3; ++i) {
     if (bmp280_init(&bmp280, &bmp280.params)) {
       flags |= FLAG_BMP_OK;
-      debug_printf("BMP280 init success, id = %x\r\n", bmp280.id);
+      debug_printf("BMP280 init success, id = 0x%x\r\n", bmp280.id);
       bmp280_force_measurement(&bmp280);
       break;
     } else {
@@ -66,6 +70,8 @@ void base_clock_event() {
   HAL_Delay(3);
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
 
+  uint8_t status = at25_read_status_register();
+  debug_printf("at25df321 status = 0x%x\r\n", status);
 
 }
 

@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "bmp280.h"
+#include "at25df321.h"
 
 #define FLAG_EVENT_BASE 0x1
 #define FLAG_EVENT_DATA 0x2
