@@ -17,11 +17,11 @@ uint8_t at25_read_status_register() {
 }
 
 uint8_t at25_is_ready() {
-  return (at25_read_status_register() & AT25_BIT_READY) == 0
+  return (at25_read_status_register() & AT25_BIT_READY) == 0;
 }
 
 uint8_t at25_write_ok() {
-  return (at25_read_status_register() & AT25_BIT_WRITE_OK) == 0
+  return (at25_read_status_register() & AT25_BIT_WRITE_OK) == 0;
 }
 
 uint8_t at25_is_valid() {
@@ -35,6 +35,7 @@ uint8_t at25_is_valid() {
 }
 
 void at25_global_unprotect() {
+  at25_write_enable();
   at25_select();
   at25_transmit_byte(AT25_CMD_WRITE_STATUS_1);
   at25_transmit_byte(0x0); // SPRL and 5,4,3,2 bits unset

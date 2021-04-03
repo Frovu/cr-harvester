@@ -14,6 +14,34 @@ uint16_t flags = 0;
 uint16_t seconds_counter = COUNTER_DATA_RATE - 4;
 uint32_t cycle_counter = 0;
 
+uint8_t try_init_bmp() {
+  if (flags & FLAG_BMP_OK)
+    return 1;
+  if (bmp280_init(&bmp280, &bmp280.params)) {
+    flags |= FLAG_BMP_OK;
+    debug_printf("BMP280 init success, id = 0x%x\r\n", bmp280.id);
+    bmp280_force_measurement(&bmp280);
+    return 1;
+  } else {
+    debug_printf("BMP280 init failed\r\n");
+    return 0;
+  }
+}
+
+uint8_t try_init_flash() {
+  if (flags & FLAG_FLASH_OK)
+    return 1;
+  if (at25_is_valid() && at25_is_ready()) {
+    at25_global_unprotect();
+    flags |= FLAG_FLASH_OK;
+    debug_printf("AT25DF321 init success\r\n");
+    return 1;
+  } else {
+    debug_printf("AT25DF321 invalid\r\n");
+    return 0;
+  }
+}
+
 void counter_init() {
   debug_printf("INIT\r\n");
   // ******************** BMP280 ********************
@@ -21,27 +49,12 @@ void counter_init() {
   bmp280.addr = BMP280_I2C_ADDRESS_0;
   bmp280.i2c = &hi2c2;
   // try to init bmp280 3 times with 1 second delay
-  for (int i=0; i < 3; ++i) {
-    if (bmp280_init(&bmp280, &bmp280.params)) {
-      flags |= FLAG_BMP_OK;
-      debug_printf("BMP280 init success, id = 0x%x\r\n", bmp280.id);
-      bmp280_force_measurement(&bmp280);
-      break;
-    } else {
-      debug_printf("BMP280 init failed\r\n");
-      HAL_Delay(500);
-    }
-  }
+  for (int i=0; !try_init_bmp() || i < 3; ++i)
+    HAL_Delay(500);
   // ******************* AT25DF321 ******************
   at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
-  for (int i=0; i < 3; ++i) {
-    if (at25_is_valid()) {
-      debug_printf("AT25DF321 init success\r\n");
-      break;
-    } else {
-      debug_printf("AT25DF321 invalid\r\n");
-      HAL_Delay(300);
-    }
+  for (int i=0; !try_init_flash() || i < 3; ++i) {
+    HAL_Delay(300);
   }
 }
 

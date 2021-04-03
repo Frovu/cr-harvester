@@ -12,9 +12,10 @@
 #include "bmp280.h"
 #include "at25df321.h"
 
-#define FLAG_EVENT_BASE 0x1
-#define FLAG_EVENT_DATA 0x2
-#define FLAG_BMP_OK 0x10
+#define FLAG_EVENT_BASE     0x01
+#define FLAG_EVENT_DATA     0x02
+#define FLAG_BMP_OK         0x10
+#define FLAG_FLASH_OK       0x20
 
 #define COUNTER_DATA_RATE 60
 
