@@ -70,8 +70,13 @@ void base_clock_event() {
   HAL_Delay(3);
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
 
-  uint8_t status = at25_read_status_register();
-  debug_printf("at25df321 status = 0x%x\r\n", status);
+  debug_printf("at25df321 validity = %x\r\n", at25_is_valid());
+  debug_printf("at25df321 status = 0x%x\r\n", at25_read_status_register());
+  at25_write_enable();
+  debug_printf("write enable\r\n");
+  debug_printf("at25df321 status = 0x%x\r\n", at25_read_status_register());
+  at25_write_disable();
+  debug_printf("write disable\r\n");
 
 }
 
