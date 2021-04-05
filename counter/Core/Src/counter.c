@@ -10,6 +10,8 @@ extern I2C_HandleTypeDef hi2c2;
 extern SPI_HandleTypeDef hspi1;
 BMP280_HandleTypedef bmp280;
 
+volatile uint16_t counters[CHANNELS_COUNT];
+
 uint16_t flags = 0;
 uint16_t seconds_counter = COUNTER_DATA_RATE - 4;
 uint32_t cycle_counter = 0;
@@ -56,14 +58,6 @@ void counter_init() {
   for (int i=0; !try_init_flash() || i < 3; ++i) {
     HAL_Delay(300);
   }
-
-  uint8_t ibuf[11];
-  ibuf[10] = '\0';
-  uint8_t buf[10] = "hello world";
-  at25_read_block(0x0, ibuf, 10);
-  debug_printf("string in flash on init: <%s>\r\n", ibuf);
-  at25_write_block(0x0, buf, 10);
-  HAL_Delay(500);
 }
 
 void event_loop() {
@@ -109,5 +103,16 @@ void base_clock_interrupt_handler() {
     flags |= FLAG_EVENT_DATA;
     seconds_counter = 0;
     ++cycle_counter;
+  }
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+  uint8_t idx = 0;
+  while (GPIO_Pin >>= 1) {
+    ++idx;
+  }
+  idx = GPIO_LOOKUP_CHANNEL[idx];
+  if (idx < CHANNELS_COUNT) {
+    ++counters[idx];
   }
 }
