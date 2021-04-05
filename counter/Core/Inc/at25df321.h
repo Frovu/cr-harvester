@@ -1,7 +1,3 @@
-/*
-* Based on https://github.com/Synapseware/libs/blob/master/drivers/at25df321/at25df321.c
-*/
-
 #ifndef __AT25DF321_H
 #define __AT25DF321_H
 
@@ -15,6 +11,9 @@
 #define AT25_CMD_WRITE_STATUS_1  0x01
 #define AT25_CMD_WRITE_ENABLE    0x06
 #define AT25_CMD_WRITE_DISABLE   0x04
+#define AT25_CMD_ERASE_ALL       0x60
+#define AT25_CMD_READ_ARRAY      0x03 // 0x0B opcode could also be used, see datasheet
+#define AT25_CMD_BYTE_PROGRAM    0x02
 
 #define AT25_TIMEOUT 250u
 
@@ -61,7 +60,7 @@ uint8_t at25_is_valid();
 
 void at25_global_unprotect();
 void at25_erase_all();
-uint8_t at25_write_block(uint32_t address, const uint8_t *data, uint16_t count);
-uint16_t at25_read_block(uint32_t address, const uint8_t *data, uint16_t count);
+void at25_write_block(uint32_t address, const uint8_t *data, uint16_t count);
+void at25_read_block(uint32_t address, uint8_t *data, uint16_t count);
 
 #endif

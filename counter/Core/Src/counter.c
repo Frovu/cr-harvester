@@ -56,6 +56,14 @@ void counter_init() {
   for (int i=0; !try_init_flash() || i < 3; ++i) {
     HAL_Delay(300);
   }
+
+  uint8_t ibuf[11];
+  ibuf[10] = '\0';
+  uint8_t buf[10] = "hello world";
+  at25_read_block(0x0, ibuf, 10);
+  debug_printf("string in flash on init: <%s>\r\n", ibuf);
+  at25_write_block(0x0, buf, 10);
+  HAL_Delay(500);
 }
 
 void event_loop() {
