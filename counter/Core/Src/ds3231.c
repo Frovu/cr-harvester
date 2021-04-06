@@ -17,6 +17,8 @@ HAL_StatusTypeDef RTC_init(I2C_HandleTypeDef *i2ch, uint16_t address, uint8_t co
       return status;
     }
   }
+  uint8_t status_reg = 0u;
+  // HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_STATUS, 1, &status_reg, 1, timeout);
   return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_CONTROL, 1, &config, 1, timeout);
 }
 
@@ -39,7 +41,7 @@ HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout)
   return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_DATE, 1, buf, 7, timeout);
 }
 
-HAL_StatusTypeDef RTC_ReadDateTime (DateTime *dt, uint32_t timeout)
+HAL_StatusTypeDef RTC_ReadDateTime(DateTime *dt, uint32_t timeout)
 {
   uint8_t buf[7];
   HAL_StatusTypeDef status = HAL_I2C_Mem_Read(rtc_i2ch, dev_addr, RTC_REG_DATE, 1, buf, 7, timeout);

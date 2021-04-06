@@ -60,7 +60,7 @@ void counter_init() {
   }
   // ******************** DS3231 ********************
   int8_t s = RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A1IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT) == HAL_OK;
-  debug_printf("RTC init: %s", s ? "OK" : "FAIL");
+  debug_printf("RTC init: %s\r\n", s ? "OK" : "FAIL");
   // TODO: retry
 }
 
@@ -96,7 +96,11 @@ void base_clock_event() {
   HAL_Delay(3);
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
 
-  debug_printf("at25df321 status = 0x%x\r\n", at25_read_status_register());
+  DateTime t;
+  RTC_ReadDateTime(&t, DEFAULT_TIMEOUT);
+  char buf[32];
+  strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &t);
+  debug_printf("time: %s\r\n", buf);
 
 }
 
