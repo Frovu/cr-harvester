@@ -58,6 +58,10 @@ void counter_init() {
   for (int i=0; !try_init_flash() || i < 3; ++i) {
     HAL_Delay(300);
   }
+  // ******************** DS3231 ********************
+  int8_t s = RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A1IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT) == HAL_OK;
+  debug_printf("RTC init: %s", s ? "OK" : "FAIL");
+  // TODO: retry
 }
 
 void event_loop() {
@@ -96,23 +100,27 @@ void base_clock_event() {
 
 }
 
-void base_clock_interrupt_handler() {
-  ++seconds_counter;
-  flags |= FLAG_EVENT_BASE;
-  if(seconds_counter >= COUNTER_DATA_RATE) {
-    flags |= FLAG_EVENT_DATA;
-    seconds_counter = 0;
-    ++cycle_counter;
-  }
-}
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-  uint8_t idx = 0;
-  while (GPIO_Pin >>= 1) {
-    ++idx;
+  if (GPIO_Pin == GPIO_RTC_IRQ)
+  {
+    ++seconds_counter;
+    flags |= FLAG_EVENT_BASE;
+    if(seconds_counter >= COUNTER_DATA_RATE)
+    {
+      flags |= FLAG_EVENT_DATA;
+      seconds_counter = 0;
+      ++cycle_counter;
+    }
   }
-  idx = GPIO_LOOKUP_CHANNEL[idx];
-  if (idx < CHANNELS_COUNT) {
-    ++counters[idx];
+  else
+  {
+    uint8_t idx = 0;
+    while (GPIO_Pin >>= 1) {
+      ++idx;
+    }
+    idx = GPIO_LOOKUP_CHANNEL[idx];
+    if (idx < CHANNELS_COUNT) {
+      ++counters[idx];
+    }
   }
 }

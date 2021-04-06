@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#define RTC_DEFAULT_ADDR    0xD0
+
 #define RTC_REG_DATE        0x00
 #define RTC_REG_ALARM1      0x07
 #define RTC_REG_ALARM2      0x0B
