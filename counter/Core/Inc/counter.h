@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "bmp280.h"
+#include "ds3231.h"
 #include "at25df321.h"
 
 #define FLAG_EVENT_BASE     0x01
@@ -17,10 +18,11 @@
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
 
-#define COUNTER_DATA_RATE 60
-#define CHANNELS_COUNT 12
+#define DEFAULT_TIMEOUT      300
+#define COUNTER_DATA_RATE     60
+#define CHANNELS_COUNT        12
 
-#define GPIO_RTC_IRQ    GPIO_PIN_11
+#define GPIO_RTC_IRQ    GPIO_PIN_1
 
 #define GPIO_CH_0       GPIO_PIN_12
 #define GPIO_CH_1       GPIO_PIN_13

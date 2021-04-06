@@ -2,6 +2,7 @@
 *  A simple HAL driver for DS3231 Real Time Clock
 *     Author: Frovy
 */
+#include "ds3231.h"
 
 I2C_HandleTypeDef *rtc_i2ch;
 uint16_t dev_addr;
