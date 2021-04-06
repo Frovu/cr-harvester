@@ -10,6 +10,7 @@ extern I2C_HandleTypeDef hi2c2;
 extern SPI_HandleTypeDef hspi1;
 BMP280_HandleTypedef bmp280;
 
+volatile uint16_t saved_counts[CHANNELS_COUNT];
 volatile uint16_t counters[CHANNELS_COUNT];
 
 uint16_t flags = 0;
@@ -59,9 +60,11 @@ void counter_init() {
     HAL_Delay(300);
   }
   // ******************** DS3231 ********************
-  int8_t s = RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A1IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT) == HAL_OK;
+  int8_t s = RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_SQW_1HZ, DEFAULT_TIMEOUT) == HAL_OK;
   debug_printf("RTC init: %s\r\n", s ? "OK" : "FAIL");
   // TODO: retry
+
+  base_clock_event();
 }
 
 void event_loop() {
@@ -96,6 +99,9 @@ void base_clock_event() {
   HAL_Delay(3);
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
 
+  uint8_t abuf[2];
+  HAL_I2C_Mem_Read(&hi2c2, RTC_DEFAULT_ADDR, RTC_REG_CONTROL, 1, abuf, 2, DEFAULT_TIMEOUT);
+  debug_printf("control: 0x%x status: 0x%x\r\n", abuf[0], abuf[1]);
   DateTime t;
   RTC_ReadDateTime(&t, DEFAULT_TIMEOUT);
   char buf[32];
@@ -109,10 +115,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   {
     ++seconds_counter;
     flags |= FLAG_EVENT_BASE;
-    if(seconds_counter >= COUNTER_DATA_RATE)
+    if (seconds_counter >= COUNTER_DATA_RATE)
     {
       flags |= FLAG_EVENT_DATA;
       seconds_counter = 0;
+      for (uint8_t i=0; i<CHANNELS_COUNT; ++i) {
+        saved_counts[i] = counters[i];
+      }
       ++cycle_counter;
     }
   }

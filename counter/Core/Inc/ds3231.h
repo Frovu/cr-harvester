@@ -21,6 +21,7 @@
 #define RTC_CONTROL_A1IE    0x01
 #define RTC_CONTROL_A2IE    0x02
 #define RTC_CONTROL_INTCN   0x04
+#define RTC_CONTROL_SQW_1HZ 0x00
 
 typedef struct tm DateTime;
 
@@ -29,8 +30,7 @@ typedef struct tm DateTime;
 
 HAL_StatusTypeDef RTC_init(I2C_HandleTypeDef *i2ch, uint16_t address, uint8_t config, uint32_t timeout);
 
-HAL_StatusTypeDef RTC_ConfigAlarm(uint32_t timeout);
-// alarm functionality implementation limits to every second alarm1 here
+// alarm functionality could be implemented here, but not today
 
 HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout);
 HAL_StatusTypeDef RTC_ReadDateTime (DateTime *dt, uint32_t timeout);
