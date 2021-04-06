@@ -11,7 +11,26 @@ HAL_StatusTypeDef RTC_init(I2C_HandleTypeDef *i2ch, uint16_t address, uint8_t co
 {
   rtc_i2ch = i2ch;
   dev_addr = address;
+  if (config & (RTC_CONTROL_A1IE | RTC_CONTROL_A2IE)) {
+    HAL_StatusTypeDef status = RTC_ConfigAlarm(RTC_REG_ALARM2, 3, timeout);
+    if (status != HAL_OK) {
+      return status;
+    }
+  }
+  RTC_ClearAlarm(timeout / 4);
   return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_CONTROL, 1, &config, 1, timeout);
+}
+
+HAL_StatusTypeDef RTC_ConfigAlarm(uint16_t addr, uint16_t size,  uint32_t timeout)
+{
+  uint8_t alarm_mask[4] = { 0x80, 0x80, 0x80, 0x01 };
+  return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, addr, 1, alarm_mask, size, timeout);
+}
+
+HAL_StatusTypeDef RTC_ClearAlarm(uint32_t timeout)
+{
+  uint8_t reg = 0u;
+  return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_STATUS, 1, &reg, 4, timeout);
 }
 
 HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout)
