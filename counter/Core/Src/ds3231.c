@@ -23,7 +23,7 @@ HAL_StatusTypeDef RTC_init(I2C_HandleTypeDef *i2ch, uint16_t address, uint8_t co
 HAL_StatusTypeDef RTC_ConfigAlarm(uint32_t timeout)
 {
   uint8_t alarm_mask[4] = { 0x80, 0x80, 0x80, 0x80 };
-  HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_ALARM1, 1, alarm_mask, 4, timeout);
+  return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_ALARM1, 1, alarm_mask, 4, timeout);
 }
 
 HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout)
