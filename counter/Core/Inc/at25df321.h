@@ -15,8 +15,9 @@
 #define AT25_CMD_READ_ARRAY      0x03 // 0x0B opcode could also be used, see datasheet
 #define AT25_CMD_BYTE_PROGRAM    0x02
 
-#define AT25_TIMEOUT 250u
-
+#define AT25_TIMEOUT             250u
+#define AT25_PAGE_SIZE           256u
+#define AT25_PAGES_COUNT        16384
 
 SPI_HandleTypeDef *at25_hspi;
 GPIO_TypeDef *at25_gpio_bus;

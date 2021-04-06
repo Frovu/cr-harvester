@@ -10,12 +10,13 @@ extern I2C_HandleTypeDef hi2c2;
 extern SPI_HandleTypeDef hspi1;
 BMP280_HandleTypedef bmp280;
 
+volatile uint16_t flags = FLAG_RTC_ALARM | FLAG_SKIP_PERIOD;
+
 volatile uint16_t saved_counts[CHANNELS_COUNT];
 volatile uint16_t counters[CHANNELS_COUNT];
 
-volatile uint16_t flags = FLAG_RTC_ALARM | FLAG_SKIP_PERIOD;
 uint32_t cycle_counter = 0;
-uint32_t last_alarm_reset = 0;
+uint32_t last_period_tick = 0;
 
 uint8_t try_init_bmp() {
   if (flags & FLAG_BMP_OK)
@@ -54,7 +55,8 @@ uint8_t try_init_rtc() {
   }
 }
 
-void counter_init() {
+void counter_init()
+{
   debug_printf("INIT\r\n");
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
@@ -75,13 +77,15 @@ void counter_init() {
 }
 
 void event_loop() {
-  if (flags & FLAG_EVENT_BASE) {
+  if (flags & FLAG_EVENT_BASE)
+  {
+    last_period_tick = HAL_GetTick();
     base_clock_event();
     flags ^= FLAG_EVENT_BASE;
   }
-  if (flags & FLAG_RTC_ALARM) {
+  if (flags & FLAG_RTC_ALARM)
+  {
     if (RTC_ClearAlarm(50) == HAL_OK) {
-      last_alarm_reset = HAL_GetTick();
       flags ^= FLAG_RTC_ALARM;
     }
   }
@@ -92,22 +96,37 @@ void event_loop() {
     *  can do here is just to try to re-initialize RTC's alarm registers
     *  with some period and hope it will be restored in its place
     */
-    if (HAL_GetTick() - last_alarm_reset > BASE_EVENT_WATCHDOG_MS)
+    if (HAL_GetTick() - last_period_tick > BASE_EVENT_WATCHDOG_MS)
     {
       debug_printf("period watchdog triggered\r\n");
       if (try_init_rtc() != HAL_OK) {
         // error led on
-        HAL_Delay(2500);
+        HAL_Delay(1000);
       } else {
         debug_printf("period watchdog reset!\r\n");
         // error led off
       }
     }
   }
-
+  if (flags & FLAG_DATA_SENDING)
+  {
+    int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick
+    if (time_left > SENDING_TIMEOUT) {
+      if (data_send_one() == 0) {
+        flags ^= FLAG_DATA_SENDING;
+      }
+    }
+  }
 }
-void base_periodic_event() {
-  float t, p;
+void base_periodic_event()
+{
+  float t_buf = 0, p_buf = 0;
+  DateTime date_buf;
+  for (int i=0; (RTC_ReadDateTime(&dt, DEFAULT_TIMEOUT) != HAL_OK) && (i < 5); ++i) {
+    debug_printf("RTC time read failed!\r\n");
+    memset(&date_buf, 0, sizeof(date_buf)); // protect from garbage readings
+    HAL_Delay(500);
+  }
   if (flags & FLAG_BMP_OK) {
     for (int i=0; !bmp280_read_float(&bmp280, &t, &p, NULL) && (i < 3); ++i) {
       debug_printf("BMP280 readout failed\r\n");
@@ -116,13 +135,19 @@ void base_periodic_event() {
     bmp280_force_measurement(&bmp280);
   }
 
-  debug_printf("%.2f hPa / %.2f C\r\n", p/100, t);
+  if (flags & FLAG_SKIP_PERIOD) {
+    flags ^= FLAG_SKIP_PERIOD;
+  } else {
+    data_end_period(saved_counts);
+  }
+  data_new_period(&date_buf, t_buf, p_buf);
+
   // blink onboard led to show that we are alive
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_RESET);
   HAL_Delay(3);
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
 
-  DateTime dt;
+
   RTC_ReadDateTime(&dt, DEFAULT_TIMEOUT);
   char buf[32];
   strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &dt);
@@ -130,7 +155,8 @@ void base_periodic_event() {
 
 }
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
   if (GPIO_Pin == GPIO_RTC_IRQ)
   {
     if ((flags & FLAG_RTC_ALARM) == 0)
