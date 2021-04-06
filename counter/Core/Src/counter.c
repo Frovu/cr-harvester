@@ -13,8 +13,9 @@ BMP280_HandleTypedef bmp280;
 volatile uint16_t saved_counts[CHANNELS_COUNT];
 volatile uint16_t counters[CHANNELS_COUNT];
 
-volatile uint16_t flags = 0;
+volatile uint16_t flags = FLAG_RTC_ALARM | FLAG_SKIP_PERIOD;
 uint32_t cycle_counter = 0;
+uint32_t last_alarm_reset = 0;
 
 uint8_t try_init_bmp() {
   if (flags & FLAG_BMP_OK)
@@ -22,7 +23,6 @@ uint8_t try_init_bmp() {
   if (bmp280_init(&bmp280, &bmp280.params)) {
     flags |= FLAG_BMP_OK;
     debug_printf("BMP280 init success, id = 0x%x\r\n", bmp280.id);
-    bmp280_force_measurement(&bmp280);
     return 1;
   } else {
     debug_printf("BMP280 init failed\r\n");
@@ -44,26 +44,34 @@ uint8_t try_init_flash() {
   }
 }
 
+uint8_t try_init_rtc() {
+  if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A2IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT)) {
+    debug_printf("RTC init success\r\n");
+    return 1;
+  } else {
+    debug_printf("RTC init failed\r\n");
+    return 0;
+  }
+}
+
 void counter_init() {
   debug_printf("INIT\r\n");
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
   bmp280.i2c = &hi2c2;
-  // try to init bmp280 3 times with 1 second delay
-  for (int i=0; !try_init_bmp() && i < 3; ++i)
+  for (int i=0; !try_init_bmp() && i < 3; ++i) {
     HAL_Delay(500);
+  }
   // ******************* AT25DF321 ******************
   at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
   for (int i=0; !try_init_flash() && i < 3; ++i) {
     HAL_Delay(300);
   }
   // ******************** DS3231 ********************
-  int8_t s = RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A2IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT) == HAL_OK;
-  debug_printf("RTC init: %s\r\n", s ? "OK" : "FAIL");
-  // TODO: retry
-
-  base_clock_event();
+  while (!try_init_rtc()) {
+    HAL_Delay(300);
+  }
 }
 
 void event_loop() {
@@ -72,31 +80,40 @@ void event_loop() {
     flags ^= FLAG_EVENT_BASE;
   }
   if (flags & FLAG_RTC_ALARM) {
-      uint8_t abuf[4];
-//      uint8_t alarm_mask[4] = { 0x80, 0x80, 0x80, 0x80 };
-//      HAL_I2C_Mem_Write(&hi2c2, RTC_DEFAULT_ADDR, RTC_REG_ALARM2, 1, alarm_mask, 3, DEFAULT_TIMEOUT);
-//      HAL_I2C_Mem_Read(&hi2c2, RTC_DEFAULT_ADDR, RTC_REG_ALARM2, 1, abuf, 4, DEFAULT_TIMEOUT);
-//      debug_printf("malarm 2: 0x%x 0x%x 0x%x\r\n", abuf[0], abuf[1], abuf[2]);
-//      HAL_I2C_Mem_Read(&hi2c2, RTC_DEFAULT_ADDR, RTC_REG_CONTROL, 1, abuf, 2, DEFAULT_TIMEOUT);
-//      debug_printf("prec alarm: 0x%x status: 0x%x\r\n", abuf[0], abuf[1]);
     if (RTC_ClearAlarm(50) == HAL_OK) {
+      last_alarm_reset = HAL_GetTick();
       flags ^= FLAG_RTC_ALARM;
-//      HAL_I2C_Mem_Read(&hi2c2, RTC_DEFAULT_ADDR, RTC_REG_CONTROL, 1, abuf, 2, DEFAULT_TIMEOUT);
-//      debug_printf("c alarm control: 0x%x status: 0x%x\r\n", abuf[0], abuf[1]);
+    }
+  }
+  else
+  {
+    /* If RTC does not produce alarm IRQ for more than a minute,
+    *  it means something is wrong with RTC and the only thing we
+    *  can do here is just to try to re-initialize RTC's alarm registers
+    *  with some period and hope it will be restored in its place
+    */
+    if (HAL_GetTick() - last_alarm_reset > BASE_EVENT_WATCHDOG_MS)
+    {
+      debug_printf("period watchdog triggered\r\n");
+      if (try_init_rtc() != HAL_OK) {
+        // error led on
+        HAL_Delay(2500);
+      } else {
+        debug_printf("period watchdog reset!\r\n");
+        // error led off
+      }
     }
   }
 
 }
-void base_clock_event() {
+void base_periodic_event() {
   float t, p;
   if (flags & FLAG_BMP_OK) {
-	for (int i=0; i<3; ++i) {
-	  if (bmp280_read_float(&bmp280, &t, &p, NULL))
-		break;
-	  debug_printf("BMP280 read failed\r\n");
-	  HAL_Delay(500);
-	}
-	bmp280_force_measurement(&bmp280);
+    for (int i=0; !bmp280_read_float(&bmp280, &t, &p, NULL) && (i < 3); ++i) {
+      debug_printf("BMP280 readout failed\r\n");
+      HAL_Delay(100);
+    }
+    bmp280_force_measurement(&bmp280);
   }
 
   debug_printf("%.2f hPa / %.2f C\r\n", p/100, t);

@@ -17,9 +17,11 @@
 #define FLAG_RTC_ALARM      0x02
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
+#define FLAG_SKIP_PERIOD    0x80
 
-#define DEFAULT_TIMEOUT      300
-#define CHANNELS_COUNT        12
+#define DEFAULT_TIMEOUT          300
+#define BASE_EVENT_WATCHDOG_MS   61999u
+#define CHANNELS_COUNT           12
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1
 
@@ -47,13 +49,15 @@ typedef struct {
   float pressure;
 } DataLine;
 
+// Initialization routines
+uint8_t try_init_rtc();
+uint8_t try_init_bmp();
+uint8_t try_init_flash();
+void counter_init();
 // Called continuously from core while loop
 void event_loop();
 // Core events handlers
-void data_collection_event();
-void base_clock_event();
-// Called every second from system RTC IRQ handler
-void base_clock_interrupt_handler();
+void base_periodic_event();
 
 
 #endif
