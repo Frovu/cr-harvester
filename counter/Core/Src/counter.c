@@ -50,10 +50,13 @@ uint8_t try_init_flash() {
 }
 
 uint8_t try_init_rtc() {
+  if (IS_SET(FLAG_RTC_OK))
+    return 1;
   if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONFIG, DEFAULT_TIMEOUT) == HAL_OK) {
     uint8_t alarm_data[] = RTC_ALARM_CONFIG;
     if (RTC_ConfigAlarm(RTC_REG_ALARM2, alarm_data, DEFAULT_TIMEOUT) == HAL_OK) {
       if (RTC_ClearAlarm(DEFAULT_TIMEOUT) == HAL_OK) {
+        RAISE(FLAG_RTC_OK);
         debug_printf("RTC init success\r\n");
         return 1;
       }
@@ -95,35 +98,51 @@ void counter_init()
 }
 
 void event_loop() {
-  if (IS_SET(FLAG_EVENT_BASE))
+  if (IS_SET(FLAG_RTC_OK))
   {
-    last_period_tick = HAL_GetTick();
-    base_periodic_event();
-    TOGGLE(FLAG_EVENT_BASE);
-  }
-  if (IS_SET(FLAG_RTC_ALARM))
-  {
-    if (RTC_ClearAlarm(50) == HAL_OK) {
-      TOGGLE(FLAG_RTC_ALARM);
+    if (IS_SET(FLAG_EVENT_BASE))
+    {
+      last_period_tick = HAL_GetTick();
+      base_periodic_event();
+      TOGGLE(FLAG_EVENT_BASE);
+    }
+    if (IS_SET(FLAG_RTC_ALARM))
+    {
+      uint16_t alarm_reset = 0;
+      for(uint16_t i=0; i<3; ++i) {
+        // try reset alarm 3 times, if failed raise RTC reinitializaiton flag
+        if (RTC_ClearAlarm(50) == HAL_OK) {
+          alarm_reset = 1;
+          break;
+        } else {
+          LED_BLINK(LED_ERROR, 50);
+          debug_printf("can't reset RTC alarm\r\n");
+        }
+      }
+      if (alarm_reset) {
+        TOGGLE(FLAG_RTC_ALARM);
+      } else {
+        TOGGLE(FLAG_RTC_OK); // reset RTC OK flag
+      }
+    }
+    else
+    { /* If RTC does not produce alarm IRQ for more than a minute,
+      *  it means something is wrong with RTC and the only thing we
+      *  can do here is just to try to re-initialize RTC's alarm registers
+      *  with some period and hope it will be restored in its place
+      */
+      if (HAL_GetTick() - last_period_tick > BASE_EVENT_WATCHDOG_MS) {
+        TOGGLE(FLAG_RTC_OK);
+        debug_printf("period watchdog triggered\r\n");
+      }
     }
   }
-  else
+  else // try to fix rtc somehow
   {
-    /* If RTC does not produce alarm IRQ for more than a minute,
-    *  it means something is wrong with RTC and the only thing we
-    *  can do here is just to try to re-initialize RTC's alarm registers
-    *  with some period and hope it will be restored in its place
-    */
-    if (HAL_GetTick() - last_period_tick > BASE_EVENT_WATCHDOG_MS)
-    {
-      debug_printf("period watchdog triggered\r\n");
-      if (try_init_rtc() != HAL_OK) {
-        // error led on
-        HAL_Delay(1000);
-      } else {
-        debug_printf("period watchdog reset!\r\n");
-        // error led off
-      }
+    LED_OFF(LED_ERROR);
+    if (!try_init_rtc()) {
+      HAL_Delay(300);
+      LED_ON(LED_ERROR);
     }
   }
   int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
@@ -143,10 +162,16 @@ void event_loop() {
       }
     }
     if (NOT_SET(FLAG_BMP_OK)) {
-      try_init_bmp();
+      if (!try_init_bmp()) {
+        HAL_Delay(500);
+        LED_BLINK(LED_ERROR, 30);
+      }
     }
     if (NOT_SET(FLAG_FLASH_OK)) {
-      try_init_flash();
+      if (!try_init_flash()) {
+        HAL_Delay(500);
+        LED_BLINK(LED_ERROR, 30);
+      }
     }
   }
 }
