@@ -38,7 +38,7 @@ uint8_t try_init_flash() {
     at25_global_unprotect();
     LED_OFF(LED_ERROR);
     LED_ON(LED_DATA);
-    init_read_flash();
+    // init_read_flash(); // FIXME: uncomment
     LED_OFF(LED_DATA);
     RAISE(FLAG_FLASH_OK);
     debug_printf("AT25DF321 init success\r\n");
@@ -141,6 +141,7 @@ void event_loop() {
   {
     LED_OFF(LED_ERROR);
     if (!try_init_rtc()) {
+      HAL_I2C_Init(&hi2c2);
       HAL_Delay(300);
       LED_ON(LED_ERROR);
     }
@@ -163,6 +164,7 @@ void event_loop() {
     }
     if (NOT_SET(FLAG_BMP_OK)) {
       if (!try_init_bmp()) {
+        HAL_I2C_Init(&hi2c2);
         HAL_Delay(500);
         LED_BLINK(LED_ERROR, 30);
       }
