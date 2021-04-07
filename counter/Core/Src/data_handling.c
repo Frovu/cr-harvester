@@ -192,7 +192,7 @@ uint16_t data_send_one(uint32_t timeout)
       line_to_send = malloc(struct_size);
       if (!read_from_flash(line_to_send, timeout))
       {
-        debug_printf("dataline: failed to retrieve from flash");
+        debug_printf("dataline: failed to retrieve from flash\r\n");
         return flash_pages_used; // failed to read anything useful from flash, aborting
       }
     }
@@ -221,7 +221,7 @@ uint16_t data_send_one(uint32_t timeout)
     }
     else
     {
-      debug_printf("dataline: failed to send");
+      debug_printf("dataline: failed to send\r\n");
     }
   }
   return buffer_periods_count + flash_pages_used;

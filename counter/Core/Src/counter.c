@@ -58,7 +58,7 @@ uint8_t try_init_rtc() {
 
 void counter_init()
 {
-  debug_printf("INIT\r\n");
+  debug_printf("\r\n\r\nINIT\r\n");
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
@@ -115,6 +115,8 @@ void event_loop() {
     if (IS_SET(FLAG_DATA_SENDING)) {
       if (data_send_one(SENDING_TIMEOUT) == 0) {
         TOGGLE(FLAG_DATA_SENDING);
+      } else {
+        HAL_Delay(1000); // FIXME: probably too much
       }
     }
     if (NOT_SET(FLAG_BMP_OK)) {
@@ -160,7 +162,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == GPIO_RTC_IRQ)
   {
-    if (IS_SET(FLAG_RTC_ALARM))
+    if (NOT_SET(FLAG_RTC_ALARM))
     {
       RAISE(FLAG_RTC_ALARM);
       RAISE(FLAG_EVENT_BASE);
