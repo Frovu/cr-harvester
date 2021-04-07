@@ -65,6 +65,10 @@ void debug_printf(const char * fmt, ...);
 #define BOARD_LED_GPIO_Port GPIOC
 #define AT25_CS_Pin GPIO_PIN_0
 #define AT25_CS_GPIO_Port GPIOB
+#define LED_DATA_Pin GPIO_PIN_12
+#define LED_DATA_GPIO_Port GPIOA
+#define LED_ERROR_Pin GPIO_PIN_15
+#define LED_ERROR_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 #define DEBUG_UART
 
