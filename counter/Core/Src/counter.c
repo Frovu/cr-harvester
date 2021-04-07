@@ -36,7 +36,10 @@ uint8_t try_init_flash() {
     return 1;
   if (at25_is_valid() && at25_is_ready()) {
     at25_global_unprotect();
+    LED_OFF(LED_ERROR);
+    LED_ON(LED_DATA);
     init_read_flash();
+    LED_OFF(LED_DATA);
     RAISE(FLAG_FLASH_OK);
     debug_printf("AT25DF321 init success\r\n");
     return 1;
@@ -64,22 +67,31 @@ uint8_t try_init_rtc() {
 void counter_init()
 {
   debug_printf("\r\n\r\nINIT\r\n");
+  for(uint16_t i=0; i<5; ++i) {
+    LED_BLINK(LED_DATA, 30);
+    HAL_Delay(30);
+  }
+  LED_ON(LED_ERROR);
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
   bmp280.i2c = &hi2c2;
   for (int i=0; !try_init_bmp() && i < 3; ++i) {
-    HAL_Delay(500);
+    HAL_Delay(300);
+    LED_BLINK_INV(LED_ERROR, 200);
   }
   // ******************** DS3231 ********************
   while (!try_init_rtc()) {
-    HAL_Delay(500);
+    HAL_Delay(100);
+    LED_BLINK_INV(LED_ERROR, 400);
   }
   // ******************* AT25DF321 ******************
   at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
-  for (int i=0; !try_init_flash() && i < 3; ++i) {
-    HAL_Delay(300);
+  for (int i=0; !try_init_flash() && i < 10; ++i) {
+    HAL_Delay(100);
+    LED_BLINK_INV(LED_ERROR, 100);
   }
+  LED_OFF(LED_ERROR);
 }
 
 void event_loop() {
@@ -159,10 +171,7 @@ void base_periodic_event()
   RAISE(FLAG_DATA_SENDING);
 
   // blink onboard led to show that we are alive
-  HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_RESET);
-  HAL_Delay(3);
-  HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET);
-
+  LED_BLINK_INV(BOARD_LED, 10);
 
 }
 

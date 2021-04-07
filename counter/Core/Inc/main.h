@@ -70,6 +70,20 @@ void debug_printf(const char * fmt, ...);
 #define LED_ERROR_Pin GPIO_PIN_15
 #define LED_ERROR_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
+#define LED_ON(led) \
+  HAL_GPIO_WritePin(led##_GPIO_Port, led##_Pin, GPIO_PIN_SET)
+#define LED_OFF(led) \
+  HAL_GPIO_WritePin(led##_GPIO_Port, led##_Pin, GPIO_PIN_RESET)
+#define LED_BLINK(led, delay)     \
+	LED_ON(led);                    \
+	HAL_Delay(delay);               \
+	LED_OFF(led)
+#define LED_BLINK_INV(led, delay) \
+	LED_OFF(led);                   \
+	HAL_Delay(delay);               \
+	LED_ON(led)
+
+
 #define DEBUG_UART
 
 #define DEBUG_FMT_MAX_SIZE 256
