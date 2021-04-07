@@ -28,13 +28,31 @@
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
 
-#define DEFAULT_TIMEOUT          300
-#define SENDING_TIMEOUT          3000
-#define BASE_PERIOD_LEN_MS       60000
+#define RTC_SHORT_CYCLE // switch from 60s to 1s cycle (ONLY FOR DEBUG)
+#ifdef RTC_SHORT_CYCLE
+  #define RTC_ALARM_ENABLE_BIT RTC_CONTROL_A1IE
+  #define RTC_ALARM_CONFIG { 0x80, 0x80, 0x80, 0x80 } // set 4 mask bits (alarm1 every second)
+#else
+  #define RTC_ALARM_ENABLE_BIT RTC_CONTROL_A2IE
+  #define RTC_ALARM_CONFIG { 0x80, 0x80, 0x80 } // set 3 mask bits (alarm2 every minute)
+#endif
+#define RTC_CONFIG (RTC_ALARM_ENABLE_BIT | RTC_CONTROL_INTCN)
+
+#define DEFAULT_TIMEOUT            300
+#ifdef RTC_SHORT_CYCLE
+  #define SENDING_TIMEOUT          DEFAULT_TIMEOUT
+  #define BASE_PERIOD_LEN_MS       1000
+#else
+  #define SENDING_TIMEOUT          3000
+  #define BASE_PERIOD_LEN_MS       60000
+#endif
+
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 2000)
 #define CHANNELS_COUNT           12
 // if and only if more than DATA_BUFFER_LEN lines fail to send external flash memory is used
 #define DATA_BUFFER_LEN          8
+
+
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1
 

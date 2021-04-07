@@ -47,13 +47,18 @@ uint8_t try_init_flash() {
 }
 
 uint8_t try_init_rtc() {
-  if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A2IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT) == HAL_OK) {
-    debug_printf("RTC init success\r\n");
-    return 1;
-  } else {
-    debug_printf("RTC init failed\r\n");
-    return 0;
+  if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONFIG, DEFAULT_TIMEOUT) == HAL_OK) {
+    uint8_t alarm_data[] = RTC_ALARM_CONFIG;
+    if (RTC_ConfigAlarm(RTC_REG_ALARM2, alarm_data, DEFAULT_TIMEOUT) == HAL_OK) {
+      if (RTC_ClearAlarm(DEFAULT_TIMEOUT) == HAL_OK) {
+        debug_printf("RTC init success\r\n");
+        return 1;
+      }
+    }
   }
+  debug_printf("RTC init failed!\r\n");
+  return 0;
+
 }
 
 void counter_init()

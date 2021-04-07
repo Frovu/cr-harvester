@@ -77,7 +77,7 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
         return 0;
       }
       HAL_Delay(10);
-    }
+    } /// FIXMEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
     if (at25_write_ok())
     { // flash write succeeded
       if (flash_pages_used == 0)
