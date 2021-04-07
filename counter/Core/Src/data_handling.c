@@ -137,17 +137,22 @@ void data_period_transition(const uint16_t * counts, const DateTime *dt, float t
     for (uint16_t i=0; i<CHANNELS_COUNT; ++i) {
       current_period->counts[i] = counts[i];
     }
+    if (NOT_SET(FLAG_FLASH_OK))
+    { // if flash is broken forget about data saved there
+      flash_pages_used = 0;
+    }
     if ((buffer_periods_count < DATA_BUFFER_LEN) && (flash_pages_used == 0))
     { // save data line to buffer
       data_buffer[buffer_periods_count] = current_period;
       ++buffer_periods_count;
       debug_printf("period: saved to buffer\r\n");
     }
-    else // save data line to flash
+    else if (IS_SET(FLAG_FLASH_OK)) // save data line to flash
     {
       // if buffer was not in flash, save it
       for (uint16_t i=0; i<buffer_periods_count; ++i) {
         write_to_flash(data_buffer[i], DEFAULT_TIMEOUT);
+        free(data_buffer[i]);
       }
       buffer_periods_count = 0;
       write_to_flash(current_period, DEFAULT_TIMEOUT);
@@ -168,8 +173,8 @@ void data_period_transition(const uint16_t * counts, const DateTime *dt, float t
 
 uint16_t data_send_one(uint32_t timeout)
 {
-  uint16_t total_count = buffer_periods_count + flash_pages_used ; // if flash_pages_used is >0, buffer_periods_count is 0
-  if (total_count > 0)
+  // if flash_pages_used is >0, buffer_periods_count is 0
+  if (buffer_periods_count + flash_pages_used > 0)
   {
     DataLine *line_to_send;
     if (flash_pages_used == 0)
@@ -181,7 +186,8 @@ uint16_t data_send_one(uint32_t timeout)
       line_to_send = malloc(struct_size);
       if (!read_from_flash(line_to_send, timeout))
       {
-        return total_count; // failed to read anything useful from flash, aborting
+        debug_printf("dataline: failed to retrieve from flash");
+        return flash_pages_used; // failed to read anything useful from flash, aborting
       }
     }
     // TODO: prepare and send data string over HTTP
@@ -207,6 +213,10 @@ uint16_t data_send_one(uint32_t timeout)
       }
       debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used)
     }
+    else
+    {
+      debug_printf("dataline: failed to send");
+    }
   }
-  return total_count;
+  return buffer_periods_count + flash_pages_used;
 }

@@ -36,6 +36,7 @@ uint8_t try_init_flash() {
     return 1;
   if (at25_is_valid() && at25_is_ready()) {
     at25_global_unprotect();
+    init_read_flash();
     flags |= FLAG_FLASH_OK;
     debug_printf("AT25DF321 init success\r\n");
     return 1;
@@ -108,13 +109,19 @@ void event_loop() {
       }
     }
   }
-  if (flags & FLAG_DATA_SENDING)
+  int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
+  if (time_left > SENDING_TIMEOUT * 2)
   {
-    int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick
-    if (time_left > SENDING_TIMEOUT * 2) {
+    if (IS_SET(FLAG_DATA_SENDING)) {
       if (data_send_one() == 0) {
-        flags ^= FLAG_DATA_SENDING;
+        TOGGLE(FLAG_DATA_SENDING);
       }
+    }
+    if (NOT_SET(FLAG_BMP_OK)) {
+      try_init_bmp();
+    }
+    if (NOT_SET(FLAG_FLASH_OK)) {
+      try_init_flash();
     }
   }
 }
