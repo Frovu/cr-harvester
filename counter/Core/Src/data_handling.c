@@ -8,6 +8,7 @@
 static const uint32_t data_line_signature = 0xdeadbeef;
 
 static const uint16_t struct_size = sizeof(DataLine);
+static const uint16_t signature_size = sizeof(data_line_signature);
 static const uint16_t chunk_size  = sizeof(data_line_signature) + struct_size;
 
 extern uint16_t flags;
@@ -16,9 +17,9 @@ DataLine * current_period = NULL;
 DataLine * data_buffer[DATA_BUFFER_LEN];
 
 uint16_t buffer_periods_count = 0;
-uint16_t flash_page_first = 0;
-uint16_t flash_pages_used = 0;
-uint16_t flash_page_pointer = 0;  // pointer to what is assumed first writable empty page
+uint16_t flash_page_first = 0;    // aka where-to-read (nothing useful before it)
+uint16_t flash_pages_used = 0;    // number of lines stored in flash
+uint16_t flash_page_pointer = 0;  // pointer to what is assumed first writable unused page, aka where-to-write
 
 uint8_t buffer[chunk_size];
 
@@ -42,9 +43,6 @@ void init_read_flash()
     }
   }
   flash_page_pointer = flash_page_first + flash_pages_used;
-  if (flash_pages_used != 0) {
-    RAISE(FLAG_FLASH_NOT_EMPTY);
-  }
   debug_printf("found %d records in flash starting from page %d", flash_pages_used, flash_page_first);
 }
 
@@ -57,8 +55,8 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
     return 0;
   }
   uint32_t tickstart = HAL_GetTick();
-  memcpy(buffer, data_line_signature, sizeof(data_line_signature));
-  memcpy((buffer + sizeof(data_line_signature)), dl, struct_size);
+  memcpy(buffer, data_line_signature, signature_size);
+  memcpy(buffer + signature_size, dl, struct_size);
   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
     while (!at25_is_ready()) {
@@ -101,15 +99,30 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
   }
   while ((flash_page_first < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
-
+    at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, chunk_size);
+    uint32_t *signature = (uint32_t*) buffer;
+    if (*signature == data_line_signature)
+    { // found saved data line
+      memcpy(dl, buffer + signature_size, struct_size);
+      return 1;
+    }
+    else
+    {
+      ++flash_page_first;
+    }
   }
   if (flash_page_first >= AT25_PAGES_COUNT)
-  { // flash should be assumed to be empty
-    flash_page_first = 0;
-    flash_pages_used = 0;
-    flash_page_pointer = 0;
+  { // data not found, flash is assumed to be empty
+    reset_flash();
   }
   return 0;
+}
+
+void reset_flash() {
+  at25_erase_all(); // complete operation takes about 1 minute
+  flash_page_first = 0;
+  flash_pages_used = 0;
+  flash_page_pointer = 0;
 }
 
 void data_period_transition(const uint16_t * counts, const DateTime *dt, float t, float p)
@@ -126,15 +139,11 @@ void data_period_transition(const uint16_t * counts, const DateTime *dt, float t
     }
     else // save data line to flash
     {
-      RAISE(FLAG_FLASH_NOT_EMPTY);
-      if (NOT_SET(FLAG_FLASH_BUFFER))
-      { // if buffer was not in flash, save it
-        RAISE(FLAG_FLASH_BUFFER);
-        for(uint16_t i=0; i<CHANNELS_COUNT; ++i)
-        {
-          write_to_flash(data_buffer[i], DEFAULT_TIMEOUT);
-        }
+      // if buffer was not in flash, save it
+      for (uint16_t i=0; i<buffer_periods_count; ++i) {
+        write_to_flash(data_buffer[i], DEFAULT_TIMEOUT);
       }
+      buffer_periods_count = 0;
       write_to_flash(current_period, DEFAULT_TIMEOUT);
       // free data since it is now saved in flash (at least we hope so)
       free(current_period);
@@ -165,16 +174,29 @@ uint16_t data_send_one(uint32_t timeout)
       line_to_send = malloc(struct_size);
       if (!read_from_flash(line_to_send, timeout))
       {
-        return saved_periods_count; // failed to read anything useful from flash, aborting
+        return total_count; // failed to read anything useful from flash, aborting
       }
     }
     // TODO: prepare and send data string over HTTP
     uint8_t status = 0;
     if (status)
     {
-      --saved_periods_count;
       if (flash_pages_used == 0)
-      { // data was taken from buffer, shift it to left
+      { // data was taken from buffer, free and shift buffer to the left
+        free(line_to_send);
+        --buffer_periods_count;
+        for (uint16_t i = 0; i < buffer_periods_count; ++i) {
+          data_buffer[i] = data_buffer[i + 1];
+        }
+      }
+      else
+      { // data was taken from flash, decrement flash counter and erase if nothing left on chip
+        --flash_pages_used;
+        ++flash_page_first;
+        if (flash_pages_used == 0)
+        {
+          reset_flash();
+        }
 
       }
     }

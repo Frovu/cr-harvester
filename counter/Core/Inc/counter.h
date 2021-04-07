@@ -26,10 +26,6 @@
 #define FLAG_DATA_SENDING   0x04
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
-// #define FLAG_SKIP_PERIOD    0x80
-
-#define FLAG_FLASH_BUFFER    0x100
-#define FLAG_FLASH_NOT_EMPTY 0x200
 
 #define DEFAULT_TIMEOUT          300
 #define SENDING_TIMEOUT          3000
