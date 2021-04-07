@@ -43,7 +43,7 @@ void init_read_flash()
     }
   }
   flash_page_pointer = flash_page_first + flash_pages_used;
-  debug_printf("found %d records in flash starting from page %d", flash_pages_used, flash_page_first);
+  debug_printf("flash: found %d records starting from page %d\r\n", flash_pages_used, flash_page_first);
 }
 
 uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
@@ -80,11 +80,12 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
         flash_page_first = flash_page_pointer - 1;
       }
       ++flash_pages_used;
+      debug_printf("flash: successfuly wrote page %d\r\n", flash_page_pointer - 1);
       return 1;
     }
     else
     {
-      debug_printf("failed to write flash page %d", flash_page_pointer - 1);
+      debug_printf("flash: write error on page %d\r\n", flash_page_pointer - 1);
     }
   }
   return 0; // run out of flash pages or timed out
@@ -103,11 +104,13 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
     uint32_t *signature = (uint32_t*) buffer;
     if (*signature == data_line_signature)
     { // found saved data line
+      debug_printf("flash: successfuly read page %d\r\n", flash_page_first);
       memcpy(dl, buffer + signature_size, struct_size);
       return 1;
     }
     else
     {
+      debug_printf("flash: skipping page %d\r\n", flash_page_first);
       ++flash_page_first;
     }
   }
@@ -119,6 +122,7 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
 }
 
 void reset_flash() {
+  debug_printf("flash: erasing everything\r\n");
   at25_erase_all(); // complete operation takes about 1 minute
   flash_page_first = 0;
   flash_pages_used = 0;
@@ -129,6 +133,7 @@ void data_period_transition(const uint16_t * counts, const DateTime *dt, float t
 {
   if (current_period)
   {
+    debug_printf("period: counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
     for (uint16_t i=0; i<CHANNELS_COUNT; ++i) {
       current_period->counts[i] = counts[i];
     }
@@ -136,6 +141,7 @@ void data_period_transition(const uint16_t * counts, const DateTime *dt, float t
     { // save data line to buffer
       data_buffer[buffer_periods_count] = current_period;
       ++buffer_periods_count;
+      debug_printf("period: saved to buffer\r\n");
     }
     else // save data line to flash
     {
@@ -147,6 +153,7 @@ void data_period_transition(const uint16_t * counts, const DateTime *dt, float t
       write_to_flash(current_period, DEFAULT_TIMEOUT);
       // free data since it is now saved in flash (at least we hope so)
       free(current_period);
+      debug_printf("period: saved to flash (%d) < %d / %d >\r\n", flash_pages_used, flash_page_first, flash_page_pointer);
     }
   }
   /*
@@ -161,7 +168,7 @@ void data_period_transition(const uint16_t * counts, const DateTime *dt, float t
 
 uint16_t data_send_one(uint32_t timeout)
 {
-  uint16_t total_count = flash_pages_used ? flash_pages_used : buffer_periods_count;
+  uint16_t total_count = buffer_periods_count + flash_pages_used ; // if flash_pages_used is >0, buffer_periods_count is 0
   if (total_count > 0)
   {
     DataLine *line_to_send;
@@ -197,8 +204,8 @@ uint16_t data_send_one(uint32_t timeout)
         {
           reset_flash();
         }
-
       }
+      debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used)
     }
   }
   return total_count;
