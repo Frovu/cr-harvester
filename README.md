@@ -10,3 +10,31 @@ Each device has internet (over ethernet) connection to server and is sending dat
 Each device has onboard real time clock (battery backed) and keeps its time in sync via NTP.
 
 Each device has external flash unit of (32 mbits) where data is stored in case of server/connection failure, when connection is restored data is resent to server.
+
+## device LED's behavior
+
+Device has 3 informative LED's:
+- green led on stm32 board
+- blue led (referred to as DATA_LED)
+- red led (referred to as ERROR_LED)
+
+Green led behaves as follows:
+- it's **lit** when device is being initialized
+- it **blinks** shortly at the moment of data registration period transition
+
+DATA_LED (blue) led behaves as follows:
+- it's **lit** when device data storage is being read (it happens on flash initialization - green led is on)
+- it's **lit** when device have any data stored
+- it **blinks** (inverted) at the moment of data sending try
+
+ERROR_LED (red)  led behaves as follows:
+- it's **lit** when device peripherals initialization happens
+- it **blinks** shortly after data sending try is failed
+- it **blinks** with period of ~500ms when some of device peripherals is lost or fails to answer
+
+## device LED's most common patterns
+1. **green and blue** leds are **lit** - whole flash memory is being read
+2. **red and green** leds are **lit** - device failed to initialize RTC peripheral on start
+3. **red** led **blinks** with period of ~500ms - something is wrong with device peripherals
+4. **blue** led is **lit** and **red** led **blinks shortly** -
+device fails to send data to server
