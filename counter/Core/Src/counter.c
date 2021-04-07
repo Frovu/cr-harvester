@@ -179,19 +179,39 @@ void event_loop() {
 }
 void base_periodic_event()
 {
+  uint16_t flag_ok = 0;
   float t_buf = 0, p_buf = 0;
   DateTime date_buf;
-  for (int i=0; (RTC_ReadDateTime(&date_buf, DEFAULT_TIMEOUT) != HAL_OK) && (i < 5); ++i) {
-    debug_printf("RTC time read failed!\r\n");
-    memset(&date_buf, 0, sizeof(date_buf)); // protect from garbage readings
-    HAL_Delay(500);
-  }
-  if (IS_SET(FLAG_BMP_OK)) {
-    for (int i=0; !bmp280_read_float(&bmp280, &t_buf, &p_buf, NULL) && (i < 3); ++i) {
-      debug_printf("BMP280 readout failed\r\n");
-      HAL_Delay(100);
+  if (IS_SET(FLAG_RTC_OK)) {
+    for (int i=0; i < 3; ++i) {
+      if (RTC_ReadDateTime(&date_buf, DEFAULT_TIMEOUT) == HAL_OK) {
+        flag_ok = 1;
+        break;
+      }
+      debug_printf("RTC time read failed!\r\n");
+      memset(&date_buf, 0, sizeof(date_buf)); // protect from garbage readings
+      HAL_Delay(300);
     }
-    bmp280_force_measurement(&bmp280);
+    if (!flag_ok) { // RTC is lost
+      TOGGLE(FLAG_RTC_OK);
+    }
+  }
+
+  if (IS_SET(FLAG_BMP_OK)) {
+    flag_ok = 0;
+    for (int i=0; i < 3; ++i) {
+      if (bmp280_read_float(&bmp280, &t_buf, &p_buf, NULL)) {
+        flag_ok = 1;
+        break;
+      }
+      debug_printf("BMP280 readout failed\r\n");
+      HAL_Delay(200);
+    }
+    if (flag_ok) {
+      bmp280_force_measurement(&bmp280);
+    } else { // BMP is lost
+      TOGGLE(FLAG_BMP_OK);
+    }
   }
 
   char buf[32];
