@@ -13,6 +13,7 @@
 #include "ds3231.h"
 #include "at25df321.h"
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -73,7 +74,7 @@ void event_loop();
 void base_periodic_event();
 /********************* Data Handling **********************/
 void init_read_flash();
-void data_period_transition(const uint16_t * counts, const DateTime *dt, float t, float p);
+void data_period_transition(const volatile uint16_t * counts, const DateTime *dt, float t, float p);
 uint16_t data_send_one(uint32_t timeout);
 /********************* Data Sending **********************/
 

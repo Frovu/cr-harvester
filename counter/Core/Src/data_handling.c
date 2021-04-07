@@ -2,7 +2,7 @@
 *   Logic dedicated to storing and sending data lines
 */
 
-#include "couter.h"
+#include "counter.h"
 
 // if first 4 bytes of flash page contain this, they are counted as saved data lines
 static const uint32_t data_line_signature = 0xdeadbeef;
@@ -21,13 +21,15 @@ uint16_t flash_page_first = 0;    // aka where-to-read (nothing useful before it
 uint16_t flash_pages_used = 0;    // number of lines stored in flash
 uint16_t flash_page_pointer = 0;  // pointer to what is assumed first writable unused page, aka where-to-write
 
-uint8_t buffer[chunk_size];
+uint8_t * buffer;
 
+void reset_flash();
 uint8_t write_to_flash(const DataLine *dl, uint32_t timeout);
 uint8_t read_from_flash(DataLine *dl, uint32_t timeout);
 
 void init_read_flash()
 {
+  buffer = malloc(chunk_size);
   flash_pages_used = 0;
   flash_page_first = 0;
   for (uint16_t page = 0; page < AT25_PAGES_COUNT; ++page)
@@ -55,7 +57,7 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
     return 0;
   }
   uint32_t tickstart = HAL_GetTick();
-  memcpy(buffer, data_line_signature, signature_size);
+  memcpy(buffer, &data_line_signature, signature_size);
   memcpy(buffer + signature_size, dl, struct_size);
   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
@@ -98,6 +100,7 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
     }
     return 0;
   }
+  uint32_t tickstart = HAL_GetTick();
   while ((flash_page_first < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
     at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, chunk_size);
@@ -129,7 +132,7 @@ void reset_flash() {
   flash_page_pointer = 0;
 }
 
-void data_period_transition(const uint16_t * counts, const DateTime *dt, float t, float p)
+void data_period_transition(const volatile uint16_t * counts, const DateTime *dt, float t, float p)
 {
   if (current_period)
   {
@@ -211,7 +214,7 @@ uint16_t data_send_one(uint32_t timeout)
           reset_flash();
         }
       }
-      debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used)
+      debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
     }
     else
     {
