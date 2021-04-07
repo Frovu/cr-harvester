@@ -19,10 +19,10 @@ uint32_t cycle_counter = 0;
 uint32_t last_period_tick = 0;
 
 uint8_t try_init_bmp() {
-  if (flags & FLAG_BMP_OK)
+  if (IS_SET(FLAG_BMP_OK))
     return 1;
   if (bmp280_init(&bmp280, &bmp280.params)) {
-    flags |= FLAG_BMP_OK;
+    RAISE(FLAG_BMP_OK);
     debug_printf("BMP280 init success, id = 0x%x\r\n", bmp280.id);
     return 1;
   } else {
@@ -32,12 +32,12 @@ uint8_t try_init_bmp() {
 }
 
 uint8_t try_init_flash() {
-  if (flags & FLAG_FLASH_OK)
+  if (IS_SET(FLAG_FLASH_OK)
     return 1;
   if (at25_is_valid() && at25_is_ready()) {
     at25_global_unprotect();
     init_read_flash();
-    flags |= FLAG_FLASH_OK;
+    RAISE(FLAG_FLASH_OK);
     debug_printf("AT25DF321 init success\r\n");
     return 1;
   } else {
@@ -78,16 +78,16 @@ void counter_init()
 }
 
 void event_loop() {
-  if (flags & FLAG_EVENT_BASE)
+  if (IS_SET(FLAG_EVENT_BASE))
   {
     last_period_tick = HAL_GetTick();
     base_clock_event();
-    flags ^= FLAG_EVENT_BASE;
+    TOGGLE(FLAG_EVENT_BASE);
   }
-  if (flags & FLAG_RTC_ALARM)
+  if (IS_SET(FLAG_RTC_ALARM)
   {
     if (RTC_ClearAlarm(50) == HAL_OK) {
-      flags ^= FLAG_RTC_ALARM;
+      TOGGLE(FLAG_RTC_ALARM);
     }
   }
   else
@@ -134,7 +134,7 @@ void base_periodic_event()
     memset(&date_buf, 0, sizeof(date_buf)); // protect from garbage readings
     HAL_Delay(500);
   }
-  if (flags & FLAG_BMP_OK) {
+  if (IS_SET(FLAG_BMP_OK)) {
     for (int i=0; !bmp280_read_float(&bmp280, &t, &p, NULL) && (i < 3); ++i) {
       debug_printf("BMP280 readout failed\r\n");
       HAL_Delay(100);
@@ -162,10 +162,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == GPIO_RTC_IRQ)
   {
-    if ((flags & FLAG_RTC_ALARM) == 0)
+    if ((IS_SET(FLAG_RTC_ALARM) == 0)
     {
-      flags |= FLAG_RTC_ALARM;
-      flags |= FLAG_EVENT_BASE;
+      RAISE(FLAG_RTC_ALARM);
+      RAISE(FLAG_EVENT_BASE);
       for (uint8_t i=0; i<CHANNELS_COUNT; ++i) {
         saved_counts[i] = counters[i];
       }
