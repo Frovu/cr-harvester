@@ -134,8 +134,11 @@ void event_loop() {
       if (storage_stat == 0) {
         // everything sent
         TOGGLE(FLAG_DATA_SENDING);
+        LED_OFF(LED_DATA);
       } else if (storage_stat < 0) {
         // if failed to send line wait until something probably fixes idk
+        LED_BLINK_INV(LED_DATA, 30);
+        LED_BLINK(LED_ERROR, 30);
         HAL_Delay(1000); // FIXME: probably too much
       }
     }
@@ -168,7 +171,9 @@ void base_periodic_event()
   strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &date_buf);
   debug_printf("time now: %s\r\n", buf);
   data_period_transition(saved_counts, &date_buf, t_buf, p_buf /100); // /100 for hPa
+
   RAISE(FLAG_DATA_SENDING);
+  LED_ON(LED_DATA);
 
   // blink onboard led to show that we are alive
   LED_BLINK_INV(BOARD_LED, 10);
