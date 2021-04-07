@@ -47,7 +47,7 @@ uint8_t try_init_flash() {
 }
 
 uint8_t try_init_rtc() {
-  if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A2IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT)) {
+  if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONTROL_A2IE|RTC_CONTROL_INTCN, DEFAULT_TIMEOUT) == HAL_OK) {
     debug_printf("RTC init success\r\n");
     return 1;
   } else {
@@ -66,13 +66,13 @@ void counter_init()
   for (int i=0; !try_init_bmp() && i < 3; ++i) {
     HAL_Delay(500);
   }
+  // ******************** DS3231 ********************
+  while (!try_init_rtc()) {
+    HAL_Delay(500);
+  }
   // ******************* AT25DF321 ******************
   at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
   for (int i=0; !try_init_flash() && i < 3; ++i) {
-    HAL_Delay(300);
-  }
-  // ******************** DS3231 ********************
-  while (!try_init_rtc()) {
     HAL_Delay(300);
   }
 }

@@ -43,6 +43,9 @@ void init_read_flash()
       }
       ++flash_pages_used;
     }
+    if(page % 1000 == 0) {
+      debug_printf("flash: init read: %.2f%%\r\n", ((float)page/AT25_PAGES_COUNT)*100);
+    }
   }
   flash_page_pointer = flash_page_first + flash_pages_used;
   debug_printf("flash: found %d records starting from page %d\r\n", flash_pages_used, flash_page_first);
