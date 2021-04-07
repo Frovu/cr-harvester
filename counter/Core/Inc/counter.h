@@ -26,7 +26,7 @@
 #define FLAG_DATA_SENDING   0x04
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
-#define FLAG_SKIP_PERIOD    0x80
+// #define FLAG_SKIP_PERIOD    0x80
 
 #define FLAG_FLASH_BUFFER    0x100
 #define FLAG_FLASH_NOT_EMPTY 0x200
@@ -76,9 +76,9 @@ void event_loop();
 // Core events handlers
 void base_periodic_event();
 /********************* Data Handling **********************/
-void data_end_period(const uint16_t * counts);
-void data_new_period(const DateTime *dt, float t, float p);
-void data_send_one(uint32_t timeout);
+void init_read_flash();
+void data_period_transition(const uint16_t * counts, const DateTime *dt, float t, float p);
+uint16_t data_send_one(uint32_t timeout);
 /********************* Data Sending **********************/
 
 

@@ -15,15 +15,20 @@ extern uint16_t flags;
 DataLine * current_period = NULL;
 DataLine * data_buffer[DATA_BUFFER_LEN];
 
-uint16_t saved_periods_count = 0;
+uint16_t buffer_periods_count = 0;
 uint16_t flash_page_first = 0;
 uint16_t flash_pages_used = 0;
 uint16_t flash_page_pointer = 0;  // pointer to what is assumed first writable empty page
 
 uint8_t buffer[chunk_size];
 
+uint8_t write_to_flash(const DataLine *dl, uint32_t timeout);
+uint8_t read_from_flash(DataLine *dl, uint32_t timeout);
+
 void init_read_flash()
 {
+  flash_pages_used = 0;
+  flash_page_first = 0;
   for (uint16_t page = 0; page < AT25_PAGES_COUNT; ++page)
   {
     at25_read_block(page * AT25_PAGE_SIZE, buffer, chunk_size);
@@ -36,7 +41,6 @@ void init_read_flash()
       ++flash_pages_used;
     }
   }
-  saved_periods_count += flash_pages_used;
   flash_page_pointer = flash_page_first + flash_pages_used;
   if (flash_pages_used != 0) {
     RAISE(FLAG_FLASH_NOT_EMPTY);
@@ -85,19 +89,40 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
       debug_printf("failed to write flash page %d", flash_page_pointer - 1);
     }
   }
+  return 0; // run out of flash pages or timed out
 }
 
-void data_end_period(const uint16_t * counts)
+uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
+  if (!at25_is_valid()) {
+    if (IS_SET(FLAG_FLASH_OK)) {
+      TOGGLE(FLAG_FLASH_OK);
+    }
+    return 0;
+  }
+  while ((flash_page_first < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
+  {
+
+  }
+  if (flash_page_first >= AT25_PAGES_COUNT)
+  { // flash should be assumed to be empty
+    flash_page_first = 0;
+    flash_pages_used = 0;
+    flash_page_pointer = 0;
+  }
+  return 0;
+}
+
+void data_period_transition(const uint16_t * counts, const DateTime *dt, float t, float p)
 {
   if (current_period)
   {
     for (uint16_t i=0; i<CHANNELS_COUNT; ++i) {
       current_period->counts[i] = counts[i];
     }
-    if (saved_periods_count < DATA_BUFFER_LEN)
+    if ((buffer_periods_count < DATA_BUFFER_LEN) && (flash_pages_used == 0))
     { // save data line to buffer
-      data_buffer[saved_periods_count] = current_period;
-      ++saved_periods_count;
+      data_buffer[buffer_periods_count] = current_period;
+      ++buffer_periods_count;
     }
     else // save data line to flash
     {
@@ -111,14 +136,48 @@ void data_end_period(const uint16_t * counts)
         }
       }
       write_to_flash(current_period, DEFAULT_TIMEOUT);
+      // free data since it is now saved in flash (at least we hope so)
+      free(current_period);
     }
   }
+  /*
+  ******************* Start new period ******************
+  */
+  current_period = malloc(struct_size);
+  current_period->timestamp = mktime(dt);
+  current_period->temperature = t;
+  current_period->pressure = p;
+
 }
 
-void data_new_period(const DateTime *dt, float t, float p)
+uint16_t data_send_one(uint32_t timeout)
 {
+  uint16_t total_count = flash_pages_used ? flash_pages_used : buffer_periods_count;
+  if (total_count > 0)
+  {
+    DataLine *line_to_send;
+    if (flash_pages_used == 0)
+    { // data is stored in buffer only
+      line_to_send = data_buffer[0];
+    }
+    else // read data from flash
+    {
+      line_to_send = malloc(struct_size);
+      if (!read_from_flash(line_to_send, timeout))
+      {
+        return saved_periods_count; // failed to read anything useful from flash, aborting
+      }
+    }
+    // TODO: prepare and send data string over HTTP
+    uint8_t status = 0;
+    if (status)
+    {
+      --saved_periods_count;
+      if (flash_pages_used == 0)
+      { // data was taken from buffer, shift it to left
 
+      }
+    }
+  }
+  return total_count;
 }
-
-void data_send_one(uint32_t timeout);
-//uint8_t read_line_if_any();

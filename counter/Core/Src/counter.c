@@ -111,7 +111,7 @@ void event_loop() {
   if (flags & FLAG_DATA_SENDING)
   {
     int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick
-    if (time_left > SENDING_TIMEOUT) {
+    if (time_left > SENDING_TIMEOUT * 2) {
       if (data_send_one() == 0) {
         flags ^= FLAG_DATA_SENDING;
       }
@@ -135,12 +135,8 @@ void base_periodic_event()
     bmp280_force_measurement(&bmp280);
   }
 
-  if (flags & FLAG_SKIP_PERIOD) {
-    flags ^= FLAG_SKIP_PERIOD;
-  } else {
-    data_end_period(saved_counts);
-  }
-  data_new_period(&date_buf, t_buf, p_buf);
+  data_period_transition(saved_counts, &date_buf, t_buf, p_buf);
+  RAISE(FLAG_DATA_SENDING);
 
   // blink onboard led to show that we are alive
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_RESET);
