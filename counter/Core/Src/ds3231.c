@@ -50,7 +50,8 @@ HAL_StatusTypeDef RTC_ReadDateTime(DateTime *dt, uint32_t timeout)
     // dt->tm_wday = FROM_BCD(buf[3]); FIXME: uncomment if weekday isn't useless
     dt->tm_mday = FROM_BCD(buf[4]);
     dt->tm_mon  = FROM_BCD(buf[5]);
-    dt->tm_year = FROM_BCD(buf[6]);
+    dt->tm_year = RTC_CENTURY_START + FROM_BCD(buf[6]);
+    dt->tm_isdst = 0;
   }
   return status;
 }

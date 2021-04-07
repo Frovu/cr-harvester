@@ -40,7 +40,7 @@
 
 #define DEFAULT_TIMEOUT            300
 #ifdef RTC_SHORT_CYCLE
-  #define SENDING_TIMEOUT          DEFAULT_TIMEOUT
+  #define SENDING_TIMEOUT          100
   #define BASE_PERIOD_LEN_MS       1000
 #else
   #define SENDING_TIMEOUT          3000
@@ -93,7 +93,7 @@ void base_periodic_event();
 /********************* Data Handling **********************/
 void init_read_flash();
 void data_period_transition(const volatile uint16_t * counts, const DateTime *dt, float t, float p);
-uint16_t data_send_one(uint32_t timeout);
+int32_t data_send_one(uint32_t timeout);
 /********************* Data Sending **********************/
 
 

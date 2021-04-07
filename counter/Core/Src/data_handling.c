@@ -65,19 +65,19 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
     while (!at25_is_ready()) {
-      if (HAL_GetTick() - tickstart < timeout) {
+      if (HAL_GetTick() - tickstart > timeout) {
+        debug_printf("flash: timed out before write\r\n");
         return 0;
       }
-      HAL_Delay(30);
     }
     at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, chunk_size);
     ++flash_page_pointer;
     while (!at25_is_ready()) {
-      if (HAL_GetTick() - tickstart < timeout) {
+      if (HAL_GetTick() - tickstart > timeout) {
+        debug_printf("flash: timed out after write\r\n");
         return 0;
       }
-      HAL_Delay(10);
-    } /// FIXMEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+    }
     if (at25_write_ok())
     { // flash write succeeded
       if (flash_pages_used == 0)
@@ -85,7 +85,7 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
         flash_page_first = flash_page_pointer - 1;
       }
       ++flash_pages_used;
-      debug_printf("flash: successfuly wrote page %d\r\n", flash_page_pointer - 1);
+      debug_printf("flash: successfully wrote page %d (%dms)\r\n", flash_page_pointer - 1, HAL_GetTick() - tickstart);
       return 1;
     }
     else
@@ -93,6 +93,7 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
       debug_printf("flash: write error on page %d\r\n", flash_page_pointer - 1);
     }
   }
+  debug_printf("flash: end of writing loop (p# = %d / %d)\r\n", flash_page_pointer, AT25_PAGES_COUNT);
   return 0; // run out of flash pages or timed out
 }
 
@@ -177,7 +178,11 @@ void data_period_transition(const volatile uint16_t * counts, const DateTime *dt
 
 }
 
-uint16_t data_send_one(uint32_t timeout)
+// returns
+//    positive number if line sent but there is more remaining
+//    negative number if failed to send
+//    0 if sent all
+int32_t data_send_one(uint32_t timeout)
 {
   // if flash_pages_used is >0, buffer_periods_count is 0
   if (buffer_periods_count + flash_pages_used > 0)
@@ -193,11 +198,20 @@ uint16_t data_send_one(uint32_t timeout)
       if (!read_from_flash(line_to_send, timeout))
       {
         debug_printf("dataline: failed to retrieve from flash\r\n");
-        return flash_pages_used; // failed to read anything useful from flash, aborting
+        return -1 * flash_pages_used; // failed to read anything useful from flash, aborting
       }
     }
     // TODO: prepare and send data string over HTTP
-    uint8_t status = 0;
+    // ************************************************************
+    char buf1[32];
+    time_t tstmp = line_to_send->timestamp;
+    DateTime *date_buf = gmtime(&tstmp);
+    strftime(buf1, 32, "%Y-%m-%d %H:%M:%S", date_buf);
+    debug_printf("()--> %s / %.2f hPa / %.2f C ()-->\r\n", buf1,
+      line_to_send->pressure, line_to_send->temperature);
+    // ************************************************************
+
+    uint8_t status = 1;
     if (status)
     {
       if (flash_pages_used == 0)
@@ -218,11 +232,12 @@ uint16_t data_send_one(uint32_t timeout)
         }
       }
       debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
+      return buffer_periods_count + flash_pages_used;
     }
     else
     {
       debug_printf("dataline: failed to send\r\n");
+      return (buffer_periods_count + flash_pages_used) * -1;
     }
   }
-  return buffer_periods_count + flash_pages_used;
 }

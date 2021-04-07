@@ -23,6 +23,9 @@
 #define RTC_CONTROL_INTCN   0x04
 #define RTC_CONTROL_SQW_1HZ 0x00
 
+#define STRUCT_TM_BASE_YEAR 1900
+#define RTC_CENTURY_START   (2000 - STRUCT_TM_BASE_YEAR)
+
 typedef struct tm DateTime;
 
 #define FROM_BCD(val)   ((val >> 4) * 10 + (val & 0x0F))
@@ -30,7 +33,7 @@ typedef struct tm DateTime;
 
 HAL_StatusTypeDef RTC_init(I2C_HandleTypeDef *i2ch, uint16_t address, uint8_t config, uint32_t timeout);
 
-HAL_StatusTypeDef RTC_ConfigAlarm(uint16_t addr, uint16_t size, uint32_t timeout);
+HAL_StatusTypeDef RTC_ConfigAlarm(uint16_t addr, const uint8_t *data, uint32_t timeout);
 HAL_StatusTypeDef RTC_ClearAlarm(uint32_t timeout);
 // alarm functionality could be implemented here, but not today
 

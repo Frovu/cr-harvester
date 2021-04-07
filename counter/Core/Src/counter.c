@@ -118,9 +118,12 @@ void event_loop() {
   if (time_left > SENDING_TIMEOUT * 2)
   {
     if (IS_SET(FLAG_DATA_SENDING)) {
-      if (data_send_one(SENDING_TIMEOUT) == 0) {
+    	int32_t storage_stat = data_send_one(SENDING_TIMEOUT);
+      if (storage_stat == 0) {
+        // everything sent
         TOGGLE(FLAG_DATA_SENDING);
-      } else {
+      } else if (storage_stat < 0) {
+        // if failed to send line wait until something probably fixes idk
         HAL_Delay(1000); // FIXME: probably too much
       }
     }
@@ -151,8 +154,8 @@ void base_periodic_event()
 
   char buf[32];
   strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &date_buf);
-  debug_printf("time: %s\r\n", buf);
-  data_period_transition(saved_counts, &date_buf, t_buf, p_buf);
+  debug_printf("time now: %s\r\n", buf);
+  data_period_transition(saved_counts, &date_buf, t_buf, p_buf /100); // /100 for hPa
   RAISE(FLAG_DATA_SENDING);
 
   // blink onboard led to show that we are alive
