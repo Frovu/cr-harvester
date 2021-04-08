@@ -28,6 +28,7 @@
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
 #define FLAG_RTC_OK         0x40
+#define FLAG_DHCP_RUN       0x100
 
 #define RTC_SHORT_CYCLE // switch from 60s to 1s cycle (ONLY FOR DEBUG)
 #ifdef RTC_SHORT_CYCLE

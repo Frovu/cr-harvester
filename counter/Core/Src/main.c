@@ -285,10 +285,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, W5500_CS_Pin|LED_DATA_Pin|LED_ERROR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(W5500_CS_GPIO_Port, W5500_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(AT25_CS_GPIO_Port, AT25_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(AT25_CS_GPIO_Port, AT25_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, LED_DATA_Pin|LED_ERROR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : BOARD_LED_Pin */
   GPIO_InitStruct.Pin = BOARD_LED_Pin;

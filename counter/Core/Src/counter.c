@@ -94,6 +94,10 @@ void counter_init()
     HAL_Delay(100);
     LED_BLINK_INV(LED_ERROR, 100);
   }
+  // ******************* W5500 **********************
+  W5500_Init();
+  // TODO: retry
+
   LED_OFF(LED_ERROR);
 }
 
@@ -146,10 +150,19 @@ void event_loop() {
       LED_ON(LED_ERROR);
     }
   }
+  if (IS_SET(FLAG_DHCP_RUN))
+  {
+    if (!W5500_RunDHCP()) {
+      LED_BLINK(LED_ERROR, 50);
+      HAL_Delay(450);
+    } else {
+      TOGGLE(FLAG_DHCP_RUN);
+    }
+  }
   int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
   if (time_left > SENDING_TIMEOUT * 2)
   {
-    if (IS_SET(FLAG_DATA_SENDING)) {
+    if (IS_SET(FLAG_DATA_SENDING) && NOT_SET(FLAG_DHCP_RUN)) {
     	int32_t storage_stat = data_send_one(SENDING_TIMEOUT);
       if (storage_stat == 0) {
         // everything sent
@@ -157,9 +170,9 @@ void event_loop() {
         LED_OFF(LED_DATA);
       } else if (storage_stat < 0) {
         // if failed to send line wait until something probably fixes idk
+        RAISE(FLAG_DHCP_RUN);
         LED_BLINK_INV(LED_DATA, 30);
-        LED_BLINK(LED_ERROR, 30);
-        HAL_Delay(1000); // FIXME: probably too much
+        LED_BLINK(LED_ERROR, 500);
       }
     }
     if (NOT_SET(FLAG_BMP_OK)) {
