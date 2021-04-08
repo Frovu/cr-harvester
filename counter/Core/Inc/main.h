@@ -63,6 +63,8 @@ void debug_printf(const char * fmt, ...);
 /* Private defines -----------------------------------------------------------*/
 #define BOARD_LED_Pin GPIO_PIN_13
 #define BOARD_LED_GPIO_Port GPIOC
+#define W5500_CS_Pin GPIO_PIN_4
+#define W5500_CS_GPIO_Port GPIOA
 #define AT25_CS_Pin GPIO_PIN_0
 #define AT25_CS_GPIO_Port GPIOB
 #define LED_DATA_Pin GPIO_PIN_12
