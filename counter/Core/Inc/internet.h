@@ -12,4 +12,8 @@
 #define W5500_SPI_TIMEOUT   300
 #define W5500_VERSIONR      0x04
 
+uint8_t W5500_Connected(void);
+uint8_t W5500_Init();
+uint8_t W5500_RunDHCP();
+
 #endif
