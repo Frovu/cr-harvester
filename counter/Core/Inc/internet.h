@@ -8,7 +8,8 @@
 #include "dhcp.h"
 
 #define DHCP_SN             2       // DHCP socket number (0 ~ 7)
-#define DHCP_BUF_SIZE		548
+#define DHCP_BUF_SIZE       548
 #define W5500_SPI_TIMEOUT   300
+#define W5500_VERSIONR      0x04
 
 #endif

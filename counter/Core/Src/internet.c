@@ -32,20 +32,25 @@ void W5500_WriteBuf(uint8_t *pBuf, uint16_t len) {
   HAL_SPI_Transmit(&hspi1, pBuf, len, W5500_SPI_TIMEOUT);
 }
 /***************************************************************************/
+uint8_t W5500_Connected(void) {
+    return getVERSIONR() == W5500_VERSIONR;
+}
 
-void W5500_Init()
+uint8_t W5500_Init()
 {
-  // register hardware specific functions
   reg_wizchip_cs_cbfunc(W5500_Select, W5500_Unselect);
   reg_wizchip_spiburst_cbfunc(W5500_ReadBuf, W5500_WriteBuf);
+  if (!W5500_Connected()) {
+    return 0;
+  }
+  // register hardware specific functions
   // wizchip_settimeout(..);
   wizchip_init(NULL, NULL); // default 2KB buffers
   wizchip_setnetinfo(&netinfo);
-  wizchip_getnetinfo(&netinfo);
-  wiz_PhyConf a;
-  wizphy_getphyconf(&a);
+  // wizchip_getnetinfo(&netinfo);
   DHCP_init(DHCP_SN, dhcp_buf);
   RAISE(FLAG_DHCP_RUN);
+  return 1;
 }
 
 // DHCP_FAILED = 0,  ///< Processing Fail
@@ -64,7 +69,9 @@ uint8_t W5500_RunDHCP()
         netinfo.ip[0], netinfo.ip[1], netinfo.ip[2], netinfo.ip[3]);
       return 1;
     case DHCP_IP_LEASED:
-      debug_printf("dhcp: ip is leased\r\n");
+      wizchip_getnetinfo(&netinfo);
+      debug_printf("dhcp: ip is leased: %d.%d.%d.%d\r\n",
+        netinfo.ip[0], netinfo.ip[1], netinfo.ip[2], netinfo.ip[3]);
       return 1;
     case DHCP_FAILED:
       debug_printf("dhcp: failed\r\n");
