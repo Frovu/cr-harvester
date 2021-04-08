@@ -16,13 +16,14 @@ HAL_StatusTypeDef RTC_init(I2C_HandleTypeDef *i2ch, uint16_t address, uint8_t co
 
 HAL_StatusTypeDef RTC_ConfigAlarm(uint16_t addr, const uint8_t *data, uint32_t timeout)
 {
-  return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, addr, 1, data, sizeof(data), timeout);
+  uint16_t size = (addr == RTC_REG_ALARM1) ? 0x4 : 0x3;
+  return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, addr, 1, data, size, timeout);
 }
 
 HAL_StatusTypeDef RTC_ClearAlarm(uint32_t timeout)
 {
   uint8_t reg = 0u;
-  return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_STATUS, 1, &reg, 4, timeout);
+  return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_STATUS, 1, &reg, 1, timeout);
 }
 
 HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout)

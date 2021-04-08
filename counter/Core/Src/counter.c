@@ -54,7 +54,7 @@ uint8_t try_init_rtc() {
     return 1;
   if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONFIG, DEFAULT_TIMEOUT) == HAL_OK) {
     uint8_t alarm_data[] = RTC_ALARM_CONFIG;
-    if (RTC_ConfigAlarm(RTC_REG_ALARM2, alarm_data, DEFAULT_TIMEOUT) == HAL_OK) {
+    if (RTC_ConfigAlarm(RTC_ALARM_REG, alarm_data, DEFAULT_TIMEOUT) == HAL_OK) {
       if (RTC_ClearAlarm(DEFAULT_TIMEOUT) == HAL_OK) {
         RAISE(FLAG_RTC_OK);
         debug_printf("RTC init success\r\n");

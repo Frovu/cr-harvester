@@ -30,11 +30,13 @@
 #define FLAG_RTC_OK         0x40
 #define FLAG_DHCP_RUN       0x100
 
-#define RTC_SHORT_CYCLE // switch from 60s to 1s cycle (ONLY FOR DEBUG)
+// #define RTC_SHORT_CYCLE // switch from 60s to 1s cycle (ONLY FOR DEBUG)
 #ifdef RTC_SHORT_CYCLE
+  #define RTC_ALARM_REG RTC_REG_ALARM1
   #define RTC_ALARM_ENABLE_BIT RTC_CONTROL_A1IE
   #define RTC_ALARM_CONFIG { 0x80, 0x80, 0x80, 0x80 } // set 4 mask bits (alarm1 every second)
 #else
+  #define RTC_ALARM_REG RTC_REG_ALARM2
   #define RTC_ALARM_ENABLE_BIT RTC_CONTROL_A2IE
   #define RTC_ALARM_CONFIG { 0x80, 0x80, 0x80 } // set 3 mask bits (alarm2 every minute)
 #endif
