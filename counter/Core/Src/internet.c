@@ -72,11 +72,13 @@ uint8_t W5500_RunDHCP()
       wizchip_getnetinfo(&netinfo);
       debug_printf("dhcp: ip is leased: %d.%d.%d.%d\r\n",
         netinfo.ip[0], netinfo.ip[1], netinfo.ip[2], netinfo.ip[3]);
+      debug_printf("dhcp: lease time: %d\r\n", getDHCPLeasetime());
       return 1;
     case DHCP_FAILED:
       debug_printf("dhcp: failed\r\n");
     case DHCP_STOPPED:
     case DHCP_RUNNING:
-      return 0;
+      break;
   }
+  return 0;
 }
