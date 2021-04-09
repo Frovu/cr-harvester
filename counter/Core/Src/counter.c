@@ -147,6 +147,8 @@ void event_loop() {
       }
     }
   }
+  /* ************************ TIMEKEEPIG SECTION ************************ */
+  
   /* *********************** DATA-SENDING SECTION *********************** */
   if (!W5500_Connected())
   { /* Reassure that w5500 is connected to avoid freezes */

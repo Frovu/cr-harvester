@@ -12,6 +12,7 @@ static const uint16_t signature_size = sizeof(data_line_signature);
 static const uint16_t chunk_size  = sizeof(data_line_signature) + struct_size;
 
 extern uint16_t flags;
+extern uint32_t cycle_counter;
 
 DataLine * current_period = NULL;
 DataLine * data_buffer[DATA_BUFFER_LEN];
@@ -175,7 +176,12 @@ void data_period_transition(const volatile uint16_t * counts, const DateTime *dt
   current_period->timestamp = mktime(dt);
   current_period->temperature = t;
   current_period->pressure = p;
-
+  current_period->cycle = cycle_counter;
+  uint32_t info = 0;
+  if (NOT_SET(FLAG_TIME_TRUSTED)) {
+    info |= 1;
+  }
+  current_period->info = info;
 }
 
 // returns

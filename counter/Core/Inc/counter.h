@@ -26,7 +26,7 @@
 #define FLAG_EVENT_BASE     0x01
 #define FLAG_RTC_ALARM      0x02
 #define FLAG_DATA_SENDING   0x04
-#define FLAG_DATA_CORR      0x08
+#define FLAG_TIME_TRUSTED   0x08
 
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
@@ -36,10 +36,10 @@
 #define FLAG_DHCP_RUN       0x100
 #define FLAG_NTP_SYNC       0x200
 
+#define FLAGS_INITIAL (FLAG_RTC_ALARM | FLAG_NTP_SYNC)
+
 #define FLAG_OK_MASK        0xF0
 #define FLAG_OK_SHIFT       0x04
-
-#define FLAGS_INITIAL (FLAG_RTC_ALARM | FLAG_DATA_CORR | FLAG_NTP_SYNC)
 
 typedef enum {
   DEV_RTC,
@@ -70,6 +70,9 @@ typedef enum {
 #endif
 #define PROBLEM_FIXING_PERIOD      3000
 
+#define NTP_SYNC_PERIOD             30 // in cycles (minutes)
+#define TIME_TRUST_PERIOD          720 // how long is time accounted as trusted after ntp sync
+
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 2000)
 #define CHANNELS_COUNT           12
 // if and only if more than DATA_BUFFER_LEN lines fail to send external flash memory is used
@@ -98,6 +101,8 @@ static const uint8_t GPIO_LOOKUP_CHANNEL[16] = {
 
 typedef struct {
   uint32_t timestamp;
+  uint32_t cycle;
+  uint32_t info;
   float temperature;
   float pressure;
   uint16_t counts[CHANNELS_COUNT];
