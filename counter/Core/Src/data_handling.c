@@ -137,7 +137,7 @@ void reset_flash() {
   flash_page_pointer = 0;
 }
 
-void data_period_transition(const volatile uint16_t * counts, const DateTime *dt, float t, float p)
+void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p)
 {
   if (current_period)
   {
@@ -182,6 +182,7 @@ void data_period_transition(const volatile uint16_t * counts, const DateTime *dt
     info |= 1;
   }
   current_period->info = info;
+  debug_printf("period: start %lu\r\n", current_period->timestamp);
 }
 
 // returns

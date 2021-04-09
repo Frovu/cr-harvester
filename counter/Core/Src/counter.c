@@ -96,6 +96,15 @@ void counter_init()
     HAL_Delay(300);
     LED_BLINK_INV(LED_ERROR, 600);
   }
+  /* Initial NTP sync happens before first cycle, hence requires
+  *  setting last_period_tick/tm here explicitly
+  */
+  last_period_tick = HAL_GetTick();
+  if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
+    if (IS_SET(FLAG_RTC_OK)) {
+      TOGGLE(FLAG_RTC_OK);
+    }
+  }
 
   LED_OFF(LED_ERROR);
 }
@@ -204,8 +213,9 @@ void event_loop() {
   // incorporate non-blocking delay for PROBLEM_FIXING_PERIOD ms
   if (since_last_fix_attempt > PROBLEM_FIXING_PERIOD && time_left > (PROBLEM_FIXING_PERIOD * 2))
   {
-    if (IS_SET(FLAG_NTP_SYNC)) // perform RTC to NTP time sync
-    {
+    if (IS_SET(FLAG_NTP_SYNC) && IS_SET(FLAG_RTC_OK)
+        && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN))
+    { /* Syncronize local RTC to NTP time */
       if (try_sync_ntp(SENDING_TIMEOUT)) {
         TOGGLE(FLAG_NTP_SYNC);
         RAISE(FLAG_TIME_TRUSTED);

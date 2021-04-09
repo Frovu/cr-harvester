@@ -150,7 +150,7 @@ uint8_t try_sync_ntp(uint32_t timeout)
         int64_t roundtrip = (((int64_t)arrival_ms - origin_ms) - ((int64_t)recieve_ms - transmit_ms));
         int64_t shift = (int64_t)arrival_ms - transmit_ms;
         debug_printf("ntp: got response\r\n");
-        debug_printf("ntp: local clocks are %d sec %d ms behind (including delay)\r\n", (int16_t)(shift/1000), (int16_t)(shift%1000));
+        debug_printf("ntp: local clocks are %d sec %d ms behind\r\n", (int16_t)(shift/1000), (int16_t)(shift%1000));
         debug_printf("ntp: whole trip time is %d ms\r\n", (int16_t)roundtrip);
 
         if (shift > roundtrip || shift < -1 * roundtrip)
