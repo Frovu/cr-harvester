@@ -229,10 +229,7 @@ void base_periodic_event()
       TOGGLE(FLAG_BMP_OK);
     }
   }
-
-  char buf[32];
-  strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &last_period_tm);
-  debug_printf("time now: %s\r\n", buf);
+  
   data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf /100); // /100 for hPa
 
   RAISE(FLAG_DATA_SENDING);

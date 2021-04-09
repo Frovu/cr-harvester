@@ -203,11 +203,7 @@ int32_t data_send_one(uint32_t timeout)
     }
     // TODO: prepare and send data string over HTTP
     // ************************************************************
-    char buf1[32];
-    time_t tstmp = line_to_send->timestamp;
-    DateTime *date_buf = gmtime(&tstmp);
-    strftime(buf1, 32, "%Y-%m-%d %H:%M:%S", date_buf);
-    debug_printf("()--> %s / %.2f hPa / %.2f C ()-->\r\n", buf1,
+    debug_printf("()--> %lu / %.2f hPa / %.2f C ()-->\r\n", line_to_send->timestamp,
       line_to_send->pressure, line_to_send->temperature);
     // ************************************************************
 

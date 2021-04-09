@@ -156,10 +156,7 @@ uint8_t try_sync_ntp(uint32_t timeout)
         {
           const time_t tstmp = transmit_ms / 1000 + 1; // +1 for next sec
           DateTime * new_date = gmtime(&tstmp);
-          char buf[32];
-          strftime(buf, 32, "%Y-%m-%d %H:%M:%S", new_date);
-          debug_printf("ntp: setting RTC to: %s\r\n", buf);
-          debug_printf("ntp: will wait ~%d ms\r\n", (int16_t)(1000 - (transmit_ms % 1000)));
+          debug_printf("ntp: writing RTC, wait ~%d ms\r\n", (int16_t)(1000 - (transmit_ms % 1000)));
 
           // wait until next second beginning to be precise
           int32_t ms_until_next_sec = (1000 - (transmit_ms % 1000)) - (HAL_GetTick() - last_period_tick - arrival_since_period);
