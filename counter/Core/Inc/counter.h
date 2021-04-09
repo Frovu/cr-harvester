@@ -25,10 +25,29 @@
 #define FLAG_EVENT_BASE     0x01
 #define FLAG_RTC_ALARM      0x02
 #define FLAG_DATA_SENDING   0x04
+#define FLAG_DATA_CORR      0x08
 #define FLAG_BMP_OK         0x10
 #define FLAG_FLASH_OK       0x20
 #define FLAG_RTC_OK         0x40
+#define FLAG_W5500_OK       0x80
 #define FLAG_DHCP_RUN       0x100
+#define FLAG_NTP_SYNC       0x200
+
+#define FLAGS_INITIAL (FLAG_RTC_ALARM | FLAG_DATA_CORR | FLAG_NTP_SYNC)
+
+typedef enum {
+  DEV_RTC,
+  DEV_BMP,
+  DEV_FLASH,
+  DEV_W5500
+} device_t;
+
+#define DEV_BMP_NAME      "BMP280"
+#define DEV_RTC_NAME      "RTC"
+#define DEV_FLASH_NAME    "AT25DF321"
+#define DEV_W5500_NAME    "W5500"
+
+#define DEV_NAME(dev) dev##_NAME
 
 // #define RTC_SHORT_CYCLE // switch from 60s to 1s cycle (ONLY FOR DEBUG)
 #ifdef RTC_SHORT_CYCLE

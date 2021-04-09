@@ -10,7 +10,7 @@ extern I2C_HandleTypeDef hi2c2;
 extern SPI_HandleTypeDef hspi1;
 BMP280_HandleTypedef bmp280;
 
-volatile uint16_t flags = FLAG_RTC_ALARM;
+volatile uint16_t flags = FLAGS_INITIAL;
 
 volatile uint16_t saved_counts[CHANNELS_COUNT];
 volatile uint16_t counters[CHANNELS_COUNT];
@@ -19,53 +19,45 @@ uint32_t cycle_counter = 0;
 uint32_t last_period_tick = 0;
 DateTime last_period_tm;
 
-uint8_t try_init_bmp() {
-  if (IS_SET(FLAG_BMP_OK))
-    return 1;
-  if (bmp280_init(&bmp280, &bmp280.params)) {
-    RAISE(FLAG_BMP_OK);
-    debug_printf("BMP280 init success, id = 0x%x\r\n", bmp280.id);
-    return 1;
-  } else {
-    debug_printf("BMP280 init failed\r\n");
-    return 0;
-  }
-}
-
-uint8_t try_init_flash() {
-  if (IS_SET(FLAG_FLASH_OK))
-    return 1;
-  if (at25_is_valid() && at25_is_ready()) {
-    at25_global_unprotect();
-    LED_OFF(LED_ERROR);
-    LED_ON(LED_DATA);
-    // init_read_flash(); // FIXME: uncomment
-    LED_OFF(LED_DATA);
-    RAISE(FLAG_FLASH_OK);
-    debug_printf("AT25DF321 init success\r\n");
-    return 1;
-  } else {
-    debug_printf("AT25DF321 invalid\r\n");
-    return 0;
-  }
-}
-
-uint8_t try_init_rtc() {
-  if (IS_SET(FLAG_RTC_OK))
-    return 1;
-  if (RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONFIG, DEFAULT_TIMEOUT) == HAL_OK) {
+uint8_t try_init_dev(device_t dev)
+{
+  uint16_t flagVal = 0;
+  uint8_t status = 0;
+  switch (dev) {
+  case DEV_RTC:
+    flagVal = FLAG_RTC_OK;
     uint8_t alarm_data[] = RTC_ALARM_CONFIG;
-    if (RTC_ConfigAlarm(RTC_ALARM_REG, alarm_data, DEFAULT_TIMEOUT) == HAL_OK) {
-      if (RTC_ClearAlarm(DEFAULT_TIMEOUT) == HAL_OK) {
-        RAISE(FLAG_RTC_OK);
-        debug_printf("RTC init success\r\n");
-        return 1;
-      }
+    status = RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONFIG, DEFAULT_TIMEOUT) == HAL_OK;
+    status = status && (RTC_ConfigAlarm(RTC_ALARM_REG, alarm_data, DEFAULT_TIMEOUT) == HAL_OK);
+    status = status && (RTC_ClearAlarm(DEFAULT_TIMEOUT) == HAL_OK);
+    break;
+  case DEV_BMP:
+    flagVal = FLAG_BMP_OK;
+    status = bmp280_init(&bmp280, &bmp280.params);
+    break;
+  case DEV_FLASH:
+    flagVal = FLAG_FLASH_OK;
+    status = at25_is_valid() && at25_is_ready();
+    if (status) {
+      at25_global_unprotect();
+      LED_OFF(LED_ERROR);
+      LED_ON(LED_DATA);
+      // init_read_flash(); // FIXME: uncomment
+      LED_OFF(LED_DATA);
     }
+    break;
+  case DEV_W5500:
+    flagVal = FLAG_W5500_OK;
+    status = W5500_Init();
+    break;
   }
-  debug_printf("RTC init failed!\r\n");
-  return 0;
-
+  if (status) // initialization successful
+  {
+    RAISE(flagVal);
+  }
+  debug_printf("init: %s\t%s\r\n", dev == DEV_RTC ? "RTC" : dev == DEV_BMP ? "BMP280"
+    : dev == DEV_FLASH ? "FLASH" : dev == DEV_W5500 ? "W5500" : "x", status ? "OK" : "FAIL");
+  return status;
 }
 
 void counter_init()
@@ -80,24 +72,26 @@ void counter_init()
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
   bmp280.i2c = &hi2c2;
-  for (int i=0; !try_init_bmp() && i < 3; ++i) {
+  for (int i=0; !try_init_dev(DEV_BMP) && i < 3; ++i) {
     HAL_Delay(300);
     LED_BLINK_INV(LED_ERROR, 200);
   }
   // ******************** DS3231 ********************
-  while (!try_init_rtc()) {
+  while (!try_init_dev(DEV_RTC)) {
     HAL_Delay(100);
     LED_BLINK_INV(LED_ERROR, 400);
   }
   // ******************* AT25DF321 ******************
   at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
-  for (int i=0; !try_init_flash() && i < 10; ++i) {
+  for (int i=0; !try_init_dev(DEV_FLASH) && i < 5; ++i) {
     HAL_Delay(100);
-    LED_BLINK_INV(LED_ERROR, 100);
+    LED_BLINK_INV(LED_ERROR, 200);
   }
   // ******************* W5500 **********************
-  W5500_Init();
-  // TODO: retry
+  for (int i=0; !try_init_dev(DEV_W5500) && i < 3; ++i) {
+    HAL_Delay(300);
+    LED_BLINK_INV(LED_ERROR, 600);
+  }
 
   LED_OFF(LED_ERROR);
 }
@@ -146,7 +140,7 @@ void event_loop() {
   else // try to fix rtc somehow
   {
     LED_OFF(LED_ERROR);
-    if (!try_init_rtc()) {
+    if (!try_init_dev(DEV_RTC)) {
       HAL_I2C_Init(&hi2c2);
       HAL_Delay(300);
       LED_ON(LED_ERROR);
@@ -178,14 +172,14 @@ void event_loop() {
       }
     }
     if (NOT_SET(FLAG_BMP_OK)) {
-      if (!try_init_bmp()) {
+      if (!try_init_dev(DEV_BMP)) {
         HAL_I2C_Init(&hi2c2);
         HAL_Delay(500);
         LED_BLINK(LED_ERROR, 30);
       }
     }
     if (NOT_SET(FLAG_FLASH_OK)) {
-      if (!try_init_flash()) {
+      if (!try_init_dev(DEV_FLASH)) {
         HAL_Delay(500);
         LED_BLINK(LED_ERROR, 30);
       }
