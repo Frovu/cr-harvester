@@ -152,7 +152,7 @@ uint8_t try_sync_ntp(uint32_t timeout)
         debug_printf("ntp: local clocks are %d sec %d ms behind (including delay)\r\n", (int16_t)(shift/1000), (int16_t)(shift%1000));
         debug_printf("ntp: whole trip time is %d ms\r\n", (int16_t)roundtrip);
 
-        if (shift > NTP_SYNC_MIN_SHIFT || shift < -NTP_SYNC_MIN_SHIFT)
+        if (shift > roundtrip || shift < -1 * roundtrip)
         {
           const time_t tstmp = transmit_ms / 1000 + 1; // +1 for next sec
           DateTime * new_date = gmtime(&tstmp);
@@ -179,7 +179,7 @@ uint8_t try_sync_ntp(uint32_t timeout)
         }
         else
         {
-          debug_printf("ntp: sync not required, |%d| < %d\r\n", (int16_t)shift, (int16_t)NTP_SYNC_MIN_SHIFT);
+          debug_printf("ntp: sync not required, |%d| < %d\r\n", (int16_t)shift, (int16_t)roundtrip);
         }
         return 1;
       }
