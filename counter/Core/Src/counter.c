@@ -17,6 +17,7 @@ volatile uint16_t counters[CHANNELS_COUNT];
 
 uint32_t cycle_counter = 0;
 uint32_t last_period_tick = 0;
+DateTime last_period_tm;
 
 uint8_t try_init_bmp() {
   if (IS_SET(FLAG_BMP_OK))
@@ -108,6 +109,7 @@ void event_loop() {
     {
       last_period_tick = HAL_GetTick();
       base_periodic_event();
+      try_sync_ntp(3000);
       TOGGLE(FLAG_EVENT_BASE);
     }
     if (IS_SET(FLAG_RTC_ALARM))
@@ -194,15 +196,14 @@ void base_periodic_event()
 {
   uint16_t flag_ok = 0;
   float t_buf = 0, p_buf = 0;
-  DateTime date_buf;
   if (IS_SET(FLAG_RTC_OK)) {
     for (int i=0; i < 3; ++i) {
-      if (RTC_ReadDateTime(&date_buf, DEFAULT_TIMEOUT) == HAL_OK) {
+      if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
         flag_ok = 1;
         break;
       }
       debug_printf("RTC time read failed!\r\n");
-      memset(&date_buf, 0, sizeof(date_buf)); // protect from garbage readings
+      memset(&last_period_tm, 0, sizeof(last_period_tm)); // protect from garbage readings
       HAL_Delay(300);
     }
     if (!flag_ok) { // RTC is lost
@@ -228,9 +229,9 @@ void base_periodic_event()
   }
 
   char buf[32];
-  strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &date_buf);
+  strftime(buf, 32, "%Y-%m-%d %H:%M:%S", &last_period_tm);
   debug_printf("time now: %s\r\n", buf);
-  data_period_transition(saved_counts, &date_buf, t_buf, p_buf /100); // /100 for hPa
+  data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf /100); // /100 for hPa
 
   RAISE(FLAG_DATA_SENDING);
   LED_ON(LED_DATA);
