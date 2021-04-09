@@ -18,6 +18,7 @@ volatile uint16_t counters[CHANNELS_COUNT];
 uint32_t cycle_counter = 0;
 uint32_t last_period_tick = 0;
 uint32_t last_fix_attempt = 0;
+uint32_t dhcp_ticks = 0;
 DateTime last_period_tm;
 
 uint8_t try_init_dev(device_t dev)
@@ -110,6 +111,7 @@ void event_loop() {
       base_periodic_event();
       TOGGLE(FLAG_EVENT_BASE);
       RAISE(FLAG_DATA_SENDING); // there is new data to be sent
+      LED_ON(LED_DATA);
     }
     if (IS_SET(FLAG_RTC_ALARM))
     { /* RTC alarm flag essentially repeats BASE EVENT flag, but its made to protect
@@ -177,6 +179,10 @@ void event_loop() {
   if (IS_SET(FLAG_W5500_OK) && IS_SET(FLAG_DHCP_RUN))
   { /* The DHCP client is ran only when corresponding flag is set
     */
+    if (HAL_GetTick() - dhcp_ticks > 1000) { // emulate 1s ticks for dhcp lib
+      dhcp_ticks = HAL_GetTick();
+      DHCP_time_handler();
+    }
     if (W5500_RunDHCP()) {
       TOGGLE(FLAG_DHCP_RUN);
     }
@@ -257,7 +263,6 @@ void base_periodic_event()
 
   data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf /100); // /100 for hPa
 
-  LED_ON(LED_DATA);
 
   // blink onboard led to show that we are alive
   LED_BLINK_INV(BOARD_LED, 10);
