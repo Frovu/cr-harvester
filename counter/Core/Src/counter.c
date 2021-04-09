@@ -16,6 +16,8 @@ volatile uint16_t saved_counts[CHANNELS_COUNT];
 volatile uint16_t counters[CHANNELS_COUNT];
 
 uint32_t cycle_counter = 0;
+uint32_t last_ntp_sync = 0;
+
 uint32_t last_period_tick = 0;
 uint32_t last_fix_attempt = 0;
 uint32_t dhcp_ticks = 0;
@@ -148,7 +150,16 @@ void event_loop() {
     }
   }
   /* ************************ TIMEKEEPIG SECTION ************************ */
-  
+  if (cycle_counter - last_ntp_sync > NTP_SYNC_PERIOD)
+  { /* Request ntp sync if more than NTP_SYNC_PERIOD passed since last sync */
+    RAISE(FLAG_NTP_SYNC);
+  }
+  if (IS_SET(FLAG_TIME_TRUSTED))
+  { /* Mark local time untrusted if more than TIME_TRUST_PERIOD passed since last ntp sync */
+    if (cycle_counter - last_ntp_sync > TIME_TRUST_PERIOD) {
+      TOGGLE(FLAG_TIME_TRUSTED);
+    }
+  }
   /* *********************** DATA-SENDING SECTION *********************** */
   if (!W5500_Connected())
   { /* Reassure that w5500 is connected to avoid freezes */
@@ -177,7 +188,7 @@ void event_loop() {
       }
     }
   }
-  /* ********************* SOMETHING-NOT-OK SECTION ********************* */
+  /* ****************** SOMETHING-NOT-OK / NTP SECTION ****************** */
   if (IS_SET(FLAG_W5500_OK) && IS_SET(FLAG_DHCP_RUN))
   { /* The DHCP client is ran only when corresponding flag is set
     */
@@ -193,6 +204,16 @@ void event_loop() {
   // incorporate non-blocking delay for PROBLEM_FIXING_PERIOD ms
   if (since_last_fix_attempt > PROBLEM_FIXING_PERIOD && time_left > (PROBLEM_FIXING_PERIOD * 2))
   {
+    if (IS_SET(FLAG_NTP_SYNC)) // perform RTC to NTP time sync
+    {
+      if (try_sync_ntp(SENDING_TIMEOUT)) {
+        TOGGLE(FLAG_NTP_SYNC);
+        RAISE(FLAG_TIME_TRUSTED);
+        last_ntp_sync = cycle_counter;
+      } else {
+        last_fix_attempt = HAL_GetTick(); // non-blocking delay of PROBLEM_FIXING_PERIOD
+      }
+    }
     if (NOT_SET(FLAG_RTC_OK))
     { /* To restore RTC functionality the only thing we can do is repeatedly try
       *  to re-initialize I2C peripheral and RTC device itself
