@@ -8,7 +8,8 @@ wiz_NetInfo netinfo = {
   .dhcp = NETINFO_DHCP
 };
 
-NtpMessage *ntp_msg = NULL;
+uint8_t ntp_buf[sizeof(NtpMessage)];
+NtpMessage *ntp_msg = (NtpMessage*) ntp_buf;
 uint8_t dhcp_buf[DHCP_BUF_SIZE];
 extern uint32_t last_period_tick;
 extern DateTime last_period_tm;
@@ -53,9 +54,6 @@ uint8_t W5500_Init()
   wizchip_setnetinfo(&netinfo);
   // wizchip_getnetinfo(&netinfo);
   DHCP_init(DHCP_SOCKET, dhcp_buf);
-  if (ntp_msg == NULL) {
-    ntp_msg = (NtpMessage*) malloc(NTP_BUF_SIZE);
-  }
   RAISE(FLAG_DHCP_RUN);
   return 1;
 }
