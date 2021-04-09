@@ -17,6 +17,7 @@ volatile uint16_t counters[CHANNELS_COUNT];
 
 uint32_t cycle_counter = 0;
 uint32_t last_period_tick = 0;
+uint32_t last_fix_attempt = 0;
 DateTime last_period_tm;
 
 uint8_t try_init_dev(device_t dev)
@@ -107,8 +108,8 @@ void event_loop() {
     if (IS_SET(FLAG_EVENT_BASE))
     {
       base_periodic_event();
-      try_sync_ntp(3000);
       TOGGLE(FLAG_EVENT_BASE);
+      RAISE(FLAG_DATA_SENDING); // there is new data to be sent
     }
     if (IS_SET(FLAG_RTC_ALARM))
     { /* RTC alarm flag essentially repeats BASE EVENT flag, but its made to protect
@@ -135,9 +136,8 @@ void event_loop() {
     }
     else
     { /* If RTC does not produce alarm IRQ for more than a minute,
-      *  it means something is wrong with RTC and the only thing we
-      *  can do here is just to try to re-initialize RTC's alarm registers
-      *  with some period and hope it will be restored in its place
+      *  it means that either RTC is mis-configured or I2C bus
+      *  connection is lost or corrupt
       */
       if (HAL_GetTick() - last_period_tick > BASE_EVENT_WATCHDOG_MS) {
         TOGGLE(FLAG_RTC_OK);
@@ -145,29 +145,22 @@ void event_loop() {
       }
     }
   }
-  else // try to restore rtc somehow
-  {
-    LED_OFF(LED_ERROR);
-    if (!try_init_dev(DEV_RTC)) {
-      HAL_I2C_Init(&hi2c2);
-      HAL_Delay(300);
-      LED_ON(LED_ERROR);
-    }
-  }
-  if (IS_SET(FLAG_W5500_OK) && IS_SET(FLAG_DHCP_RUN))
-  {
-    if (!W5500_RunDHCP()) {
-      LED_BLINK(LED_ERROR, 50);
-      HAL_Delay(450);
-    } else {
-      TOGGLE(FLAG_DHCP_RUN);
+  /* *********************** DATA-SENDING SECTION *********************** */
+  if (!W5500_Connected())
+  { /* Reassure that w5500 is connected to avoid freezes */
+    if (IS_SET(FLAG_W5500_OK)) {
+      TOGGLE(FLAG_W5500_OK);
     }
   }
   int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
   if (time_left > SENDING_TIMEOUT * 2)
-  {
-    if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN)) {
-    	int32_t storage_stat = data_send_one(SENDING_TIMEOUT);
+  { /* Reassure that we have enough time before next period, since failed sending try
+    *  can possibly take fair amount of time due to big timeouts
+    */
+    if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN))
+    {
+      // TODO: complex data-sending error handling
+      int32_t storage_stat = data_send_one(SENDING_TIMEOUT);
       if (storage_stat == 0) {
         // everything sent
         TOGGLE(FLAG_DATA_SENDING);
@@ -176,23 +169,55 @@ void event_loop() {
         // if failed to send line wait until something probably fixes idk
         RAISE(FLAG_DHCP_RUN);
         LED_BLINK_INV(LED_DATA, 30);
-        LED_BLINK(LED_ERROR, 500);
+        LED_BLINK(LED_ERROR, 100);
+      }
+    }
+  }
+  /* ********************* SOMETHING-NOT-OK SECTION ********************* */
+  if (IS_SET(FLAG_W5500_OK) && IS_SET(FLAG_DHCP_RUN))
+  { /* The DHCP client is ran only when corresponding flag is set
+    */
+    if (W5500_RunDHCP()) {
+      TOGGLE(FLAG_DHCP_RUN);
+    }
+  }
+  uint32_t since_last_fix_attempt = HAL_GetTick() - last_fix_attempt;
+  // incorporate non-blocking delay for PROBLEM_FIXING_PERIOD ms
+  if (since_last_fix_attempt > PROBLEM_FIXING_PERIOD && time_left > (PROBLEM_FIXING_PERIOD * 2))
+  {
+    if (NOT_SET(FLAG_RTC_OK))
+    { /* To restore RTC functionality the only thing we can do is repeatedly try
+      *  to re-initialize I2C peripheral and RTC device itself
+      */
+      if (!try_init_dev(DEV_RTC)) {
+        HAL_I2C_Init(&hi2c2);
       }
     }
     if (NOT_SET(FLAG_BMP_OK)) {
       if (!try_init_dev(DEV_BMP)) {
         HAL_I2C_Init(&hi2c2);
-        HAL_Delay(500);
-        LED_BLINK(LED_ERROR, 30);
       }
     }
     if (NOT_SET(FLAG_FLASH_OK)) {
-      if (!try_init_dev(DEV_FLASH)) {
-        HAL_Delay(500);
-        LED_BLINK(LED_ERROR, 30);
-      }
+      try_init_dev(DEV_FLASH);
+    }
+    if (NOT_SET(FLAG_W5500_OK)) {
+      // TODO: hardware reset
+      try_init_dev(DEV_W5500);
+    }
+    /* Blink ERROR led for n times depending of dev_ok flag bits
+    * so 0 means everything ok and 15 means everything is bad
+    */
+    uint16_t blinks = ((flags & FLAG_OK_MASK) ^ FLAG_OK_MASK) >> FLAG_OK_SHIFT;
+    if (blinks > 0) {
+      last_fix_attempt = HAL_GetTick(); // save tick for non-blocking delay
+    }
+    for (uint16_t i = 0; i < blinks; ++i) {
+      LED_BLINK(LED_ERROR, 10);
+      HAL_Delay(150);
     }
   }
+  /* *********************** ******************** *********************** */
 }
 void base_periodic_event()
 {
@@ -229,10 +254,9 @@ void base_periodic_event()
       TOGGLE(FLAG_BMP_OK);
     }
   }
-  
+
   data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf /100); // /100 for hPa
 
-  RAISE(FLAG_DATA_SENDING);
   LED_ON(LED_DATA);
 
   // blink onboard led to show that we are alive
