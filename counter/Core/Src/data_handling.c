@@ -185,55 +185,55 @@ void data_period_transition(const volatile uint16_t * counts, const DateTime *dt
 int32_t data_send_one(uint32_t timeout)
 {
   // if flash_pages_used is >0, buffer_periods_count is 0
-  if (buffer_periods_count + flash_pages_used > 0)
+  if (buffer_periods_count + flash_pages_used <= 0) {
+    return 0;
+  }
+  DataLine *line_to_send;
+  if (flash_pages_used == 0)
+  { // data is stored in buffer only
+    line_to_send = data_buffer[0];
+  }
+  else // read data from flash
   {
-    DataLine *line_to_send;
-    if (flash_pages_used == 0)
-    { // data is stored in buffer only
-      line_to_send = data_buffer[0];
-    }
-    else // read data from flash
+    line_to_send = malloc(struct_size);
+    if (!read_from_flash(line_to_send, timeout))
     {
-      line_to_send = malloc(struct_size);
-      if (!read_from_flash(line_to_send, timeout))
-      {
-        debug_printf("dataline: failed to retrieve from flash\r\n");
-        return -1 * flash_pages_used; // failed to read anything useful from flash, aborting
-      }
+      debug_printf("dataline: failed to retrieve from flash\r\n");
+      return -1 * flash_pages_used; // failed to read anything useful from flash, aborting
     }
-    // TODO: prepare and send data string over HTTP
-    // ************************************************************
-    debug_printf("()--> %lu / %.2f hPa / %.2f C ()-->\r\n", line_to_send->timestamp,
-      line_to_send->pressure, line_to_send->temperature);
-    // ************************************************************
+  }
+  // TODO: prepare and send data string over HTTP
+  // ************************************************************
+  debug_printf("()--> %lu / %.2f hPa / %.2f C ()-->\r\n", line_to_send->timestamp,
+    line_to_send->pressure, line_to_send->temperature);
+  // ************************************************************
 
-    uint8_t status = 1;
-    if (status)
-    {
-      if (flash_pages_used == 0)
-      { // data was taken from buffer, free and shift buffer to the left
-        free(line_to_send);
-        --buffer_periods_count;
-        for (uint16_t i = 0; i < buffer_periods_count; ++i) {
-          data_buffer[i] = data_buffer[i + 1];
-        }
+  uint8_t status = 1;
+  if (status)
+  {
+    if (flash_pages_used == 0)
+    { // data was taken from buffer, free and shift buffer to the left
+      free(line_to_send);
+      --buffer_periods_count;
+      for (uint16_t i = 0; i < buffer_periods_count; ++i) {
+        data_buffer[i] = data_buffer[i + 1];
       }
-      else
-      { // data was taken from flash, decrement flash counter and erase if nothing left on chip
-        --flash_pages_used;
-        ++flash_page_first;
-        if (flash_pages_used == 0)
-        {
-          reset_flash();
-        }
-      }
-      debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
-      return buffer_periods_count + flash_pages_used;
     }
     else
-    {
-      debug_printf("dataline: failed to send\r\n");
-      return (buffer_periods_count + flash_pages_used) * -1;
+    { // data was taken from flash, decrement flash counter and erase if nothing left on chip
+      --flash_pages_used;
+      ++flash_page_first;
+      if (flash_pages_used == 0)
+      {
+        reset_flash();
+      }
     }
+    debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
+    return buffer_periods_count + flash_pages_used;
+  }
+  else
+  {
+    debug_printf("dataline: failed to send\r\n");
+    return (buffer_periods_count + flash_pages_used) * -1;
   }
 }
