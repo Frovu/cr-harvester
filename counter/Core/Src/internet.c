@@ -89,7 +89,7 @@ uint8_t W5500_RunDHCP()
 
 uint64_t convert_ntp_timestamp(uint64_t * timestamp) {
   uint32_t seconds = 0, fraction = 0;
-  uint8_t * bytes = timestamp;
+  uint8_t * bytes = (uint8_t*)timestamp;
   for (uint16_t i=0; i < 4; ++i) {
     seconds =  (seconds  << 8) | bytes[i];
     fraction = (fraction << 8) | bytes[i + 4];
@@ -103,6 +103,7 @@ uint8_t try_sync_ntp(uint32_t timeout)
   if (last_period_tick > 0xffffffffu - BASE_PERIOD_LEN_MS) {
     return 0;
   }
+  debug_printf("ntp: starting sync\r\n");
   uint32_t origin_since_period = HAL_GetTick() - last_period_tick;
   uint32_t origin_s = mktime(&last_period_tm) + (origin_since_period / 1000);
 
@@ -138,20 +139,40 @@ uint8_t try_sync_ntp(uint32_t timeout)
       if (result <= SOCK_ERROR) {
         debug_printf("ntp: failed to recvfrom(), SOCK_ERROR = %d\r\n", result);
         return 0;
-      } else { // 0x20000798  85291AE4 3FE3C761 85291AE4 41E3C761
-               // 0x20000798  8D2C1AE4 F555D3DA 8D2C1AE4 F755D3DA                                                                                            ä.,.ÚÓUõä.,.ÚÓU÷
+      } else {
         uint64_t origin_ms  = (uint64_t)origin_s * 1000 + (origin_since_period % 1000);
         uint64_t arrival_ms = (uint64_t)origin_s * 1000 + (arrival_since_period % 1000);
         uint64_t recieve_ms  = convert_ntp_timestamp(&ntp_msg->receiveTimestamp);
         uint64_t transmit_ms = convert_ntp_timestamp(&ntp_msg->transmitTimestamp);
-        int64_t shift = transmit_ms - arrival_ms;
-        int64_t roundtrip_delay = (((int64_t)arrival_ms - origin_ms) - ((int64_t)recieve_ms - transmit_ms)) / 2;
+        int64_t roundtrip = (((int64_t)arrival_ms - origin_ms) - ((int64_t)recieve_ms - transmit_ms));
+        int64_t shift = (int64_t)transmit_ms - (int64_t)arrival_ms;
         debug_printf("ntp: got response\r\n");
-        debug_printf("ntp: local clocks are %d days %d ms behind\r\n", shift/86400000, shift/1000);
-        debug_printf("ntp: roundtrip_delay is %d ms\r\n", roundtrip_delay);
+        debug_printf("ntp: local clocks are %d sec %d ms behind\r\n", (int16_t)(shift/1000), (int16_t)(shift%1000));
+        debug_printf("ntp: whole trip time is %d ms\r\n", (int16_t)roundtrip);
 
-        // got ntp response
-    	return 1;
+        const time_t tstmp = transmit_ms / 1000 + 1; // +1 for next sec
+        DateTime * new_date = gmtime(&tstmp);
+        char buf[32];
+        strftime(buf, 32, "%Y-%m-%d %H:%M:%S", new_date);
+        debug_printf("ntp: setting RTC to: %s\r\n", buf);
+        debug_printf("ntp: will wait ~%d ms\r\n", (int16_t)(1000 - (transmit_ms % 1000)));
+
+        // wait until next second beginning to be precise
+        int32_t ms_until_next_sec = (1000 - (transmit_ms % 1000)) - (HAL_GetTick() - last_period_tick - arrival_since_period);
+        if (ms_until_next_sec < 0) {
+          ms_until_next_sec = 1000 + ms_until_next_sec;
+          new_date->tm_sec += 1;
+          if(new_date->tm_sec == 60) new_date->tm_sec = 0;
+        }
+        HAL_Delay(ms_until_next_sec);
+        
+        if (RTC_WriteDateTime(new_date, 100) != HAL_OK) {
+          debug_printf("ntp: failed to write rtc\r\n");
+          return 0;
+        } else {
+          debug_printf("ntp: done!\r\n");
+        }
+        return 1;
       }
     }
   }

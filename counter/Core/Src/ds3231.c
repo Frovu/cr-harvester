@@ -35,7 +35,7 @@ HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout)
   // buf[3] = TO_BCD(dt->tm_wday);   FIXME: uncomment if weekday isn't useless
   buf[4] = TO_BCD(dt->tm_mday);
   buf[5] = TO_BCD(dt->tm_mon);
-  buf[6] = TO_BCD(dt->tm_year);
+  buf[6] = TO_BCD((dt->tm_year - RTC_CENTURY_START));
   return HAL_I2C_Mem_Write(rtc_i2ch, dev_addr, RTC_REG_DATE, 1, buf, 7, timeout);
 }
 
