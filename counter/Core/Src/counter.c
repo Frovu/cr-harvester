@@ -96,18 +96,26 @@ void counter_init()
   LED_OFF(LED_ERROR);
 }
 
+/* Core device algorithm is described in this function
+*  it repeatedly reads flags variable and takes appropriate actions
+*/
 void event_loop() {
   if (IS_SET(FLAG_RTC_OK))
-  {
+  { /* Counter registration logic may work if and only if RTC is connected, alive
+    *  and produces interrupt signals on every period transition
+    */
     if (IS_SET(FLAG_EVENT_BASE))
     {
-      last_period_tick = HAL_GetTick();
       base_periodic_event();
       try_sync_ntp(3000);
       TOGGLE(FLAG_EVENT_BASE);
     }
     if (IS_SET(FLAG_RTC_ALARM))
-    {
+    { /* RTC alarm flag essentially repeats BASE EVENT flag, but its made to protect
+      *  from accidential noise interrupts which may occur in case of electrical
+      *  connection problems. Alarm flag forbids BASE flag to be set again
+      *  until alarm bit in RTC register is successfully reset
+      */
       uint16_t alarm_reset = 0;
       for(uint16_t i=0; i<3; ++i) {
         // try reset alarm 3 times, if failed raise RTC reinitializaiton flag
@@ -137,7 +145,7 @@ void event_loop() {
       }
     }
   }
-  else // try to fix rtc somehow
+  else // try to restore rtc somehow
   {
     LED_OFF(LED_ERROR);
     if (!try_init_dev(DEV_RTC)) {
@@ -146,7 +154,7 @@ void event_loop() {
       LED_ON(LED_ERROR);
     }
   }
-  if (IS_SET(FLAG_DHCP_RUN))
+  if (IS_SET(FLAG_W5500_OK) && IS_SET(FLAG_DHCP_RUN))
   {
     if (!W5500_RunDHCP()) {
       LED_BLINK(LED_ERROR, 50);
@@ -158,7 +166,7 @@ void event_loop() {
   int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
   if (time_left > SENDING_TIMEOUT * 2)
   {
-    if (IS_SET(FLAG_DATA_SENDING) && NOT_SET(FLAG_DHCP_RUN)) {
+    if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN)) {
     	int32_t storage_stat = data_send_one(SENDING_TIMEOUT);
       if (storage_stat == 0) {
         // everything sent
@@ -240,7 +248,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   if (GPIO_Pin == GPIO_RTC_IRQ)
   {
     if (NOT_SET(FLAG_RTC_ALARM))
-    {
+    { // save RTC minute start tick to extend local time precision up to ms
+      last_period_tick = HAL_GetTick();
       RAISE(FLAG_RTC_ALARM);
       RAISE(FLAG_EVENT_BASE);
       for (uint8_t i=0; i<CHANNELS_COUNT; ++i) {
