@@ -145,32 +145,39 @@ uint8_t try_sync_ntp(uint32_t timeout)
         uint64_t recieve_ms  = convert_ntp_timestamp(&ntp_msg->receiveTimestamp);
         uint64_t transmit_ms = convert_ntp_timestamp(&ntp_msg->transmitTimestamp);
         int64_t roundtrip = (((int64_t)arrival_ms - origin_ms) - ((int64_t)recieve_ms - transmit_ms));
-        int64_t shift = (int64_t)transmit_ms - (int64_t)arrival_ms;
+        int64_t shift = (int64_t)arrival_ms - transmit_ms;
         debug_printf("ntp: got response\r\n");
-        debug_printf("ntp: local clocks are %d sec %d ms behind\r\n", (int16_t)(shift/1000), (int16_t)(shift%1000));
+        debug_printf("ntp: local clocks are %d sec %d ms behind (including delay)\r\n", (int16_t)(shift/1000), (int16_t)(shift%1000));
         debug_printf("ntp: whole trip time is %d ms\r\n", (int16_t)roundtrip);
 
-        const time_t tstmp = transmit_ms / 1000 + 1; // +1 for next sec
-        DateTime * new_date = gmtime(&tstmp);
-        char buf[32];
-        strftime(buf, 32, "%Y-%m-%d %H:%M:%S", new_date);
-        debug_printf("ntp: setting RTC to: %s\r\n", buf);
-        debug_printf("ntp: will wait ~%d ms\r\n", (int16_t)(1000 - (transmit_ms % 1000)));
+        if (shift > NTP_SYNC_MIN_SHIFT || shift < -NTP_SYNC_MIN_SHIFT)
+        {
+          const time_t tstmp = transmit_ms / 1000 + 1; // +1 for next sec
+          DateTime * new_date = gmtime(&tstmp);
+          char buf[32];
+          strftime(buf, 32, "%Y-%m-%d %H:%M:%S", new_date);
+          debug_printf("ntp: setting RTC to: %s\r\n", buf);
+          debug_printf("ntp: will wait ~%d ms\r\n", (int16_t)(1000 - (transmit_ms % 1000)));
 
-        // wait until next second beginning to be precise
-        int32_t ms_until_next_sec = (1000 - (transmit_ms % 1000)) - (HAL_GetTick() - last_period_tick - arrival_since_period);
-        if (ms_until_next_sec < 0) {
-          ms_until_next_sec = 1000 + ms_until_next_sec;
-          new_date->tm_sec += 1;
-          if(new_date->tm_sec == 60) new_date->tm_sec = 0;
+          // wait until next second beginning to be precise
+          int32_t ms_until_next_sec = (1000 - (transmit_ms % 1000)) - (HAL_GetTick() - last_period_tick - arrival_since_period);
+          if (ms_until_next_sec < 0) {
+            ms_until_next_sec = 1000 + ms_until_next_sec;
+            new_date->tm_sec += 1;
+            if(new_date->tm_sec == 60) new_date->tm_sec = 0;
+          }
+          HAL_Delay(ms_until_next_sec);
+
+          if (RTC_WriteDateTime(new_date, 100) != HAL_OK) {
+            debug_printf("ntp: failed to write rtc\r\n");
+            return 0;
+          } else {
+            debug_printf("ntp: sync done!\r\n");
+          }
         }
-        HAL_Delay(ms_until_next_sec);
-        
-        if (RTC_WriteDateTime(new_date, 100) != HAL_OK) {
-          debug_printf("ntp: failed to write rtc\r\n");
-          return 0;
-        } else {
-          debug_printf("ntp: done!\r\n");
+        else
+        {
+          debug_printf("ntp: sync not required, |%d| < %d\r\n", (int16_t)shift, (int16_t)NTP_SYNC_MIN_SHIFT);
         }
         return 1;
       }

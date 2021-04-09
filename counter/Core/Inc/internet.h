@@ -36,6 +36,7 @@ static const uint8_t NTP_SERVER_IP[4] = {216, 239, 35, 4};
 #define NTP_MODE            0x3     // client
 #define NTP_REQ_FLAGS    (((NTP_VERSION & 0x7) << 3) | (NTP_MODE & 0x7))
 #define NTP_EPOCH_OFFSET    2208988800
+#define NTP_SYNC_MIN_SHIFT  100     // if deviation is more than 100 ms, sync clocks
 
 uint8_t W5500_Connected(void);
 uint8_t W5500_Init();
