@@ -41,6 +41,5 @@ uint8_t W5500_Connected(void);
 uint8_t W5500_Init();
 uint8_t W5500_RunDHCP();
 
-uint8_t query_ntp(uint32_t timeout, uint32_t originTimestamp);
-uint8_t try_sync_ntp();
+uint8_t try_sync_ntp(uint32_t timeout);
 #endif

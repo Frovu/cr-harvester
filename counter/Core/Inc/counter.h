@@ -12,6 +12,7 @@
 #include "bmp280.h"
 #include "ds3231.h"
 #include "at25df321.h"
+#include "internet.h"
 
 #include <stdlib.h>
 #include <stdint.h>

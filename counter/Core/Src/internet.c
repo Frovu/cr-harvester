@@ -13,6 +13,7 @@ uint8_t dhcp_buf[DHCP_BUF_SIZE];
 extern uint32_t last_period_tick;
 extern DateTime last_period_tm;
 
+uint8_t try_sync_ntp(uint32_t timeout);
 /********************* Hardware abstraction for w5500 **********************/
 void W5500_Select(void);
 void W5500_Unselect(void);
