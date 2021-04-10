@@ -13,6 +13,7 @@
 #include "ds3231.h"
 #include "at25df321.h"
 #include "internet.h"
+#include "config_server.h"
 
 #include <stdlib.h>
 #include <stdint.h>

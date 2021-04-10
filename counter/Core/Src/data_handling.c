@@ -4,6 +4,7 @@
 
 #include "counter.h"
 
+#define FIRST_DATA_PAGE CONFIG_FLASH_PAGES_COUNT // reserved couple of pages for device config
 // if first 4 bytes of flash page contain this, they are counted as saved data lines
 static const uint32_t data_line_signature = 0xdeadbeef;
 
@@ -18,9 +19,9 @@ DataLine * current_period = NULL;
 DataLine * data_buffer[DATA_BUFFER_LEN];
 
 uint16_t buffer_periods_count = 0;
-uint16_t flash_page_first = 0;    // aka where-to-read (nothing useful before it)
+uint16_t flash_page_first = FIRST_DATA_PAGE;    // aka where-to-read (nothing useful before it)
 uint16_t flash_pages_used = 0;    // number of lines stored in flash
-uint16_t flash_page_pointer = 0;  // pointer to what is assumed first writable unused page, aka where-to-write
+uint16_t flash_page_pointer = FIRST_DATA_PAGE;  // pointer to what is assumed first writable unused page, aka where-to-write
 
 uint8_t * buffer;
 
@@ -32,7 +33,7 @@ void init_read_flash()
 {
   buffer = malloc(chunk_size);
   flash_pages_used = 0;
-  flash_page_first = 0;
+  flash_page_first = FIRST_DATA_PAGE;
   for (uint16_t page = 0; page < AT25_PAGES_COUNT; ++page)
   {
     at25_read_block(page * AT25_PAGE_SIZE, buffer, chunk_size);
@@ -132,9 +133,9 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
 void reset_flash() {
   debug_printf("flash: erasing everything\r\n");
   at25_erase_all(); // complete operation takes about 1 minute
-  flash_page_first = 0;
+  flash_page_first = FIRST_DATA_PAGE;
   flash_pages_used = 0;
-  flash_page_pointer = 0;
+  flash_page_pointer = FIRST_DATA_PAGE;
 }
 
 void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p)
