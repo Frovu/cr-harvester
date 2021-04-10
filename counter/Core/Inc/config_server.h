@@ -39,6 +39,8 @@ static const Configuration default_cfg = {
   .dhcp_mode = NETINFO_DHCP
 };
 
+extern Configuration *cfg;
+
 /* These functions are called only if config button is pressed while device boots
 */
 uint8_t config_server_init();

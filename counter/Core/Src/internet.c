@@ -2,7 +2,6 @@
 #include "internet.h"
 
 extern SPI_HandleTypeDef hspi1;
-extern uint16_t flags;
 wiz_NetInfo netinfo = {
   .mac = {0x00, 0x08, 0xdc, 0x7b, 0xa3, 0xdf},
   .dhcp = NETINFO_DHCP
@@ -14,7 +13,6 @@ uint8_t dhcp_buf[DHCP_BUF_SIZE];
 uint8_t dns_buf[MAX_DNS_BUF_SIZE];
 extern uint32_t last_period_tick;
 extern DateTime last_period_tm;
-extern Configuration cfg;
 
 uint8_t try_sync_ntp(uint32_t timeout);
 /********************* Hardware abstraction for w5500 **********************/
@@ -57,10 +55,6 @@ uint8_t W5500_Init()
   // wizchip_getnetinfo(&netinfo);
   DHCP_init(DHCP_SOCKET, dhcp_buf);
   DNS_init(DNS_SOCKET, dns_buf);
-  if (cfg.dhcp_mode == NETINFO_DHCP) {
-    RAISE(FLAG_DHCP_RUN);
-  }
-  RAISE(FLAG_DNS_RUN);
   return 1;
 }
 
@@ -201,21 +195,21 @@ uint8_t try_sync_ntp(uint32_t timeout)
 uint8_t run_dns_queries()
 {
   uint8_t *dns_ip = malloc(4);
-  if (cfg.dhcp_mode == NETINFO_DHCP) {
+  if (cfg->dhcp_mode == NETINFO_DHCP) {
     getDNSfromDHCP(dns_ip);
   } else {
-    dns_ip = cfg.local_dns;
+    dns_ip = cfg->local_dns;
   }
-  if (DNS_run(dns_ip, cfg.target_addr, cfg.target_ip) <= 0) {
-    debug_printf("dns: failed to resolve %s\r\n", cfg.target_addr);
+  if (DNS_run(dns_ip, cfg->target_addr, cfg->target_ip) <= 0) {
+    debug_printf("dns: failed to resolve %s\r\n", cfg->target_addr);
     return 0;
   }
-  if (DNS_run(dns_ip, cfg.ntp_addr, cfg.ntp_ip) <= 0) {
-    debug_printf("dns: failed to resolve %s\r\n", cfg.ntp_addr);
+  if (DNS_run(dns_ip, cfg->ntp_addr, cfg->ntp_ip) <= 0) {
+    debug_printf("dns: failed to resolve %s\r\n", cfg->ntp_addr);
     return 0;
   }
   debug_printf("dns: ok\r\n\t%s = %u.%u.%u.%u\r\n\t%s = %u.%u.%u.%u\r\n",
-    cfg.target_addr, cfg.target_ip[0], cfg.target_ip[1], cfg.target_ip[2], cfg.target_ip[3],
-    cfg.ntp_addr, cfg.ntp_ip[0], cfg.ntp_ip[1], cfg.ntp_ip[2], cfg.ntp_ip[3]);
+    cfg->target_addr, cfg->target_ip[0], cfg->target_ip[1], cfg->target_ip[2], cfg->target_ip[3],
+    cfg->ntp_addr, cfg->ntp_ip[0], cfg->ntp_ip[1], cfg->ntp_ip[2], cfg->ntp_ip[3]);
   return 1;
 }

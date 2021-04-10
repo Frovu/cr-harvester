@@ -93,10 +93,9 @@ void at25_erase(uint16_t from_page, uint16_t to_page)
       #ifdef DEBUG_UART
       debug_printf("flash: erase %u timed out on addr %u\r\n", erased, page*AT25_PAGE_SIZE);
       #endif
-      return 0;
+      return;
     }
   }
-  return 1;
 }
 
 uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout)

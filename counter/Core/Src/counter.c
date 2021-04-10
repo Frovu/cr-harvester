@@ -53,6 +53,12 @@ uint8_t try_init_dev(device_t dev)
   case DEV_W5500:
     flagVal = FLAG_W5500_OK;
     status = W5500_Init();
+    if (status) {
+      if (cfg->dhcp_mode == NETINFO_DHCP) {
+        RAISE(FLAG_DHCP_RUN);
+      }
+      RAISE(FLAG_DNS_RUN);
+    }
     break;
   }
   if (status) // initialization successful
@@ -195,7 +201,9 @@ void event_loop() {
         LED_OFF(LED_DATA);
       } else if (storage_stat < 0) {
         // if failed to send line wait until something probably fixes idk
-        RAISE(FLAG_DHCP_RUN); // TODO: if config.dhcp_mode
+        if (cfg->dhcp_mode == NETINFO_DHCP) {
+          RAISE(FLAG_DHCP_RUN);
+        }
         RAISE(FLAG_DNS_RUN);
         last_net_attempt = HAL_GetTick();
         LED_BLINK_INV(LED_DATA, 30);

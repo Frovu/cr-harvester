@@ -17,21 +17,19 @@ void config_initialize()
   }
   else // try to load config from flash
   {
+    cfg = (Configuration*) malloc(sizeof(Configuration));
     uint8_t buf[sizeof(meme_signature)+sizeof(Configuration)];
     for (uint16_t page = CONFIG_FLASH_PAGE_FIRST; page < CONFIG_FLASH_PAGES_COUNT; ++page) {
       at25_read_block(page * AT25_PAGE_SIZE, buf, sizeof(meme_signature)+sizeof(Configuration));
       if (*((uint32_t*)buf) == meme_signature)
       { // found settings in flash
-        cfg = (Configuration*) malloc(sizeof(Configuration));
         memcpy(cfg, buf + sizeof(meme_signature), sizeof(Configuration));
+        debug_printf("init: flash_cfg\tOK\r\n");
         return; // done
       }
     }
-    if (cfg == NULL)
-    {
-      debug_printf("init: config\tFAIL\r\n");
-      cfg = &default_cfg;
-    }
+    debug_printf("init: flash_cfg\tFAIL\r\n");
+    memcpy(cfg, &default_cfg, sizeof(Configuration));
   }
 }
 
