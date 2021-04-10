@@ -32,7 +32,7 @@ typedef struct {
 } Configuration;
 
 static const Configuration default_cfg = {
-  .target_port = "8787",
+  .target_port = 8787,
   .dev_id = "unknown",
   .target_addr = "crst.izmiran.ru",
   .ntp_addr = "time.google.com",

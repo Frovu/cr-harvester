@@ -95,7 +95,7 @@ void counter_init()
     LED_BLINK_INV(LED_ERROR, 200);
   }
   // ******************* CONFIG *********************
-  config_initialize()
+  config_initialize();
   // ******************* W5500 **********************
   for (int i=0; !try_init_dev(DEV_W5500) && i < 3; ++i) {
     HAL_Delay(300);

@@ -29,7 +29,7 @@ void config_initialize()
     }
     if (cfg == NULL)
     {
-      debug_printf("failed to read config from flash\r\n");
+      debug_printf("init: config\tFAIL\r\n");
       cfg = &default_cfg;
     }
   }
@@ -42,7 +42,7 @@ void config_save()
     at25_erase(CONFIG_FLASH_PAGE_FIRST, CONFIG_FLASH_PAGES_COUNT);
     uint8_t buf[sizeof(meme_signature)+sizeof(Configuration)];
     memcpy(buf, &meme_signature, sizeof(meme_signature));
-    memcpy(buf + sizeof(meme_signature), cfg, struct_size)
+    memcpy(buf + sizeof(meme_signature), cfg, sizeof(Configuration));
     for (uint16_t page = CONFIG_FLASH_PAGE_FIRST; page < CONFIG_FLASH_PAGES_COUNT; ++page) {
       if (at25_write_block(page * AT25_PAGE_SIZE, buf, sizeof(meme_signature)+sizeof(Configuration), DEFAULT_TIMEOUT))
       { // write succeeded

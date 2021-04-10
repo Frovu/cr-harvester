@@ -70,7 +70,7 @@ uint8_t at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout)
 *  function is blocking and may take up to 64 seconds (!)
 *  if any operation takes more than 3 seconds it aborts
 */
-void at25_erase(uint16_t from_page, uint16_t to_page);
+void at25_erase(uint16_t from_page, uint16_t to_page)
 {
   #define PAGES_PER_64K 256
   #define PAGES_PER_4K   16
