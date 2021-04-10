@@ -14,7 +14,6 @@ uint8_t dns_buf[MAX_DNS_BUF_SIZE];
 extern uint32_t last_period_tick;
 extern DateTime last_period_tm;
 
-uint8_t try_sync_ntp(uint32_t timeout);
 /********************* Hardware abstraction for w5500 **********************/
 void W5500_Select(void);
 void W5500_Unselect(void);
@@ -86,6 +85,10 @@ uint8_t W5500_RunDHCP()
       break;
   }
   return 0;
+}
+
+uint8_t ip_sum(uint8_t * ip) {
+  return ip[0] + ip[1] + ip[2] + ip[3];
 }
 
 /*************************************************************************
@@ -198,6 +201,9 @@ uint8_t run_dns_queries()
   if (cfg->dhcp_mode == NETINFO_DHCP) {
     getDNSfromDHCP(dns_ip);
   } else {
+    if(ip_sum(cfg->local_dns) == 0) {
+      return 0; // local dns dont declared as is dhcp one
+    }
     dns_ip = cfg->local_dns;
   }
   if (DNS_run(dns_ip, cfg->target_addr, cfg->target_ip) <= 0) {
