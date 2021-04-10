@@ -28,7 +28,8 @@ void config_initialize()
       }
     }
     if (cfg == NULL)
-    { // failed to read from flash
+    {
+      debug_printf("failed to read config from flash\r\n");
       cfg = &default_cfg;
     }
   }

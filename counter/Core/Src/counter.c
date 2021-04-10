@@ -60,8 +60,10 @@ uint8_t try_init_dev(device_t dev)
   {
     RAISE(flagVal);
   }
+  #ifdef DEBUG_UART
   debug_printf("init: %s\t%s\r\n", dev == DEV_RTC ? "RTC" : dev == DEV_BMP ? "BMP280"
     : dev == DEV_FLASH ? "FLASH" : dev == DEV_W5500 ? "W5500" : "x", status ? "OK" : "FAIL");
+  #endif
   return status;
 }
 
@@ -92,6 +94,8 @@ void counter_init()
     HAL_Delay(100);
     LED_BLINK_INV(LED_ERROR, 200);
   }
+  // ******************* CONFIG *********************
+  config_initialize()
   // ******************* W5500 **********************
   for (int i=0; !try_init_dev(DEV_W5500) && i < 3; ++i) {
     HAL_Delay(300);
@@ -106,7 +110,6 @@ void counter_init()
       TOGGLE(FLAG_RTC_OK);
     }
   }
-
   LED_OFF(LED_ERROR);
 }
 

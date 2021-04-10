@@ -118,8 +118,10 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
 }
 
 void reset_flash() {
-  debug_printf("flash: erasing everything\r\n");
-  at25_erase_all(); // complete operation takes about 1 minute
+  debug_printf("flash: erasing data section\r\n");
+  uint32_t tickstart = HAL_GetTick();
+  at25_erase(FIRST_DATA_PAGE, flash_page_pointer);
+  debug_printf("flash: erased in %lu ms\r\n", (uint32_t)(HAL_GetTick()-tickstart));
   flash_page_first = FIRST_DATA_PAGE;
   flash_pages_used = 0;
   flash_page_pointer = FIRST_DATA_PAGE;
