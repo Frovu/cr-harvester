@@ -23,12 +23,6 @@ typedef struct {
   dhcp_mode dhcp_mode;  // typedef in wizchip_conf.h
 } Configuration;
 
-static const Configuration config = {
-  .dev_id = "unknown",
-  .target_addr = "192.168.1.1",
-  .ntp_addr = "time.google.com",
-  .dhcp_mode = NETINFO_DHCP
-};
 
 
 #endif

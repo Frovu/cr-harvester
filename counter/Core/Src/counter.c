@@ -202,7 +202,7 @@ void event_loop() {
     }
     /* ********************* DHCP / DNS RUN SECTION *********************** */
     if (IS_SET(FLAG_W5500_OK)) {
-      if (IS_SET(FLAG_DHCP_RUN | FLAG_DNS_RUN))
+      if (IS_SET((FLAG_DHCP_RUN | FLAG_DNS_RUN)))
       { /* ioLibrary dhcp and dns implementations which are used here require a
         *  time handler function to be called every second for timeout functionality to work.
         *  1s event is emulated here using HAL_GetTick() */
