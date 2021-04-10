@@ -61,7 +61,7 @@ uint8_t at25_is_valid();
 
 void at25_global_unprotect();
 void at25_erase_all();
-void at25_write_block(uint32_t address, const uint8_t *data, uint16_t count);
+uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count);
 void at25_read_block(uint32_t address, uint8_t *data, uint16_t count);
 
 #endif

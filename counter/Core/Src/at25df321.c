@@ -55,19 +55,31 @@ void at25_erase_all()
   at25_unselect();
 }
 
-void at25_write_block(uint32_t address, const uint8_t *data, uint16_t count)
+uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout)
 {
+  uint32_t tickstart = HAL_GetTick();
+  while (!at25_is_ready()) {
+    if (HAL_GetTick() - tickstart > timeout) {
+      return 0;
+    }
+  }
   at25_write_enable();
   at25_select();
   at25_transmit_byte(AT25_CMD_BYTE_PROGRAM);
   at25_transmit_byte((address >> 16) & 0x3F);
   at25_transmit_byte((address >> 8)  & 0xFF);
   at25_transmit_byte( address        & 0xFF);
-
   for (uint16_t i=0; i < count; ++i) {
     at25_transmit_byte(data[i]);
   }
   at25_unselect();
+
+  while (!at25_is_ready()) {
+    if (HAL_GetTick() - tickstart > timeout) {
+      return 0;
+    }
+  }
+  return at25_write_ok();
 }
 
 void at25_read_block(uint32_t address, uint8_t *data, uint16_t count)

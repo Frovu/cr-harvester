@@ -66,21 +66,8 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
   memcpy(buffer + signature_size, dl, struct_size);
   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
-    while (!at25_is_ready()) {
-      if (HAL_GetTick() - tickstart > timeout) {
-        debug_printf("flash: timed out before write\r\n");
-        return 0;
-      }
-    }
-    at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, chunk_size);
     ++flash_page_pointer;
-    while (!at25_is_ready()) {
-      if (HAL_GetTick() - tickstart > timeout) {
-        debug_printf("flash: timed out after write\r\n");
-        return 0;
-      }
-    }
-    if (at25_write_ok())
+    if (at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, chunk_size, DEFAULT_TIMEOUT))
     { // flash write succeeded
       if (flash_pages_used == 0)
       {
