@@ -183,6 +183,8 @@ uint8_t try_sync_ntp(uint32_t timeout)
           } else {
             debug_printf("ntp: sync done!\r\n");
           }
+          // mitigation for time_left being incorrect in counter.c at first cycle
+          last_period_tick -= transmit_ms % 60000;
         }
         else
         {

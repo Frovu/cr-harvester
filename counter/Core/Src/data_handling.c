@@ -31,6 +31,8 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout);
 
 void init_read_flash()
 {
+  debug_printf("flash: init read start\r\n");
+  uint32_t tickstart = HAL_GetTick();
   buffer = malloc(chunk_size);
   flash_pages_used = 0;
   flash_page_first = FIRST_DATA_PAGE;
@@ -45,11 +47,12 @@ void init_read_flash()
       }
       ++flash_pages_used;
     }
-    if(page % 1000 == 0) {
-      debug_printf("flash: init read: %.2f%%\r\n", ((float)page/AT25_PAGES_COUNT)*100);
+    if(page % 100 == 0) {
+      LED_BLINK_INV(BOARD_LED, 3);
     }
   }
   flash_page_pointer = flash_page_first + flash_pages_used;
+  debug_printf("flash: init read done in %lu ms\r\n", HAL_GetTick() - tickstart);
   debug_printf("flash: found %d records starting from page %d\r\n", flash_pages_used, flash_page_first);
 }
 

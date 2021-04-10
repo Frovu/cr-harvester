@@ -37,6 +37,7 @@
 #define FLAG_DHCP_RUN       0x100
 #define FLAG_NTP_SYNC       0x200
 #define FLAG_DNS_RUN        0x400
+#define FLAG_FLASH_INIT     0x800
 
 #define FLAGS_INITIAL (FLAG_RTC_ALARM | FLAG_NTP_SYNC)
 
@@ -71,6 +72,7 @@ typedef enum {
   #define BASE_PERIOD_LEN_MS       60000
 #endif
 #define PROBLEM_FIXING_PERIOD      3000
+#define FLASH_INIT_TIME            30000
 
 #define NTP_SYNC_PERIOD             30 // in cycles (minutes)
 #define TIME_TRUST_PERIOD          720 // how long is time accounted as trusted after ntp sync

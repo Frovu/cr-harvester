@@ -18,7 +18,7 @@ volatile uint16_t counters[CHANNELS_COUNT];
 uint32_t cycle_counter = 0;
 uint32_t last_ntp_sync = 0;
 
-uint32_t last_period_tick = 0;
+int64_t last_period_tick = 0;
 uint32_t last_fix_attempt = -5000;
 uint32_t last_net_attempt = -5000;
 DateTime last_period_tm;
@@ -44,10 +44,7 @@ uint8_t try_init_dev(device_t dev)
     status = at25_is_valid() && at25_is_ready();
     if (status) {
       at25_global_unprotect();
-      LED_OFF(LED_ERROR);
-      LED_ON(LED_DATA);
-      // init_read_flash(); // FIXME: uncomment
-      LED_OFF(LED_DATA);
+      RAISE(FLAG_FLASH_INIT);
     }
     break;
   case DEV_W5500:
@@ -107,9 +104,8 @@ void counter_init()
     LED_BLINK_INV(LED_ERROR, 600);
   }
   /* Initial NTP sync happens before first cycle, hence requires
-  *  setting last_period_tick/tm here explicitly
+  *  setting last_period_tick/tm explicitly
   */
-  last_period_tick = HAL_GetTick();
   if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) != HAL_OK) {
     if (IS_SET(FLAG_RTC_OK)) {
       TOGGLE(FLAG_RTC_OK);
@@ -187,6 +183,14 @@ void event_loop() {
   }
   int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
   uint32_t since_last_attempt = HAL_GetTick() - last_net_attempt; // non-blocking delay for net failures
+  /* Perform initial read of external flash. This operation takes alot of time so
+   * its better to do it after NTP sync to not loose one data period */
+  if (IS_SET(FLAG_FLASH_INIT) && IS_SET(FLAG_TIME_TRUSTED)) {
+    if (time_left > FLASH_INIT_TIME && NOT_SET(FLAG_EVENT_BASE)) {
+      init_read_flash();
+      TOGGLE(FLAG_FLASH_INIT);
+    }
+  }
   if (time_left > SENDING_TIMEOUT * 2)
   { /* Reassure that we have enough time before next period, since failed sending try
     *  can possibly take fair amount of time due to big timeouts
