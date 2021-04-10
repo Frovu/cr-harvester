@@ -101,7 +101,7 @@ void counter_init()
   *  setting last_period_tick/tm here explicitly
   */
   last_period_tick = HAL_GetTick();
-  if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
+  if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) != HAL_OK) {
     if (IS_SET(FLAG_RTC_OK)) {
       TOGGLE(FLAG_RTC_OK);
     }
