@@ -107,6 +107,10 @@ uint64_t convert_ntp_timestamp(uint64_t * timestamp) {
 
 uint8_t try_sync_ntp(uint32_t timeout)
 {
+  if (ip_sum(cfg->ntp_ip) == 0) {
+    debug_printf("ntp: no server ip\r\n");
+    return 0;
+  }
   // protect from int overflow
   if (last_period_tick > 0xffffffffu - BASE_PERIOD_LEN_MS) {
     return 0;
@@ -128,7 +132,7 @@ uint8_t try_sync_ntp(uint32_t timeout)
   ntp_msg->flags = NTP_REQ_FLAGS;
   ntp_msg->originTimestamp = ((uint64_t)origin_s << 32);
 
-  result = sendto(NTP_SOCKET, (uint8_t*)ntp_msg, NTP_BUF_SIZE, (uint8_t*)NTP_SERVER_IP, NTP_PORT);
+  result = sendto(NTP_SOCKET, (uint8_t*)ntp_msg, NTP_BUF_SIZE, cfg->ntp_ip, NTP_PORT);
   if (result <= SOCK_ERROR) {
     debug_printf("ntp: failed to sendto(), SOCK_ERROR = %d\r\n", result);
     return 0;

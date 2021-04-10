@@ -36,7 +36,6 @@ typedef struct {
   uint64_t  transmitTimestamp;
 } NtpMessage;
 
-static const uint8_t NTP_SERVER_IP[4] = {216, 239, 35, 4};
 #define NTP_PORT            123
 #define NTP_BUF_SIZE        sizeof(NtpMessage)
 #define NTP_VERSION         0x4     // v4
@@ -50,5 +49,6 @@ uint8_t W5500_RunDHCP();
 
 uint8_t ip_sum(uint8_t * ip);
 
+uint8_t run_dns_queries();
 uint8_t try_sync_ntp(uint32_t timeout);
 #endif

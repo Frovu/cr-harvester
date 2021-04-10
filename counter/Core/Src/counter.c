@@ -19,8 +19,8 @@ uint32_t cycle_counter = 0;
 uint32_t last_ntp_sync = 0;
 
 uint32_t last_period_tick = 0;
-uint32_t last_fix_attempt = 0;
-uint32_t last_net_attempt = 0;
+uint32_t last_fix_attempt = -5000;
+uint32_t last_net_attempt = -5000;
 DateTime last_period_tm;
 
 uint8_t try_init_dev(device_t dev)
@@ -216,8 +216,6 @@ void event_loop() {
       { /* The DHCP client is ran repeatedly when corresponding flag is set */
         if (W5500_RunDHCP()) {
           TOGGLE(FLAG_DHCP_RUN);
-        } else {
-          last_net_attempt = HAL_GetTick();
         }
       }
       if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 5000)
