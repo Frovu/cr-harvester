@@ -20,7 +20,8 @@ uint32_t last_ntp_sync = 0;
 
 uint32_t last_period_tick = 0;
 uint32_t last_fix_attempt = 0;
-uint32_t dhcp_ticks = 0;
+uint32_t last_net_attempt = 0;
+uint32_t dhcp_dns_ticks = 0;
 DateTime last_period_tm;
 
 uint8_t try_init_dev(device_t dev)
@@ -177,11 +178,12 @@ void event_loop() {
     }
   }
   int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
+  uint32_t since_last_attempt = HAL_GetTick() - last_net_attempt; // non-blocking delay for net failures
   if (time_left > SENDING_TIMEOUT * 2)
   { /* Reassure that we have enough time before next period, since failed sending try
     *  can possibly take fair amount of time due to big timeouts
     */
-    if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN))
+    if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 1000)
     {
       // TODO: complex data-sending error handling
       int32_t storage_stat = data_send_one(SENDING_TIMEOUT);
@@ -191,30 +193,50 @@ void event_loop() {
         LED_OFF(LED_DATA);
       } else if (storage_stat < 0) {
         // if failed to send line wait until something probably fixes idk
-        RAISE(FLAG_DHCP_RUN);
+        RAISE(FLAG_DHCP_RUN); // TODO: if config.dhcp_mode
+        RAISE(FLAG_DNS_RUN);
+        last_net_attempt = HAL_GetTick();
         LED_BLINK_INV(LED_DATA, 30);
         LED_BLINK(LED_ERROR, 100);
       }
     }
+    /* ********************* DHCP / DNS RUN SECTION *********************** */
+    if (IS_SET(FLAG_W5500_OK)) {
+      if (IS_SET(FLAG_DHCP_RUN | FLAG_DNS_RUN))
+      { /* ioLibrary dhcp and dns implementations which are used here require a
+        *  time handler function to be called every second for timeout functionality to work.
+        *  1s event is emulated here using HAL_GetTick() */
+        if (HAL_GetTick() - dhcp_dns_ticks > 1000) {
+          dhcp_dns_ticks = HAL_GetTick();
+          DHCP_time_handler();
+          DNS_time_handler();
+        }
+        if (IS_SET(FLAG_DHCP_RUN))
+        { /* The DHCP client is ran repeatedly when corresponding flag is set */
+          if (W5500_RunDHCP()) {
+            TOGGLE(FLAG_DHCP_RUN);
+          } else {
+            last_net_attempt = HAL_GetTick();
+          }
+        }
+        if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 1000)
+        { /* The DNS client is ran repeatedly when corresponding flag is set */
+          if (run_dns_queries()) {
+            TOGGLE(FLAG_DNS_RUN);
+          } else {
+            last_net_attempt = HAL_GetTick();
+          }
+        }
+      }
+    }
   }
   /* ****************** SOMETHING-NOT-OK / NTP SECTION ****************** */
-  if (IS_SET(FLAG_W5500_OK) && IS_SET(FLAG_DHCP_RUN))
-  { /* The DHCP client is ran only when corresponding flag is set
-    */
-    if (HAL_GetTick() - dhcp_ticks > 1000) { // emulate 1s ticks for dhcp lib
-      dhcp_ticks = HAL_GetTick();
-      DHCP_time_handler();
-    }
-    if (W5500_RunDHCP()) {
-      TOGGLE(FLAG_DHCP_RUN);
-    }
-  }
   uint32_t since_last_fix_attempt = HAL_GetTick() - last_fix_attempt;
   // incorporate non-blocking delay for PROBLEM_FIXING_PERIOD ms
   if (since_last_fix_attempt > PROBLEM_FIXING_PERIOD && time_left > (PROBLEM_FIXING_PERIOD * 2))
   {
-    if (IS_SET(FLAG_NTP_SYNC) && IS_SET(FLAG_RTC_OK)
-        && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN))
+    if (IS_SET(FLAG_NTP_SYNC) && IS_SET(FLAG_RTC_OK) && IS_SET(FLAG_W5500_OK)
+        && NOT_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN))
     { /* Syncronize local RTC to NTP time */
       if (try_sync_ntp(SENDING_TIMEOUT)) {
         TOGGLE(FLAG_NTP_SYNC);

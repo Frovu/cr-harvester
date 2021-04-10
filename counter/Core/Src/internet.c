@@ -11,8 +11,10 @@ wiz_NetInfo netinfo = {
 uint8_t ntp_buf[sizeof(NtpMessage)];
 NtpMessage *ntp_msg = (NtpMessage*) ntp_buf;
 uint8_t dhcp_buf[DHCP_BUF_SIZE];
+uint8_t dns_buf[MAX_DNS_BUF_SIZE];
 extern uint32_t last_period_tick;
 extern DateTime last_period_tm;
+extern Configuration config;
 
 uint8_t try_sync_ntp(uint32_t timeout);
 /********************* Hardware abstraction for w5500 **********************/
@@ -54,7 +56,11 @@ uint8_t W5500_Init()
   wizchip_setnetinfo(&netinfo);
   // wizchip_getnetinfo(&netinfo);
   DHCP_init(DHCP_SOCKET, dhcp_buf);
-  RAISE(FLAG_DHCP_RUN);
+  DNS_init(DNS_SOCKET, dns_buf)
+  if (config.dhcp_mode == NETINFO_DHCP) {
+    RAISE(FLAG_DHCP_RUN);
+  }
+  RAISE(FLAG_DNS_RUN);
   return 1;
 }
 
@@ -87,6 +93,10 @@ uint8_t W5500_RunDHCP()
   }
   return 0;
 }
+
+/*************************************************************************
+*************************** BEGIN SECTION NTP ****************************
+**************************************************************************/
 
 uint64_t convert_ntp_timestamp(uint64_t * timestamp) {
   uint32_t seconds = 0, fraction = 0;
@@ -182,4 +192,30 @@ uint8_t try_sync_ntp(uint32_t timeout)
     }
   }
   return 0; // timed out
+}
+
+/*************************************************************************
+*************************** BEGIN SECTION DNS ****************************
+**************************************************************************/
+
+uint8_t run_dns_queries()
+{
+  uint8_t dns_ip[4];
+  if (config.dhcp_mode == NETINFO_DHCP) {
+    getDNSfromDHCP(dns_ip);
+  } else {
+    dns_ip = config.dns_ip;
+  }
+  if (DNS_run(dns_ip, config.target_addr, config.target_ip) <= 0) {
+    debug_printf("dns: failed to resolve %s", config.target_addr);
+    return 0;
+  }
+  if (DNS_run(dns_ip, config.dns_addr, config.dns_ip) <= 0) {
+    debug_printf("dns: failed to resolve %s", config.dns_addr);
+    return 0;
+  }
+  debug_printf("dns: ok\r\n\t%s = %u.%u.%u.%u\r\n\t%s = %u.%u.%u.%u\r\n",
+    config.target_addr, config.target_ip[0], config.target_ip[1], config.target_ip[2], config.target_ip[3],
+    config.dns_addr, config.dns_ip[0], config.dns_ip[1], config.dns_ip[2], config.dns_ip[3]);
+  return 1;
 }

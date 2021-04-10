@@ -6,10 +6,18 @@
 #include "w5500.h"
 #include "socket.h"
 #include "dhcp.h"
+#include "dns.h"
+#include "config_server.h"
 #include <time.h>
 #include <string.h>
 
-#define DHCP_SOCKET         2       // DHCP socket number (0 ~ 7)
+// socket numbers (0 ~ 7)
+#define NTP_SOCKET          1
+#define DHCP_SOCKET         2
+#define DNS_SOCKET          3
+#define SERVER_SOCKET       4
+#define DATA_SOCKET         5
+
 #define DHCP_BUF_SIZE       548
 #define W5500_SPI_TIMEOUT   300
 #define W5500_VERSIONR      0x04
@@ -30,7 +38,6 @@ typedef struct {
 
 static const uint8_t NTP_SERVER_IP[4] = {216, 239, 35, 4};
 #define NTP_PORT            123
-#define NTP_SOCKET          1
 #define NTP_BUF_SIZE        sizeof(NtpMessage)
 #define NTP_VERSION         0x4     // v4
 #define NTP_MODE            0x3     // client

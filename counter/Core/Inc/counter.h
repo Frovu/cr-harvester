@@ -35,6 +35,7 @@
 
 #define FLAG_DHCP_RUN       0x100
 #define FLAG_NTP_SYNC       0x200
+#define FLAG_DNS_RUN        0x400
 
 #define FLAGS_INITIAL (FLAG_RTC_ALARM | FLAG_NTP_SYNC)
 
