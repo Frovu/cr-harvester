@@ -21,7 +21,6 @@ uint32_t last_ntp_sync = 0;
 uint32_t last_period_tick = 0;
 uint32_t last_fix_attempt = 0;
 uint32_t last_net_attempt = 0;
-uint32_t dhcp_dns_ticks = 0;
 DateTime last_period_tm;
 
 uint8_t try_init_dev(device_t dev)
@@ -205,30 +204,20 @@ void event_loop() {
     }
     /* ********************* DHCP / DNS RUN SECTION *********************** */
     if (IS_SET(FLAG_W5500_OK)) {
-      if (IS_SET((FLAG_DHCP_RUN | FLAG_DNS_RUN)))
-      { /* ioLibrary dhcp and dns implementations which are used here require a
-        *  time handler function to be called every second for timeout functionality to work.
-        *  1s event is emulated here using HAL_GetTick() */
-        if (HAL_GetTick() - dhcp_dns_ticks > 1000) {
-          dhcp_dns_ticks = HAL_GetTick();
-          DHCP_time_handler();
-          DNS_time_handler();
+      if (IS_SET(FLAG_DHCP_RUN))
+      { /* The DHCP client is ran repeatedly when corresponding flag is set */
+        if (W5500_RunDHCP()) {
+          TOGGLE(FLAG_DHCP_RUN);
+        } else {
+          last_net_attempt = HAL_GetTick();
         }
-        if (IS_SET(FLAG_DHCP_RUN))
-        { /* The DHCP client is ran repeatedly when corresponding flag is set */
-          if (W5500_RunDHCP()) {
-            TOGGLE(FLAG_DHCP_RUN);
-          } else {
-            last_net_attempt = HAL_GetTick();
-          }
-        }
-        if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 1000)
-        { /* The DNS client is ran repeatedly when corresponding flag is set */
-          if (run_dns_queries()) {
-            TOGGLE(FLAG_DNS_RUN);
-          } else {
-            last_net_attempt = HAL_GetTick();
-          }
+      }
+      if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 5000)
+      { /* The DNS client is ran repeatedly when corresponding flag is set */
+        if (run_dns_queries()) {
+          TOGGLE(FLAG_DNS_RUN);
+        } else {
+          last_net_attempt = HAL_GetTick();
         }
       }
     }

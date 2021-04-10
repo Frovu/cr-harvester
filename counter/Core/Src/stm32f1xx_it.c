@@ -23,6 +23,8 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "dns.h"
+#include "dhcp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,6 +44,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
+uint32_t dhcp_dns_ticks = 0;
 
 /* USER CODE END PV */
 
@@ -188,6 +191,14 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
+  /* ioLibrary dhcp and dns implementations require a time handler
+   * function to be called every second for timeout functionality to work.
+   * 1s event is emulated here using HAL_GetTick() */
+  if (HAL_GetTick() - dhcp_dns_ticks > 1000) {
+    dhcp_dns_ticks = HAL_GetTick();
+    DHCP_time_handler();
+    DNS_time_handler();
+  }
 
   /* USER CODE END SysTick_IRQn 1 */
 }
