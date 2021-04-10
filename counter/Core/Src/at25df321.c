@@ -47,22 +47,63 @@ void at25_global_unprotect()
   at25_unselect();
 }
 
-void at25_erase_all()
+// does not care about operation success
+uint8_t at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout)
 {
+  uint32_t tickstart = HAL_GetTick();
+  WAIT_READY();
+
   at25_write_enable();
   at25_select();
-  at25_transmit_byte(AT25_CMD_ERASE_ALL);
+  at25_transmit_byte(command);
+  at25_transmit_byte((address >> 16) & 0x3F);
+  at25_transmit_byte((address >> 8)  & 0xFF);
+  at25_transmit_byte( address        & 0xFF);
   at25_unselect();
+
+  WAIT_READY();
+  return 1;
+}
+
+/* "Intelligent" erase algorithm uses 4 or 64 Kbyte erase commands to erase
+*  pages from A to B, if to_page is == 0 it does not care about last pages.
+*  function is blocking and may take up to 64 seconds (!)
+*  if any operation takes more than 3 seconds it aborts
+*/
+void at25_erase(uint16_t from_page, uint16_t to_page);
+{
+  #define PAGES_PER_64K 256
+  #define PAGES_PER_4K   16
+  uint16_t erased;
+  uint8_t cmd;
+  for (uint16_t page = from_page; page < to_page; page+=erased)
+  {
+    if ((to_page == 0) || (to_page - from_page > PAGES_PER_4K)) {
+      cmd = AT25_CMD_ERASE_64K;
+      erased = PAGES_PER_64K;
+    } else {
+      cmd = AT25_CMD_ERASE_4K;
+      erased = PAGES_PER_4K;
+    }
+    if(at25_erase_block(page * AT25_PAGE_SIZE, cmd, AT25_ERASE_TIMEOUT)) {
+      #ifdef DEBUG_UART
+      debug_printf("flash: erase %u succeeded on addr %u\r\n", erased, page*AT25_PAGE_SIZE);
+      #endif
+    } else {
+      #ifdef DEBUG_UART
+      debug_printf("flash: erase %u timed out on addr %u\r\n", erased, page*AT25_PAGE_SIZE);
+      #endif
+      return 0;
+    }
+  }
+  return 1;
 }
 
 uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout)
 {
   uint32_t tickstart = HAL_GetTick();
-  while (!at25_is_ready()) {
-    if (HAL_GetTick() - tickstart > timeout) {
-      return 0;
-    }
-  }
+  WAIT_READY();
+
   at25_write_enable();
   at25_select();
   at25_transmit_byte(AT25_CMD_BYTE_PROGRAM);
@@ -74,11 +115,7 @@ uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32
   }
   at25_unselect();
 
-  while (!at25_is_ready()) {
-    if (HAL_GetTick() - tickstart > timeout) {
-      return 0;
-    }
-  }
+  WAIT_READY();
   return at25_write_ok();
 }
 

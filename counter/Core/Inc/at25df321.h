@@ -11,13 +11,25 @@
 #define AT25_CMD_WRITE_STATUS_1  0x01
 #define AT25_CMD_WRITE_ENABLE    0x06
 #define AT25_CMD_WRITE_DISABLE   0x04
+#define AT25_CMD_ERASE_4K        0x20
+#define AT25_CMD_ERASE_32K       0x52
+#define AT25_CMD_ERASE_64K       0xd8
 #define AT25_CMD_ERASE_ALL       0x60
 #define AT25_CMD_READ_ARRAY      0x03 // 0x0B opcode could also be used, see datasheet
 #define AT25_CMD_BYTE_PROGRAM    0x02
 
 #define AT25_TIMEOUT             250u
+#define AT25_ERASE_TIMEOUT      3000u
 #define AT25_PAGE_SIZE           256u
 #define AT25_PAGES_COUNT        16384
+
+// requires tickstart and timeout to be declared
+#define WAIT_READY()                           \
+  do {                                         \
+    if (HAL_GetTick() - tickstart > timeout) { \
+      return 0;                                \
+    }                                          \
+  } while (!at25_is_ready())
 
 SPI_HandleTypeDef *at25_hspi;
 GPIO_TypeDef *at25_gpio_bus;
@@ -57,11 +69,12 @@ uint8_t at25_is_ready();
 uint8_t at25_write_ok();
 uint8_t at25_is_valid();
 
-// block protection and erase operations are not used hence not implemented here
+// block protection is not used hence not implemented here
 
 void at25_global_unprotect();
-void at25_erase_all();
-uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count);
+void at25_erase(uint16_t from_page, uint16_t to_page);
+uint8_t at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout);
+uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout);
 void at25_read_block(uint32_t address, uint8_t *data, uint16_t count);
 
 #endif
