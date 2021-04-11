@@ -123,7 +123,24 @@ int32_t _stoi(uint8_t *string) {
 **************************************************************************/
 uint16_t construct_post_query(DataLine *dl)
 {
-
+  uint16_t content_len = 0;
+  if (cfg->target_addr == '\0') {
+    snprintf(http_host, HTTP_HOST_SIZE, "%u.%u.%u.%u:%u",
+      cfg->target_ip[0], cfg->target_ip[0], cfg->target_ip[0], cfg->target_ip[0], cfg->target_port);
+  } else {
+    snprintf(http_body, HTTP_BODY_SIZE, "%s:%u", cfg->target_addr, cfg->target_ip);
+  }
+  /* string format general info, see README for protocol description */
+  #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&t=%.2f&p=%.2f"
+  content_len = snprintf(http_host, HTTP_HOST_SIZE, PFSTRING,
+    cfg->dev_id, dl->timestamp, dl->cycle, dl->info,
+    dl->temperature, dl->pressure);
+  /* string format counters */
+  for(uint16_t ch = 0; ch < CHANNELS_COUNT; ++ch) {
+    content_len = snprintf(http_host+content_len, HTTP_HOST_SIZE-content_len,
+      "&c[%u]=%u", ch, dl->counts[ch]);
+  }
+  return snprintf(http_buf, HTTP_BUF_SIZE, query_headers, query_path, http_host, content_len, http_body);
 }
 
 HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
