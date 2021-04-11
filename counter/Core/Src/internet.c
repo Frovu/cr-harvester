@@ -36,20 +36,34 @@ void W5500_WriteBuf(uint8_t *pBuf, uint16_t len) {
   HAL_SPI_Transmit(&hspi1, pBuf, len, W5500_SPI_TIMEOUT);
 }
 /***************************************************************************/
+void copy_ip(uint8_t *dst, uint8_t *src) {
+  dst[0] = src[0];
+  dst[1] = src[1];
+  dst[2] = src[2];
+  dst[3] = src[3];
+}
+
 uint8_t W5500_Connected(void) {
     return getVERSIONR() == W5500_VERSIONR;
 }
 
 uint8_t W5500_Init()
 {
+  // register hardware specific functions
   reg_wizchip_cs_cbfunc(W5500_Select, W5500_Unselect);
   reg_wizchip_spiburst_cbfunc(W5500_ReadBuf, W5500_WriteBuf);
   if (!W5500_Connected()) {
     return 0;
   }
-  // register hardware specific functions
   // wizchip_settimeout(..);
   wizchip_init(NULL, NULL); // default 2KB buffers
+
+  netinfo.dhcp = cfg->dhcp_mode;
+  copy_ip(netinfo.ip, cfg->local_ip);
+  copy_ip(netinfo.gw, cfg->local_gw);
+  copy_ip(netinfo.sn, cfg->local_sn);
+  copy_ip(netinfo.dns, cfg->local_dns);
+
   wizchip_setnetinfo(&netinfo);
   // wizchip_getnetinfo(&netinfo);
   DHCP_init(DHCP_SOCKET, dhcp_buf);
@@ -200,13 +214,6 @@ uint8_t try_sync_ntp(uint32_t timeout)
 /*************************************************************************
 *************************** BEGIN SECTION DNS ****************************
 **************************************************************************/
-void copy_ip(uint8_t *dst, uint8_t *src) {
-  dst[0] = src[0];
-  dst[1] = src[1];
-  dst[2] = src[2];
-  dst[3] = src[3];
-}
-
 uint8_t run_dns_queries()
 {
   uint8_t dns_ip_buf[4];

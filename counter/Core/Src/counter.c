@@ -282,7 +282,15 @@ void event_loop() {
   }
 
   if (IS_SET(FLAG_W5500_OK)) {
-    config_server_run();
+    if (config_server_run())
+    { /* User changed device configuration, we should re-initialize W5500 in case
+      *  of DHCP mode change, re-run DHCP, DNS, NTP queries if servers changed
+      */
+      TOGGLE(FLAG_W5500_OK); // reinit W5500
+      RAISE(FLAG_DHCP_RUN);
+      RAISE(FLAG_DNS_RUN);
+      RAISE(FLAG_NTP_SYNC);
+    }
   }
   /* *********************** ******************** *********************** */
 }
