@@ -18,7 +18,7 @@ void cursed_atoi(uint8_t *string, uint16_t *dest)
   uint8_t ch = *string;
   while (ch >= '0' && ch <= '9') {
     *dest = *dest * 10 + ch - '0';
-    ch = *(string++);
+    ch = *(++string);
   }
 }
 
@@ -30,10 +30,10 @@ void parse_ip(uint8_t *string, uint8_t *ip)
     buf = 0;
     while (ch >= '0' && ch <= '9') {
       buf = buf * 10 + ch - '0';
-      ch = *(string++);
+      ch = *(++string);
     }
     ip[i] = buf;
-    string++; // skip dot
+    ch = *(++string); // skip dot
   }
 }
 
@@ -79,6 +79,8 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
       cfg->dhcp_mode = NETINFO_DHCP;
     }
     return;
+  } else {
+    return; // unknown token
   }
   s_res = (uint8_t*) res;
   if (mode_write)
@@ -118,19 +120,18 @@ void update_settings()
   uint8_t first_token = 1;
   uint8_t token[16];
   uint16_t i = 0, i_t = 0, i_v = 0;
-  while(strncmp(srv_buf+(i++), "\r\n\r\n", 4) != 0); // skip headers
+  while(strncmp(srv_buf+(i++), "\r\n\r\n", 4) != 0 && i < SRV_BUF_SIZE); // skip headers
   for (i+=3; i < SRV_BUF_SIZE; ++i) {
     if (srv_buf[i] == '=')
     { // parse token=value pair
       token[i_t] = '\0';
-      i_t = 0;
       for (i_v = ++i; i_v < SRV_BUF_SIZE; ++i_v) {
         if ((srv_buf[i_v] == '&') || (srv_buf[i_v] == '\0')) {
           break;
         }
       }
       if (first_token) {
-        if ((strncmp(token, "secret", 6) != 0) || (strncmp(srv_buf+i, secret, sizeof(secret)) != 0)) {
+        if ((strncmp(token, "secret", 6) != 0) || (strncmp(srv_buf+i, secret, sizeof(secret)-1) != 0)) {
           debug_printf("srv: secret invalid\r\n");
           return; // secret validation failed
         }
@@ -138,6 +139,8 @@ void update_settings()
       } else {
         token_ctl(0, token, srv_buf+i, i_v-i);
       }
+      i = i_v + 1; // skip value
+      i_t = 0;
     } else if (srv_buf[i] == '\0') {
       break;
     }
@@ -150,12 +153,9 @@ uint16_t prepare_html_resp()
   uint8_t token[16];
   uint8_t in_token = 0;
   uint16_t i = 0, templ_i = 0, tok_i = 0;
-  if (current_period) { // TODO: flash failures
-    snprintf(srv_buf, SRV_BUF_SIZE, (char*)html_template, current_period->timestamp, cycle_counter, 0,
+  // TODO: flash failures
+  snprintf(srv_buf, SRV_BUF_SIZE, (const char*)html_template, current_period?current_period->timestamp:0, cycle_counter, 0,
       (cycle_counter-last_ntp_sync), flags);
-  } else {
-    memcpy(srv_buf, html_template, sizeof(html_template));
-  }
   // syncronize template and buffer pointers
   while(strncmp(srv_buf+(i++), "<h2>Dev", 7) != 0);
   while(strncmp(html_template+(templ_i++), "<h2>Dev", 7) != 0);

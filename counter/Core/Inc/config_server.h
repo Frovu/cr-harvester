@@ -53,7 +53,7 @@ static const uint8_t html_template[] = "<html><head><title>NM</title></head><bod
 "Be caerful, typo in config can lead to device hard fault!<br>"
 "If you specify IP, domain field should be empty!<br>Don't forget to set DHCP on/off!"
 "<form method=\"post\">"
-"<p>Secret <input name=\"secret\" value=\"$\"></p>"
+"<p>Secret <input name=\"secret\" value=\"\"></p>"
 "<p>Device ID <input name=\"id\" value=\"$\"></p>"
 "<p>Target domain <input name=\"ta\" value=\"$\">"
 "<b>OR</b> IP <input name=\"tip\" value=\"$\">, Port <input name=\"port\" value=\"$\"></p>"
