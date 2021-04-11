@@ -23,6 +23,10 @@ uint8_t config_server_run()
         len = (len < SRV_BUF_SIZE) ? len : SRV_BUF_SIZE;
         len = recv(SERVER_SOCKET, srv_buf, len);
         debug_printf("srv: got request of len %u\r\n", len);
+        len = strlen(html_template);
+        memcpy(srv_buf, html_template, len);
+        send(SERVER_SOCKET, srv_buf, len);
+        disconnect(SERVER_SOCKET);
       }
       return 1;
     case SOCK_CLOSE_WAIT:

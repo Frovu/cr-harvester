@@ -7,6 +7,7 @@
 #include "wizchip_conf.h"
 #include "socket.h"
 #include "counter.h"
+#include <string.h>
 
 #define DEV_ID_MAX_LEN  16
 #define ADDR_MAX_LEN    32
@@ -42,7 +43,9 @@ static const Configuration default_cfg = {
 #define SRV_BUF_SIZE       1024
 #define CONFIG_SERVER_PORT 80
 
-static const uint8_t html[SRV_BUF_SIZE] = "<html>"
+static const uint8_t html_template[] = "HTTP/2.0 200 OK\r\n"
+"Content-Type: text/html\r\n\r\n"
+"<html>"
 "<head><meta charset=\"utf-8\"><title>NM</title></head>"
 "<body>Hello World!</body>"
 "</html>";
