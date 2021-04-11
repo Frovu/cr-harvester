@@ -174,19 +174,19 @@ DataStatus send_data_to_server(DataLine *dl, uint32_t timeout)
         return DATA_NET_ERROR;
       } else { /* wait for server response */
         do {
-          length = getSn_RX_RSR(SERVER_SOCKET);
-          if (HAL_GetTick() - tickstart < timeout) {
+          length = getSn_RX_RSR(DATA_SOCKET);
+          if (HAL_GetTick() - tickstart > timeout) {
             debug_printf("send: resp timeout\r\n");
             return DATA_NET_TIMEOUT;
           }
         } while (length <= 0);
         length = (length < HTTP_BUF_SIZE) ? length : HTTP_BUF_SIZE;
-        length = recv(SERVER_SOCKET, http_buf, length);
+        length = recv(DATA_SOCKET, http_buf, length);
         http_buf[length] = '\0';
         /* parse http status */
         uint8_t found_head = 0;
         for(uint16_t i=0; i < HTTP_BUF_SIZE; ++i) {
-          if (strncmp(http_buf+i, "HTTP", 4)) {
+          if (strncmp(http_buf+i, "HTTP", 4) == 0) {
             found_head = 1;
             /* skip until space */
           } else if (found_head && http_buf[i]==' ') {
