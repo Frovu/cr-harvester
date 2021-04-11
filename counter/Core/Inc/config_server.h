@@ -35,7 +35,7 @@ typedef struct {
 
 static const Configuration default_cfg = {
   .target_port = 8787,
-  .dev_id = "unknown",
+  .dev_id = "anon",
   .target_addr = "crst.izmiran.ru",
   .ntp_addr = "time.google.com",
   .dhcp_mode = NETINFO_DHCP
@@ -78,7 +78,7 @@ static const uint8_t html_ok[] = HTTP_OK_RESP"<html><head><title>NM</title></hea
 static const uint8_t html_error[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
 "<h2 style=\"color:red;\">Invalid secret code!</h2></body></html>";
 
-static const uint8_t secret[] = "anon";
+static const uint8_t secret[] = "890gsdfh";
 
 extern Configuration *cfg;
 

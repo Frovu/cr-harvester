@@ -49,7 +49,7 @@ typedef struct {
 #define HTTP_BODY_SIZE      256
 #define HTTP_BUF_SIZE       (128+HTTP_PATH_SIZE+HTTP_HOST_SIZE+HTTP_BODY_SIZE)
 
-static const uint8_t query_path[] = "/";
+static const uint8_t query_path[] = "/api/data";
 static const uint8_t query_template[] = "POST %s HTTP/1.1\r\n"
 "Host: %s\r\n"
 "Content-Type: application/x-www-form-urlencoded\r\n"
