@@ -159,7 +159,7 @@ DataStatus send_data_to_server(DataLine *dl, uint32_t timeout)
     case SOCK_INIT:
       status = connect(DATA_SOCKET, cfg->target_ip, cfg->target_port);
       debug_printf("send: connect() = %d\r\n", (int16_t)status);
-      if (status == SOCKERR_TIMEOUT) {
+      if (status == SOCKERR_TIMEOUT || status == SOCKERR_SOCKCLOSED) { // SOCKCLOSED hapens if no route to host
         return DATA_NET_TIMEOUT;
       } else if (status != SOCK_OK) {
         return DATA_NET_ERROR;

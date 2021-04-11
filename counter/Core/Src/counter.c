@@ -212,7 +212,7 @@ void event_loop() {
         case DATA_NET_ERROR:
           if (IS_SET(FLAG_W5500_OK))
             TOGGLE(FLAG_W5500_OK);
-          break;
+          // no break here
         case DATA_NET_TIMEOUT:
           if (cfg->dhcp_mode == NETINFO_DHCP) {
             RAISE(FLAG_DHCP_RUN);
