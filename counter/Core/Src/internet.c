@@ -10,6 +10,7 @@ wiz_NetInfo netinfo = {
 uint8_t ntp_buf[sizeof(NtpMessage)];
 NtpMessage *ntp_msg = (NtpMessage*) ntp_buf;
 uint8_t dhcp_buf[DHCP_BUF_SIZE];
+uint8_t http_buf[HTTP_BUF_SIZE];
 uint8_t dns_buf[MAX_DNS_BUF_SIZE];
 extern uint32_t last_period_tick;
 extern DateTime last_period_tm;
@@ -105,6 +106,46 @@ uint16_t ip_sum(uint8_t * ip) {
   return ip[0] + ip[1] + ip[2] + ip[3];
 }
 
+/*************************************************************************
+*************************** BEGIN SECTION HTTP ***************************
+**************************************************************************/
+HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
+{
+  uint32_t tickstart = HAL_GetTick();
+  int8_t status;
+  while (HAL_GetTick() - tickstart < timeout)
+  {
+    switch (getSn_SR(DATA_SOCKET)) {
+    case SOCK_CLOSED:
+      status = socket(DATA_SOCKET, Sn_MR_TCP, DATA_PORT, 0x00);
+      debug_printf("send: socket() = %d\r\n", status);
+      if (status != DATA_SOCKET) {
+        return HAL_ERROR;
+      }
+      break;
+    case SOCK_INIT:
+      status = connect(DATA_SOCKET, cfg->target_ip, cfg->target_port);
+      debug_printf("send: connect() = %d\r\n", status);
+      if(status == SOCKERR_TIMEOUT) {
+        debug_printf("send: connect() timeout\r\n");
+        return HAL_TIMEOUT;
+      } else if (status != SOCK_OK) {
+        return HAL_ERROR;
+      }
+      break;
+    case SOCK_ESTABLISHED:
+
+    case SOCK_CLOSE_WAIT:
+      debug_printf("send: disconnect()\r\n");
+      disconnect(DATA_SOCKET);
+      break;
+    default:
+      close(DATA_SOCKET);
+      break;
+    }
+  }
+  return HAL_TIMEOUT;
+}
 /*************************************************************************
 *************************** BEGIN SECTION NTP ****************************
 **************************************************************************/

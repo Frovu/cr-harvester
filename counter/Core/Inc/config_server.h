@@ -18,6 +18,7 @@
 #define CONFIG_FLASH_PAGE_FIRST  0
 #define CONFIG_FLASH_PAGES_COUNT 16
 
+// TODO: http path setting
 typedef struct {
   uint16_t target_port;
   uint8_t dev_id[DEV_ID_MAX_LEN];
@@ -43,7 +44,9 @@ static const Configuration default_cfg = {
 #define SRV_BUF_SIZE       2048
 #define CONFIG_SERVER_PORT 80
 
-static const uint8_t html_template[] = "<html><head><title>NM</title></head><body>"
+#define HTTP_OK_RESP "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+
+static const uint8_t html_template[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
 "<h1>Status</h1>"
 "Local time: %lu<br>"
 "Uptime: %lu minutes<br>"
@@ -69,10 +72,10 @@ static const uint8_t html_template[] = "<html><head><title>NM</title></head><bod
 "</form></body>"
 "</html>";
 
-static const uint8_t html_ok[] = "<html><head><title>NM</title></head><body>"
+static const uint8_t html_ok[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
 "<h2 style=\"color:green;\">Device configuration updated!</h2></body></html>";
 
-static const uint8_t html_error[] = "<html><head><title>NM</title></head><body>"
+static const uint8_t html_error[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
 "<h2 style=\"color:red;\">Invalid secret code!</h2></body></html>";
 
 static const uint8_t secret[] = "890gsdfh";

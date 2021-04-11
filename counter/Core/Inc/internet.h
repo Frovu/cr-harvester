@@ -43,11 +43,24 @@ typedef struct {
 #define NTP_REQ_FLAGS    (((NTP_VERSION & 0x7) << 3) | (NTP_MODE & 0x7))
 #define NTP_EPOCH_OFFSET    2208988800
 
+// FIXME: query assembly uses more memory than it actually needs, but we have enough RAM available
+#define HTTP_PATH_SIZE      64
+#define HTTP_HOST_SIZE      32
+#define HTTP_BODY_SIZE      256
+#define HTTP_BUF_SIZE       (128+HTTP_PATH_SIZE+HTTP_HOST_SIZE+HTTP_BODY_SIZE)
+
+static const uint8_t query_path[] = "/";
+static const uint8_t query_template[] = "POST %s HTTP/1.1\r\n"
+"Host: %s\r\n"
+"Content-Type: application/json\r\n"
+"Content-Length: %u\r\n"
+"\r\n%s";
+
 uint8_t W5500_Connected(void);
 uint8_t W5500_Init();
 uint8_t W5500_RunDHCP();
 
-uint16_t ip_sum(uint8_t * ip);
+HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout);
 
 uint8_t run_dns_queries();
 uint8_t try_sync_ntp(uint32_t timeout);
