@@ -44,7 +44,7 @@ static const Configuration default_cfg = {
 #define CONFIG_SERVER_PORT 80
 
 static const uint8_t html_template[] = "<html><head><title>NM</title></head><body>"
-"<h2>Status</h2>"
+"<h1>Status</h1>"
 "Local time: %lu<br>"
 "Uptime: %u minutes<br>"
 "Flash failures: %u<br>"

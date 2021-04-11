@@ -6,6 +6,80 @@ static const uint32_t meme_signature = 0xdeadc0de;
 Configuration *cfg = NULL; // global variable for whole program
 uint8_t config_modified = 0;
 
+typedef enum {
+  T_STRING,
+  T_IP,
+  T_INT
+} t_type_t;
+
+uint16_t atoi(uint8_t *string)
+{
+
+}
+
+void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destlen) {
+  t_type_t type;
+  void *res;
+  uint8_t *s_res;
+  if (strcmp(token, "id") == 0) {
+    type = T_STRING;
+    res = cfg->dev_id;
+  } else if (strcmp(token, "ta") == 0) {
+    type = T_STRING;
+    res = cfg->target_addr;
+  } else if (strcmp(token, "port") == 0) {
+    type = T_INT;
+    res = &cfg->target_port;
+  } else if (strcmp(token, "tip") == 0) {
+    type = T_IP;
+    res = cfg->target_ip;
+  } else if (strcmp(token, "na") == 0) {
+    type = T_STRING;
+    res = cfg->ntp_addr;
+  } else if (strcmp(token, "nip") == 0) {
+    type = T_IP;
+    res = cfg->ntp_ip;
+  } else if (strcmp(token, "ip") == 0) {
+    type = T_IP;
+    res = cfg->local_ip;
+  } else if (strcmp(token, "gw") == 0) {
+    type = T_IP;
+    res = cfg->local_gw;
+  } else if (strcmp(token, "sn") == 0) {
+    type = T_IP;
+    res = cfg->local_sn;
+  } else if (strcmp(token, "dns") == 0) {
+    type = T_IP;
+    res = cfg->local_dns;
+  } else if (strcmp(token, "dhcp") == 0) {
+    // only in parsing mode
+    if (dest[0] == '0') {
+      cfg->dhcp_mode = NETINFO_STATIC;
+    } else {
+      cfg->dhcp_mode = NETINFO_DHCP;
+    }
+    return;
+  }
+  if (mode_write)
+  {
+    switch (type) {
+      case T_STRING:
+    }
+
+  }
+  else // parse string
+  {
+    s_res = (uint8_t*) res;
+    switch (type) {
+      case T_STRING:
+        memcpy(s_res, dest, destlen);
+        s_res[destlen] = '\0';
+      case T_IP:
+        memcpy(s_res, dest, destlen);
+        s_res[destlen] = '\0';
+    }
+  }
+}
 
 uint16_t prepare_html_resp()
 {
