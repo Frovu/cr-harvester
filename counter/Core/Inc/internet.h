@@ -60,6 +60,7 @@ uint8_t W5500_Connected(void);
 uint8_t W5500_Init();
 uint8_t W5500_RunDHCP();
 
+int32_t _stoi(uint8_t *string);
 HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout);
 
 uint8_t run_dns_queries();

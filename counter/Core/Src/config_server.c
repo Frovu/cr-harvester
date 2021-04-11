@@ -12,16 +12,6 @@ typedef enum {
   T_INT
 } t_type_t;
 
-void cursed_atoi(uint8_t *string, uint16_t *dest)
-{
-  *dest = 0;
-  uint8_t ch = *string;
-  while (ch >= '0' && ch <= '9') {
-    *dest = *dest * 10 + ch - '0';
-    ch = *(++string);
-  }
-}
-
 void parse_ip(uint8_t *string, uint8_t *ip)
 {
   uint16_t buf;
@@ -108,7 +98,7 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
         parse_ip(dest, s_res);
         break;
       case T_INT:
-        cursed_atoi(dest, (uint16_t*) res);
+        *res = (uint16_t) _stoi(string);
         break;
     }
   }

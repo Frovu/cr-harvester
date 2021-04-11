@@ -108,6 +108,16 @@ uint16_t ip_sum(uint8_t * ip) {
   return ip[0] + ip[1] + ip[2] + ip[3];
 }
 
+int32_t _stoi(uint8_t *string) {
+  int32_t buf = 0;
+  uint8_t ch = *string;
+  while (ch >= '0' && ch <= '9') {
+    buf = buf * 10 + ch - '0';
+    ch = *(++string);
+  }
+  return buf;
+}
+
 /*************************************************************************
 *************************** BEGIN SECTION HTTP ***************************
 **************************************************************************/
@@ -157,13 +167,22 @@ HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
         length = recv(SERVER_SOCKET, http_buf, length);
         http_buf[length] = '\0';
         /* parse http status */
+        uint8_t found_head = 0;
         for(uint16_t i=0; i < HTTP_BUF_SIZE; ++i) {
           if (strncmp(http_buf+i, "HTTP")) {
+            found_head = 1;
             /* skip until space */
+          } else if (found_head && http_buf[i]==' ') {
+            status = _stoi(http_buf + i + 1);
+            debug_printf("send: HTTP %d\r\n", (int16_t)status);
+            if (status == 200) {
+              return HAL_OK;
+            } else {
+              return HAL_ERROR;
+            }
           }
         }
-
-        return HAL_OK;
+        return HAL_ERROR;
       }
     case SOCK_CLOSE_WAIT:
       debug_printf("send: disconnect()\r\n");
