@@ -69,13 +69,16 @@ static const uint8_t html_template[] = "<html><head><title>NM</title></head><bod
 "</form></body>"
 "</html>";
 
+static const uint8_t html_ok[] = "<html><head><title>NM</title></head><body>"
+"<h2 style=\"color:green;\">Device configuration updated!</h2></body></html>";
+
+static const uint8_t html_error[] = "<html><head><title>NM</title></head><body>"
+"<h2 style=\"color:red;\">Invalid secret code!</h2></body></html>";
+
 static const uint8_t secret[] = "890gsdfh";
 
 extern Configuration *cfg;
 
-/* These functions are called only if config button is pressed while device boots
-*/
-uint8_t config_server_init();
 uint8_t config_server_run();
 
 /* This function is called every time external flash is initialized

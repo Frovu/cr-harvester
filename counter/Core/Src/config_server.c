@@ -115,7 +115,7 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
 }
 
 // parse HTTP response and update settings accordingly
-void update_settings()
+uint8_t update_settings()
 {
   uint8_t first_token = 1;
   uint8_t token[16];
@@ -133,7 +133,7 @@ void update_settings()
       if (first_token) {
         if ((strncmp(token, "secret", 6) != 0) || (strncmp(srv_buf+i, secret, sizeof(secret)-1) != 0)) {
           debug_printf("srv: secret invalid\r\n");
-          return; // secret validation failed
+          return 0; // secret validation failed
         }
         first_token = 0;
       } else {
@@ -146,6 +146,7 @@ void update_settings()
     }
     token[i_t++] = srv_buf[i];
   }
+  return 1; // success
 }
 
 uint16_t prepare_html_resp()
@@ -183,11 +184,6 @@ uint16_t prepare_html_resp()
   return i;
 }
 
-uint8_t config_server_init()
-{
-
-}
-
 // @retval: 0 - idle, 1 - client connected
 uint8_t config_server_run()
 {
@@ -202,15 +198,25 @@ uint8_t config_server_run()
         srv_buf[len] = '\0';
         debug_printf("srv: got request of len %u\r\n", len);
         if (strncmp(srv_buf, "POST", 4) == 0) {
-          update_settings();
+          if (update_settings()) {
+            config_save();
+            memcpy(srv_buf, html_ok, sizeof(html_ok));
+            send(SERVER_SOCKET, srv_buf, sizeof(html_ok));
+            disconnect(SERVER_SOCKET);
+            return 1;
+          } else {
+            memcpy(srv_buf, html_error, sizeof(html_error));
+            send(SERVER_SOCKET, srv_buf, sizeof(html_error));
+            disconnect(SERVER_SOCKET);
+          }
           // TODO: send something
         } else if (strncmp(srv_buf, "GET", 3) == 0) {
           len = prepare_html_resp();
           send(SERVER_SOCKET, srv_buf, len);
+          disconnect(SERVER_SOCKET);
         }
-        disconnect(SERVER_SOCKET);
       }
-      return 1;
+      break;
     case SOCK_CLOSE_WAIT:
       disconnect(SERVER_SOCKET);
       debug_printf("srv: disconnect()\r\n");
@@ -266,7 +272,7 @@ void config_save()
   for (uint16_t page = CONFIG_FLASH_PAGE_FIRST; page < CONFIG_FLASH_PAGES_COUNT; ++page) {
     if (at25_write_block(page * AT25_PAGE_SIZE, buf, sizeof(meme_signature)+sizeof(Configuration), DEFAULT_TIMEOUT))
     { // write succeeded
-      debug_printf("flash: saved config\r\n");
+      debug_printf("flash: saved config at page %u\r\n", page);
       return;
     }
   }
