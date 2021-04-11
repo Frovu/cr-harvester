@@ -1,7 +1,6 @@
 #ifndef __INTERNET_H
 #define __INTERNET_H
 
-#define _WIZCHIP_ 5500
 #include "counter.h"
 #include "w5500.h"
 #include "socket.h"
@@ -44,6 +43,7 @@ typedef struct {
 #define NTP_EPOCH_OFFSET    2208988800
 
 // FIXME: query assembly uses more memory than it actually needs, but we have enough RAM available
+#define HTTP_PORT           8888
 #define HTTP_PATH_SIZE      64
 #define HTTP_HOST_SIZE      32
 #define HTTP_BODY_SIZE      256

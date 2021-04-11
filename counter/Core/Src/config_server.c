@@ -30,7 +30,7 @@ void parse_ip(uint8_t *string, uint8_t *ip)
 void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destlen) {
   t_type_t type = T_STRING;
   void *res = NULL;
-  uint8_t *s_res;
+  uint8_t *s_res; uint16_t *i_res;
   if (strcmp(token, "id") == 0) {
     type = T_STRING;
     res = cfg->dev_id;
@@ -98,7 +98,8 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
         parse_ip(dest, s_res);
         break;
       case T_INT:
-        *res = (uint16_t) _stoi(string);
+	    i_res = (uint16_t*) res;
+        *i_res = (uint16_t) _stoi(dest);
         break;
     }
   }
@@ -145,7 +146,7 @@ uint16_t prepare_html_resp()
   uint8_t in_token = 0;
   uint16_t i = 0, templ_i = 0, tok_i = 0;
   // TODO: flash failures
-  snprintf(srv_buf, SRV_BUF_SIZE, (const char*)html_template, current_period?current_period->timestamp:0, cycle_counter, 0,
+  snprintf(srv_buf, SRV_BUF_SIZE, html_template, current_period?current_period->timestamp:0, cycle_counter, 0,
       (cycle_counter-last_ntp_sync), flags);
   // syncronize template and buffer pointers
   while(strncmp(srv_buf+(i++), "<h2>Dev", 7) != 0);

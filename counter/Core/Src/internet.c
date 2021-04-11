@@ -124,30 +124,31 @@ int32_t _stoi(uint8_t *string) {
 uint16_t construct_post_query(DataLine *dl)
 {
   uint16_t content_len = 0;
-  if (cfg->target_addr == '\0') {
+  if (cfg->target_addr[0] == '\0') {
     snprintf(http_host, HTTP_HOST_SIZE, "%u.%u.%u.%u:%u",
       cfg->target_ip[0], cfg->target_ip[0], cfg->target_ip[0], cfg->target_ip[0], cfg->target_port);
   } else {
-    snprintf(http_body, HTTP_BODY_SIZE, "%s:%u", cfg->target_addr, cfg->target_ip);
+    snprintf(http_body, HTTP_BODY_SIZE, "%s:%u", cfg->target_addr, cfg->target_port);
   }
   /* string format general info, see README for protocol description */
   #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&t=%.2f&p=%.2f"
-  content_len = snprintf(http_host, HTTP_HOST_SIZE, PFSTRING,
+  content_len = snprintf(http_body, HTTP_HOST_SIZE, PFSTRING,
     cfg->dev_id, dl->timestamp, dl->cycle, dl->info,
     dl->temperature, dl->pressure);
   /* string format counters */
   for(uint16_t ch = 0; ch < CHANNELS_COUNT; ++ch) {
-    content_len = snprintf(http_host+content_len, HTTP_HOST_SIZE-content_len,
+    content_len = snprintf(http_body+content_len, HTTP_HOST_SIZE-content_len,
       "&c[%u]=%u", ch, dl->counts[ch]);
   }
-  return snprintf(http_buf, HTTP_BUF_SIZE, query_headers, query_path, http_host, content_len, http_body);
+  debug_printf("(%u) %s\r\n", content_len, http_body);
+  return snprintf(http_buf, HTTP_BUF_SIZE, query_template, query_path, http_host, content_len, http_body);
 }
 
 HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
 {
   uint32_t tickstart = HAL_GetTick();
   int32_t status; uint16_t length;
-  status = socket(DATA_SOCKET, Sn_MR_TCP, DATA_PORT, 0x00);
+  status = socket(DATA_SOCKET, Sn_MR_TCP, HTTP_PORT, 0x00);
   debug_printf("send: socket() = %d\r\n", (int16_t)status);
   if (status != DATA_SOCKET) {
     return HAL_ERROR;
@@ -165,7 +166,8 @@ HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
       }
       break;
     case SOCK_ESTABLISHED:
-      length = construct_post_query();
+      length = construct_post_query(dl);
+      debug_printf("\r\n(%u) %s\r\n\r\n", length, http_buf); // printf whole http req 
       status = send(DATA_SOCKET, http_buf, length);
       debug_printf("send: send() = %d\r\n", (int16_t)status);
       if(status == SOCKERR_TIMEOUT) {
@@ -186,7 +188,7 @@ HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
         /* parse http status */
         uint8_t found_head = 0;
         for(uint16_t i=0; i < HTTP_BUF_SIZE; ++i) {
-          if (strncmp(http_buf+i, "HTTP")) {
+          if (strncmp(http_buf+i, "HTTP", 4)) {
             found_head = 1;
             /* skip until space */
           } else if (found_head && http_buf[i]==' ') {

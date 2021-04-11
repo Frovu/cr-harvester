@@ -12,7 +12,6 @@
 #include "bmp280.h"
 #include "ds3231.h"
 #include "at25df321.h"
-#include "internet.h"
 #include "config_server.h"
 
 #include <stdlib.h>
@@ -103,7 +102,7 @@ static const uint8_t GPIO_LOOKUP_CHANNEL[16] = {
   -1, -1, -1, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3, -1
 };
 
-typedef struct {
+typedef struct _struct_dl {
   uint32_t timestamp;
   uint32_t cycle;
   uint32_t info;
@@ -118,6 +117,8 @@ extern uint32_t cycle_counter;
 extern uint16_t flags;
 extern uint32_t last_ntp_sync;
 
+
+#include "internet.h" // mitigation for internet.h requires DataLine defined up here
 /********************* System Core **********************/
 // Initialization routines
 uint8_t try_init_rtc();

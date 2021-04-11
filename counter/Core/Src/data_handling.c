@@ -202,14 +202,12 @@ int32_t data_send_one(uint32_t timeout)
       return -1 * flash_pages_used; // failed to read anything useful from flash, aborting
     }
   }
-  // TODO: prepare and send data string over HTTP
-  // ************************************************************
+  
   debug_printf("()--> %lu / %.2f hPa / %.2f C ()-->\r\n", line_to_send->timestamp,
     line_to_send->pressure, line_to_send->temperature);
-  // ************************************************************
+  HAL_StatusTypeDef status = send_data_to_server(line_to_send, SENDING_TIMEOUT);
 
-  uint8_t status = 1;
-  if (status)
+  if (status == HAL_OK)
   {
     if (flash_pages_used == 0)
     { // data was taken from buffer, free and shift buffer to the left
