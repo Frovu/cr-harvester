@@ -40,14 +40,31 @@ static const Configuration default_cfg = {
   .dhcp_mode = NETINFO_DHCP
 };
 
-#define SRV_BUF_SIZE       1024
+#define SRV_BUF_SIZE       2048
 #define CONFIG_SERVER_PORT 80
 
-static const uint8_t html_template[] = "HTTP/2.0 200 OK\r\n"
-"Content-Type: text/html\r\n\r\n"
-"<html>"
-"<head><meta charset=\"utf-8\"><title>NM</title></head>"
-"<body>Hello World!</body>"
+static const uint8_t html_template[] = "<html><head><title>NM</title></head><body>"
+"<h2>Status</h2>"
+"Local time: %lu<br>"
+"Uptime: %u minutes<br>"
+"Flash failures: %u<br>"
+"Last ntp sync: %u m ago<br>Flags: %x"
+"<h2>Device Configuration</h2>"
+"If you specify IP, domain field should be empty!<br>Don't forget to set DHCP on/off!"
+"<form method=\"post\">"
+"<p>Device ID <input name=\"id\" value=\"$\"></p>"
+"<p>Target domain <input name=\"ta\" value=\"$\">"
+"<b>OR</b> IP <input name=\"tip\" value=\"$\">, Port <input name=\"port\" value=\"$\"></p>"
+"<p>NTP server domain <input name=\"na\" value=\"$\">"
+"<b>OR</b> IP <input name=\"nip\" value=\"$\"></p>"
+"<p>IP config <input type=\"radio\" name=\"dhcp\" value=\"1\" checked>DHCP <input type=\"radio\" name=\"dhcp\" value=\"0\">Static</p>"
+"<p>IP <input name=\"ip\" value=\"$\"></p>"
+"<p>Gateway <input name=\"gw\" value=\"$\"></p>"
+"<p>Subnet <input name=\"sn\" value=\"$\"></p>"
+"<p>DNS <input name=\"dns\" value=\"$\"></p>"
+"above 4 have no effect if DHCP on"
+"<p><input type=\"submit\" value=\"Update Settings\"></p>"
+"</form></body>"
 "</html>";
 
 extern Configuration *cfg;
