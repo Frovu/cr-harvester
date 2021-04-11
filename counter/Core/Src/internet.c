@@ -128,16 +128,16 @@ uint16_t construct_post_query(DataLine *dl)
     snprintf(http_host, HTTP_HOST_SIZE, "%u.%u.%u.%u:%u",
       cfg->target_ip[0], cfg->target_ip[0], cfg->target_ip[0], cfg->target_ip[0], cfg->target_port);
   } else {
-    snprintf(http_body, HTTP_BODY_SIZE, "%s:%u", cfg->target_addr, cfg->target_port);
+    snprintf(http_host, HTTP_HOST_SIZE, "%s:%u", cfg->target_addr, cfg->target_port);
   }
   /* string format general info, see README for protocol description */
   #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&t=%.2f&p=%.2f"
-  content_len = snprintf(http_body, HTTP_HOST_SIZE, PFSTRING,
+  content_len = snprintf(http_body, HTTP_BODY_SIZE, PFSTRING,
     cfg->dev_id, dl->timestamp, dl->cycle, dl->info,
     dl->temperature, dl->pressure);
   /* string format counters */
   for(uint16_t ch = 0; ch < CHANNELS_COUNT; ++ch) {
-    content_len = snprintf(http_body+content_len, HTTP_HOST_SIZE-content_len,
+    content_len += snprintf(http_body+content_len, HTTP_BODY_SIZE-content_len,
       "&c[%u]=%u", ch, dl->counts[ch]);
   }
   debug_printf("(%u) %s\r\n", content_len, http_body);
@@ -167,7 +167,7 @@ DataStatus send_data_to_server(DataLine *dl, uint32_t timeout)
       break;
     case SOCK_ESTABLISHED:
       length = construct_post_query(dl);
-      debug_printf("\r\n(%u) %s\r\n\r\n", length, http_buf); // printf whole http req
+      // debug_printf("\r\n(%u) %s\r\n\r\n", length, http_buf); // printf whole http req
       status = send(DATA_SOCKET, http_buf, length);
       debug_printf("send: send() = %d\r\n", (int16_t)status);
       if (status <= 0) {

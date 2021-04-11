@@ -52,7 +52,7 @@ typedef struct {
 static const uint8_t query_path[] = "/";
 static const uint8_t query_template[] = "POST %s HTTP/1.1\r\n"
 "Host: %s\r\n"
-"Content-Type: application/json\r\n"
+"Content-Type: application/x-www-form-urlencoded\r\n"
 "Content-Length: %u\r\n"
 "\r\n%s";
 

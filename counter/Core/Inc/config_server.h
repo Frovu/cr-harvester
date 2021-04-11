@@ -78,7 +78,7 @@ static const uint8_t html_ok[] = HTTP_OK_RESP"<html><head><title>NM</title></hea
 static const uint8_t html_error[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
 "<h2 style=\"color:red;\">Invalid secret code!</h2></body></html>";
 
-static const uint8_t secret[] = "890gsdfh";
+static const uint8_t secret[] = "anon";
 
 extern Configuration *cfg;
 
