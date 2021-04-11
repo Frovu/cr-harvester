@@ -6,6 +6,18 @@ static const uint32_t meme_signature = 0xdeadc0de;
 Configuration *cfg = NULL; // global variable for whole program
 uint8_t config_modified = 0;
 
+
+uint16_t prepare_html_resp()
+{
+  if (current_period) { // TODO: flash failures
+    return snprintf(srv_buf, SRV_BUF_SIZE, html_template, current_period->timestamp, cycle_counter, 0,
+      (cycle_counter-last_ntp_sync), flags);
+  } else {
+    memcpy(srv_buf, html_template, strlen(html_template));
+    return strlen(html_template);
+  }
+}
+
 uint8_t config_server_init()
 {
 
@@ -23,8 +35,7 @@ uint8_t config_server_run()
         len = (len < SRV_BUF_SIZE) ? len : SRV_BUF_SIZE;
         len = recv(SERVER_SOCKET, srv_buf, len);
         debug_printf("srv: got request of len %u\r\n", len);
-        len = strlen(html_template);
-        memcpy(srv_buf, html_template, len);
+        len = prepare_html_resp();
         send(SERVER_SOCKET, srv_buf, len);
         disconnect(SERVER_SOCKET);
       }

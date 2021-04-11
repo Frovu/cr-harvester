@@ -112,6 +112,12 @@ typedef struct {
   uint16_t counts[CHANNELS_COUNT];
 } DataLine;
 
+// for config_server
+extern DataLine * current_period;
+extern uint32_t cycle_counter;
+extern uint16_t flags;
+extern uint32_t last_ntp_sync;
+
 /********************* System Core **********************/
 // Initialization routines
 uint8_t try_init_rtc();

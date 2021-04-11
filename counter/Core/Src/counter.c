@@ -10,7 +10,7 @@ extern I2C_HandleTypeDef hi2c2;
 extern SPI_HandleTypeDef hspi1;
 BMP280_HandleTypedef bmp280;
 
-volatile uint16_t flags = FLAGS_INITIAL;
+uint16_t flags = FLAGS_INITIAL;
 
 volatile uint16_t saved_counts[CHANNELS_COUNT];
 volatile uint16_t counters[CHANNELS_COUNT];
