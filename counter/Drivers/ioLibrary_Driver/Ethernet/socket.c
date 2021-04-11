@@ -267,10 +267,7 @@ int8_t listen(uint8_t sn)
   while(getSn_CR(sn)) {
     if(retry++ > SOCK_OP_RETRY_CNT) return SOCKERR_TIMEOUT;
   };
-  while(getSn_SR(sn) != SOCK_LISTEN) {
-    if(retry++ > SOCK_OP_RETRY_CNT) return SOCKERR_TIMEOUT;
-  }
-  {
+  if (getSn_SR(sn) != SOCK_LISTEN) {
     close(sn);
     return SOCKERR_SOCKCLOSED;
   }

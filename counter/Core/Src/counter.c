@@ -280,6 +280,7 @@ void event_loop() {
       HAL_Delay(150);
     }
   }
+  config_server_run();
   /* *********************** ******************** *********************** */
 }
 void base_periodic_event()

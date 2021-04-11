@@ -1,10 +1,45 @@
 
 #include "config_server.h"
 
+uint8_t srv_buf[SRV_BUF_SIZE];
 static const uint32_t meme_signature = 0xdeadc0de;
 Configuration *cfg = NULL; // global variable for whole program
 uint8_t config_modified = 0;
 
+uint8_t config_server_init()
+{
+
+}
+
+// @retval: 0 - idle, 1 - client connected
+uint8_t config_server_run()
+{
+  uint16_t len, status;
+  switch (getSn_SR(SERVER_SOCKET)) {
+    case SOCK_ESTABLISHED:
+      len = getSn_RX_RSR(SERVER_SOCKET);
+      if (len > 0)
+      {
+        len = (len < SRV_BUF_SIZE) ? len : SRV_BUF_SIZE;
+        len = recv(SERVER_SOCKET, srv_buf, len);
+        debug_printf("srv: got request of len %u\r\n", len);
+      }
+      return 1;
+    case SOCK_CLOSE_WAIT:
+      disconnect(SERVER_SOCKET);
+      debug_printf("srv: disconnect()\r\n");
+      break;
+    case SOCK_INIT:
+      listen(SERVER_SOCKET);
+      break;
+    case SOCK_CLOSED:
+      status = socket(SERVER_SOCKET, Sn_MR_TCP, CONFIG_SERVER_PORT, 0x00);
+      debug_printf("srv: socket(%d) = %d\r\n", SERVER_SOCKET, status);
+    default:
+      break;
+  }
+  return 0;
+}
 
 /*************************************************************************
 *************************** BEGIN SECTION FLASH ****************************

@@ -39,12 +39,20 @@ static const Configuration default_cfg = {
   .dhcp_mode = NETINFO_DHCP
 };
 
+#define SRV_BUF_SIZE       1024
+#define CONFIG_SERVER_PORT 80
+
+static const uint8_t html[SRV_BUF_SIZE] = "<html>"
+"<head><meta charset=\"utf-8\"><title>NM</title></head>"
+"<body>Hello World!</body>"
+"</html>";
+
 extern Configuration *cfg;
 
 /* These functions are called only if config button is pressed while device boots
 */
 uint8_t config_server_init();
-void     config_server_run();
+uint8_t config_server_run();
 
 /* This function is called every time external flash is initialized
 */
