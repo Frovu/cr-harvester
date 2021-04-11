@@ -38,8 +38,8 @@ void parse_ip(uint8_t *string, uint8_t *ip)
 }
 
 void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destlen) {
-  t_type_t type;
-  void *res;
+  t_type_t type = T_STRING;
+  void *res = NULL;
   uint8_t *s_res;
   if (strcmp(token, "id") == 0) {
     type = T_STRING;
@@ -150,23 +150,21 @@ uint16_t prepare_html_resp()
   uint8_t token[16];
   uint8_t in_token = 0;
   uint16_t i = 0, templ_i = 0, tok_i = 0;
-  uint16_t len = 0;
   if (current_period) { // TODO: flash failures
-    len = snprintf(srv_buf, SRV_BUF_SIZE, html_template, current_period->timestamp, cycle_counter, 0,
+    snprintf(srv_buf, SRV_BUF_SIZE, (char*)html_template, current_period->timestamp, cycle_counter, 0,
       (cycle_counter-last_ntp_sync), flags);
   } else {
     memcpy(srv_buf, html_template, sizeof(html_template));
-    len = sizeof(html_template);
   }
   // syncronize template and buffer pointers
-  while(strncmp(srv_buf+(i++), "<h2>Dev", 7) !== 0);
-  while(strncmp(html_template+(templ_i++), "<h2>Dev", 7) !== 0);
+  while(strncmp(srv_buf+(i++), "<h2>Dev", 7) != 0);
+  while(strncmp(html_template+(templ_i++), "<h2>Dev", 7) != 0);
   memset(srv_buf+i, 0, SRV_BUF_SIZE-i);
-  for (; i < SRV_BUF_SIZE; ++i) {
+  for (; i < SRV_BUF_SIZE && templ_i < sizeof(html_template); ++i) {
     if (html_template[templ_i] == '$') {
       templ_i++;
       in_token = 0;
-      token_ctl(1, token, buf, SRV_BUF_SIZE-i-1);
+      token_ctl(1, token, srv_buf+i, SRV_BUF_SIZE-i-1);
       while(srv_buf[++i] != '\0'); // skip bytes written by tokenctl
     } else if (html_template[templ_i] == '"') {
       if (in_token || tok_i >= 16) {
@@ -177,12 +175,12 @@ uint16_t prepare_html_resp()
         tok_i = 0;
       }
     } else if(in_token) {
-      token[tok_i] = html_template[templ_i];
-    } else {
-      srv_buf[i] = html_template[templ_i];
+      token[tok_i++] = html_template[templ_i];
     }
+    srv_buf[i] = html_template[templ_i];
     templ_i++;
   }
+  return i;
 }
 
 uint8_t config_server_init()
