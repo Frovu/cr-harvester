@@ -10,6 +10,8 @@ wiz_NetInfo netinfo = {
 uint8_t ntp_buf[sizeof(NtpMessage)];
 NtpMessage *ntp_msg = (NtpMessage*) ntp_buf;
 uint8_t dhcp_buf[DHCP_BUF_SIZE];
+uint8_t http_host[HTTP_HOST_SIZE];
+uint8_t http_body[HTTP_BODY_SIZE];
 uint8_t http_buf[HTTP_BUF_SIZE];
 uint8_t dns_buf[MAX_DNS_BUF_SIZE];
 extern uint32_t last_period_tick;
@@ -109,42 +111,70 @@ uint16_t ip_sum(uint8_t * ip) {
 /*************************************************************************
 *************************** BEGIN SECTION HTTP ***************************
 **************************************************************************/
+uint16_t construct_post_query(DataLine *dl)
+{
+
+}
+
 HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
 {
   uint32_t tickstart = HAL_GetTick();
-  int8_t status;
+  int32_t status; uint16_t length;
+  status = socket(DATA_SOCKET, Sn_MR_TCP, DATA_PORT, 0x00);
+  debug_printf("send: socket() = %d\r\n", (int16_t)status);
+  if (status != DATA_SOCKET) {
+    return HAL_ERROR;
+  }
   while (HAL_GetTick() - tickstart < timeout)
   {
     switch (getSn_SR(DATA_SOCKET)) {
-    case SOCK_CLOSED:
-      status = socket(DATA_SOCKET, Sn_MR_TCP, DATA_PORT, 0x00);
-      debug_printf("send: socket() = %d\r\n", status);
-      if (status != DATA_SOCKET) {
-        return HAL_ERROR;
-      }
-      break;
     case SOCK_INIT:
       status = connect(DATA_SOCKET, cfg->target_ip, cfg->target_port);
-      debug_printf("send: connect() = %d\r\n", status);
+      debug_printf("send: connect() = %d\r\n", (int16_t)status);
       if(status == SOCKERR_TIMEOUT) {
-        debug_printf("send: connect() timeout\r\n");
         return HAL_TIMEOUT;
       } else if (status != SOCK_OK) {
         return HAL_ERROR;
       }
       break;
     case SOCK_ESTABLISHED:
+      length = construct_post_query();
+      status = send(DATA_SOCKET, http_buf, length);
+      debug_printf("send: send() = %d\r\n", (int16_t)status);
+      if(status == SOCKERR_TIMEOUT) {
+        return HAL_TIMEOUT;
+      } else if (status <= 0) {
+        return HAL_ERROR;
+      } else { /* wait for server response */
+        do {
+          length = getSn_RX_RSR(SERVER_SOCKET);
+          if (HAL_GetTick() - tickstart < timeout) {
+            debug_printf("send: resp timeout\r\n");
+            return HAL_TIMEOUT;
+          }
+        } while (length <= 0);
+        length = (length < HTTP_BUF_SIZE) ? length : HTTP_BUF_SIZE;
+        length = recv(SERVER_SOCKET, http_buf, length);
+        http_buf[length] = '\0';
+        /* parse http status */
+        for(uint16_t i=0; i < HTTP_BUF_SIZE; ++i) {
+          if (strncmp(http_buf+i, "HTTP")) {
+            /* skip until space */
+          }
+        }
 
+        return HAL_OK;
+      }
     case SOCK_CLOSE_WAIT:
       debug_printf("send: disconnect()\r\n");
       disconnect(DATA_SOCKET);
-      break;
+      return HAL_ERROR;
     default:
-      close(DATA_SOCKET);
-      break;
+      return HAL_ERROR;
     }
   }
-  return HAL_TIMEOUT;
+  close(DATA_SOCKET);
+  return HAL_OK;
 }
 /*************************************************************************
 *************************** BEGIN SECTION NTP ****************************
