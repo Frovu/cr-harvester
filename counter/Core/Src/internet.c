@@ -87,7 +87,7 @@ uint8_t W5500_RunDHCP()
   return 0;
 }
 
-uint8_t ip_sum(uint8_t * ip) {
+uint16_t ip_sum(uint8_t * ip) {
   return ip[0] + ip[1] + ip[2] + ip[3];
 }
 
@@ -200,28 +200,44 @@ uint8_t try_sync_ntp(uint32_t timeout)
 /*************************************************************************
 *************************** BEGIN SECTION DNS ****************************
 **************************************************************************/
+void copy_ip(uint8_t *dst, uint8_t *src) {
+  dst[0] = src[0];
+  dst[1] = src[1];
+  dst[2] = src[2];
+  dst[3] = src[3];
+}
 
 uint8_t run_dns_queries()
 {
-  uint8_t *dns_ip = malloc(4);
+  uint8_t dns_ip_buf[4];
+  uint8_t target_ip_saved[4];
+  uint8_t ntp_ip_saved[4];
+  uint8_t *dns_ip = dns_ip_buf;
   if (cfg->dhcp_mode == NETINFO_DHCP) {
     getDNSfromDHCP(dns_ip);
   } else {
     if(ip_sum(cfg->local_dns) == 0) {
-      return 0; // local dns dont declared as is dhcp one
+      return 0; // local dns not declared as is dhcp one
     }
     dns_ip = cfg->local_dns;
   }
-  if (DNS_run(dns_ip, cfg->target_addr, cfg->target_ip) <= 0) {
+  copy_ip(target_ip_saved, cfg->target_ip);
+  if ((cfg->target_addr[0] != 0) && DNS_run(dns_ip, cfg->target_addr, cfg->target_ip) <= 0) {
     debug_printf("dns: failed to resolve %s\r\n", cfg->target_addr);
     return 0;
   }
-  if (DNS_run(dns_ip, cfg->ntp_addr, cfg->ntp_ip) <= 0) {
+  copy_ip(ntp_ip_saved, cfg->ntp_ip);
+  if ((cfg->ntp_addr[0] != 0) && DNS_run(dns_ip, cfg->ntp_addr, cfg->ntp_ip) <= 0) {
     debug_printf("dns: failed to resolve %s\r\n", cfg->ntp_addr);
     return 0;
   }
   debug_printf("dns: ok\r\n\t%s = %u.%u.%u.%u\r\n\t%s = %u.%u.%u.%u\r\n",
     cfg->target_addr, cfg->target_ip[0], cfg->target_ip[1], cfg->target_ip[2], cfg->target_ip[3],
     cfg->ntp_addr, cfg->ntp_ip[0], cfg->ntp_ip[1], cfg->ntp_ip[2], cfg->ntp_ip[3]);
+  if ((ip_sum(target_ip_saved) != ip_sum(cfg->target_ip))
+      || (ip_sum(ntp_ip_saved) != ip_sum(cfg->ntp_ip))) {
+      config_save(); // ip was actually modified by dns
+   }
+
   return 1;
 }

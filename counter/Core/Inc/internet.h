@@ -47,7 +47,7 @@ uint8_t W5500_Connected(void);
 uint8_t W5500_Init();
 uint8_t W5500_RunDHCP();
 
-uint8_t ip_sum(uint8_t * ip);
+uint16_t ip_sum(uint8_t * ip);
 
 uint8_t run_dns_queries();
 uint8_t try_sync_ntp(uint32_t timeout);
