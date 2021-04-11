@@ -12,7 +12,7 @@ typedef enum {
   T_INT
 } t_type_t;
 
-void atoi(uint8_t *string, uint16_t *dest)
+void cursed_atoi(uint8_t *string, uint16_t *dest)
 {
   *dest = 0;
   uint8_t ch = *string;
@@ -84,6 +84,7 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
   {
     switch (type) {
       case T_STRING:
+    	  break;
     }
 
   }
@@ -99,15 +100,43 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
         parse_ip(dest, s_res);
         break;
       default:
-        atoi(dest, (uint16_t*) res);
+        cursed_atoi(dest, (uint16_t*) res);
         break;
     }
   }
 }
 
+// parse HTTP response and update settings accordingly
 void update_settings()
 {
-
+  uint8_t first_token = 1;
+  uint8_t token[16];
+  uint16_t i = 0, i_t = 0, i_v = 0;
+  while(strncmp(srv_buf+(i++), "\r\n\r\n") !== 0); // skip headers
+  for (;i < SRV_BUF_SIZE; ++i) {
+    if (srv_buf[i] == '=')
+    { // parse token=value pair
+      token[i_t] = '\0';
+      i_t = 0;
+      for (i_v = ++i; i_v < SRV_BUF_SIZE; ++i_v) {
+        if ((srv_buf[i_v] == '&') || (srv_buf[i_v] == '\0')) {
+          break;
+        }
+      }
+      if (first_token) {
+        if ((strncmp(token, "secret", 6) != 0) || (strncmp(srv_buf+i, secret, sizeof(secret)) != 0)) {
+          debug_printf("srv: secret invalid\r\n");
+          return; // secret validation failed
+        }
+        first_token = 0;
+      } else {
+        token_ctl(0, token, srv_buf+i, i_v-i);
+      }
+    } else if (srv_buf[i] == '\0') {
+      break;
+    }
+    token[i_t++] = srv_buf[i];
+  }
 }
 
 uint16_t prepare_html_resp()
@@ -137,11 +166,12 @@ uint8_t config_server_run()
       {
         len = (len < SRV_BUF_SIZE) ? len : SRV_BUF_SIZE;
         len = recv(SERVER_SOCKET, srv_buf, len);
+        srv_buf[len] = '\0';
         debug_printf("srv: got request of len %u\r\n", len);
-        if (strcmp(srv_buf, "POST") == 0) {
-
-
-        } else if (strcmp(srv_buf, "GET") == 0) {
+        if (strncmp(srv_buf, "POST", 4) == 0) {
+          update_settings();
+          // TODO: send something
+        } else if (strncmp(srv_buf, "GET", 3) == 0) {
           len = prepare_html_resp();
           send(SERVER_SOCKET, srv_buf, len);
         }

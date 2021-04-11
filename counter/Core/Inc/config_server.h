@@ -69,6 +69,8 @@ static const uint8_t html_template[] = "<html><head><title>NM</title></head><bod
 "</form></body>"
 "</html>";
 
+static const uint8_t secret[] = "890gsdfh";
+
 extern Configuration *cfg;
 
 /* These functions are called only if config button is pressed while device boots
