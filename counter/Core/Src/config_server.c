@@ -12,9 +12,29 @@ typedef enum {
   T_INT
 } t_type_t;
 
-uint16_t atoi(uint8_t *string)
+void atoi(uint8_t *string, uint16_t *dest)
 {
+  *dest = 0;
+  uint8_t ch = *string;
+  while (ch >= '0' && ch <= '9') {
+    *dest = *dest * 10 + ch - '0';
+    ch = *(string++);
+  }
+}
 
+void parse_ip(uint8_t *string, uint8_t *ip)
+{
+  uint16_t buf;
+  uint8_t ch = *string;
+  for (uint8_t i=0; i<4; ++i) {
+    buf = 0;
+    while (ch >= '0' && ch <= '9') {
+      buf = buf * 10 + ch - '0';
+      ch = *(string++);
+    }
+    ip[i] = buf;
+    string++; // skip dot
+  }
 }
 
 void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destlen) {
@@ -74,11 +94,20 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
       case T_STRING:
         memcpy(s_res, dest, destlen);
         s_res[destlen] = '\0';
+        break;
       case T_IP:
-        memcpy(s_res, dest, destlen);
-        s_res[destlen] = '\0';
+        parse_ip(dest, s_res);
+        break;
+      default:
+        atoi(dest, (uint16_t*) res);
+        break;
     }
   }
+}
+
+void update_settings()
+{
+
 }
 
 uint16_t prepare_html_resp()
@@ -109,8 +138,13 @@ uint8_t config_server_run()
         len = (len < SRV_BUF_SIZE) ? len : SRV_BUF_SIZE;
         len = recv(SERVER_SOCKET, srv_buf, len);
         debug_printf("srv: got request of len %u\r\n", len);
-        len = prepare_html_resp();
-        send(SERVER_SOCKET, srv_buf, len);
+        if (strcmp(srv_buf, "POST") == 0) {
+
+
+        } else if (strcmp(srv_buf, "GET") == 0) {
+          len = prepare_html_resp();
+          send(SERVER_SOCKET, srv_buf, len);
+        }
         disconnect(SERVER_SOCKET);
       }
       return 1;
