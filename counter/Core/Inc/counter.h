@@ -111,6 +111,15 @@ typedef struct _struct_dl {
   uint16_t counts[CHANNELS_COUNT];
 } DataLine;
 
+typedef enum {
+  DATA_CLEAR,
+  DATA_OK,
+  DATA_FLASH_ERROR,
+  DATA_NET_ERROR,
+  DATA_NET_NOT_OK,
+  DATA_NET_TIMEOUT
+} DataStatus;
+
 // for config_server
 extern DataLine * current_period;
 extern uint32_t cycle_counter;
@@ -132,7 +141,7 @@ void base_periodic_event();
 /********************* Data Handling **********************/
 void init_read_flash();
 void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p);
-int32_t data_send_one(uint32_t timeout);
+DataStatus data_send_one(uint32_t timeout);
 /********************* Data Sending **********************/
 
 

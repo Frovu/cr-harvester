@@ -182,11 +182,11 @@ void data_period_transition(const volatile uint16_t * counts, DateTime *dt, floa
 //    positive number if line sent but there is more remaining
 //    negative number if failed to send
 //    0 if sent all
-int32_t data_send_one(uint32_t timeout)
+DataStatus data_send_one(uint32_t timeout)
 {
   // if flash_pages_used is >0, buffer_periods_count is 0
   if (buffer_periods_count + flash_pages_used <= 0) {
-    return 0;
+    return DATA_CLEAR;
   }
   DataLine *line_to_send;
   if (flash_pages_used == 0)
@@ -199,15 +199,15 @@ int32_t data_send_one(uint32_t timeout)
     if (!read_from_flash(line_to_send, timeout))
     {
       debug_printf("dataline: failed to retrieve from flash\r\n");
-      return -1 * flash_pages_used; // failed to read anything useful from flash, aborting
+      return DATA_FLASH_ERROR; // failed to read anything useful from flash, aborting
     }
   }
-  
+
   debug_printf("()--> %lu / %.2f hPa / %.2f C ()-->\r\n", line_to_send->timestamp,
     line_to_send->pressure, line_to_send->temperature);
-  HAL_StatusTypeDef status = send_data_to_server(line_to_send, SENDING_TIMEOUT);
+  DataStatus status = send_data_to_server(line_to_send, timeout);
 
-  if (status == HAL_OK)
+  if (status == DATA_OK)
   {
     if (flash_pages_used == 0)
     { // data was taken from buffer, free and shift buffer to the left
@@ -226,12 +226,14 @@ int32_t data_send_one(uint32_t timeout)
         reset_flash();
       }
     }
+    if (flash_pages_used + buffer_periods_count <= 0) {
+      status = DATA_CLEAR;
+    }
     debug_printf("dataline: sent, counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
-    return buffer_periods_count + flash_pages_used;
   }
   else
   {
     debug_printf("dataline: failed to send\r\n");
-    return (buffer_periods_count + flash_pages_used) * -1;
   }
+  return status;
 }

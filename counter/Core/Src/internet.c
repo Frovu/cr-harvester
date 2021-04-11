@@ -144,14 +144,14 @@ uint16_t construct_post_query(DataLine *dl)
   return snprintf(http_buf, HTTP_BUF_SIZE, query_template, query_path, http_host, content_len, http_body);
 }
 
-HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
+DataStatus send_data_to_server(DataLine *dl, uint32_t timeout)
 {
   uint32_t tickstart = HAL_GetTick();
   int32_t status; uint16_t length;
   status = socket(DATA_SOCKET, Sn_MR_TCP, HTTP_PORT, 0x00);
   debug_printf("send: socket() = %d\r\n", (int16_t)status);
   if (status != DATA_SOCKET) {
-    return HAL_ERROR;
+    return DATA_NET_ERROR;
   }
   while (HAL_GetTick() - tickstart < timeout)
   {
@@ -159,27 +159,25 @@ HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
     case SOCK_INIT:
       status = connect(DATA_SOCKET, cfg->target_ip, cfg->target_port);
       debug_printf("send: connect() = %d\r\n", (int16_t)status);
-      if(status == SOCKERR_TIMEOUT) {
-        return HAL_TIMEOUT;
+      if (status == SOCKERR_TIMEOUT) {
+        return DATA_NET_TIMEOUT;
       } else if (status != SOCK_OK) {
-        return HAL_ERROR;
+        return DATA_NET_ERROR;
       }
       break;
     case SOCK_ESTABLISHED:
       length = construct_post_query(dl);
-      debug_printf("\r\n(%u) %s\r\n\r\n", length, http_buf); // printf whole http req 
+      debug_printf("\r\n(%u) %s\r\n\r\n", length, http_buf); // printf whole http req
       status = send(DATA_SOCKET, http_buf, length);
       debug_printf("send: send() = %d\r\n", (int16_t)status);
-      if(status == SOCKERR_TIMEOUT) {
-        return HAL_TIMEOUT;
-      } else if (status <= 0) {
-        return HAL_ERROR;
+      if (status <= 0) {
+        return DATA_NET_ERROR;
       } else { /* wait for server response */
         do {
           length = getSn_RX_RSR(SERVER_SOCKET);
           if (HAL_GetTick() - tickstart < timeout) {
             debug_printf("send: resp timeout\r\n");
-            return HAL_TIMEOUT;
+            return DATA_NET_TIMEOUT;
           }
         } while (length <= 0);
         length = (length < HTTP_BUF_SIZE) ? length : HTTP_BUF_SIZE;
@@ -195,24 +193,25 @@ HAL_StatusTypeDef send_data_to_server(DataLine *dl, uint32_t timeout)
             status = _stoi(http_buf + i + 1);
             debug_printf("send: HTTP %d\r\n", (int16_t)status);
             if (status == 200) {
-              return HAL_OK;
+              return DATA_OK;
             } else {
-              return HAL_ERROR;
+              return DATA_NET_NOT_OK;
             }
           }
         }
-        return HAL_ERROR;
+        debug_printf("send: corrupt response\r\n");
+        return DATA_NET_ERROR;
       }
     case SOCK_CLOSE_WAIT:
       debug_printf("send: disconnect()\r\n");
       disconnect(DATA_SOCKET);
-      return HAL_ERROR;
+      return DATA_NET_NOT_OK;
     default:
-      return HAL_ERROR;
+      return DATA_NET_ERROR;
     }
   }
   close(DATA_SOCKET);
-  return HAL_OK;
+  return DATA_NET_ERROR; // timed out not because of target host down
 }
 /*************************************************************************
 *************************** BEGIN SECTION NTP ****************************

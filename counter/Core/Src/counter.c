@@ -197,21 +197,31 @@ void event_loop() {
     */
     if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 1000)
     {
-      // TODO: complex data-sending error handling
-      int32_t storage_stat = data_send_one(SENDING_TIMEOUT);
-      if (storage_stat == 0) {
-        // everything sent
-        TOGGLE(FLAG_DATA_SENDING);
-        LED_OFF(LED_DATA);
-      } else if (storage_stat < 0) {
-        // if failed to send line wait until something probably fixes idk
-        if (cfg->dhcp_mode == NETINFO_DHCP) {
-          RAISE(FLAG_DHCP_RUN);
-        }
-        RAISE(FLAG_DNS_RUN);
-        last_net_attempt = HAL_GetTick();
-        LED_BLINK_INV(LED_DATA, 30);
-        LED_BLINK(LED_ERROR, 100);
+      switch (data_send_one(SENDING_TIMEOUT)) {
+        case DATA_CLEAR:
+          TOGGLE(FLAG_DATA_SENDING);
+          LED_BLINK(LED_DATA, 200);
+          break;
+        case DATA_OK:
+          LED_BLINK_INV(LED_DATA, 30);
+          break;
+        case DATA_FLASH_ERROR:
+          if (IS_SET(FLAG_FLASH_OK))
+            TOGGLE(FLAG_FLASH_OK);
+          break;
+        case DATA_NET_ERROR:
+          if (IS_SET(FLAG_W5500_OK))
+            TOGGLE(FLAG_W5500_OK);
+          break;
+        case DATA_NET_TIMEOUT:
+          if (cfg->dhcp_mode == NETINFO_DHCP) {
+            RAISE(FLAG_DHCP_RUN);
+          }
+          // no break here
+        case DATA_NET_NOT_OK:
+          last_net_attempt = HAL_GetTick();
+          LED_BLINK_INV(LED_DATA, 30);
+          LED_BLINK(LED_ERROR, 100);
       }
     }
     /* ********************* DHCP / DNS RUN SECTION *********************** */
