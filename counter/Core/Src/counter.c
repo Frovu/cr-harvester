@@ -128,6 +128,8 @@ void event_loop() {
     if (IS_SET(FLAG_EVENT_BASE))
     {
       base_periodic_event();
+      if (IS_SET(FLAG_PRE_PERIOD))
+        TOGGLE(FLAG_PRE_PERIOD);
       TOGGLE(FLAG_EVENT_BASE);
       RAISE(FLAG_DATA_SENDING); // there is new data to be sent
       LED_ON(LED_DATA);
@@ -188,7 +190,7 @@ void event_loop() {
   uint32_t since_last_attempt = HAL_GetTick() - last_net_attempt; // non-blocking delay for net failures
   /* Perform initial read of external flash. This operation takes alot of time so
    * its better to do it after NTP sync to not loose one data period */
-  if (IS_SET(FLAG_FLASH_INIT) && IS_SET(FLAG_TIME_TRUSTED)) {
+  if (IS_SET(FLAG_FLASH_INIT) && (NOT_SET(FLAG_NTP_SYNC) || NOT_SET(FLAG_PRE_PERIOD))) {
     if (time_left > FLASH_INIT_TIME && NOT_SET(FLAG_EVENT_BASE)) {
       init_read_flash();
       TOGGLE(FLAG_FLASH_INIT);
