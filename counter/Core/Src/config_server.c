@@ -145,9 +145,8 @@ uint16_t prepare_html_resp()
   uint8_t token[16];
   uint8_t in_token = 0;
   uint16_t i = 0, templ_i = 0, tok_i = 0;
-  // TODO: flash failures
-  snprintf(srv_buf, SRV_BUF_SIZE, html_template, current_period?current_period->timestamp:0, cycle_counter, 0,
-      (cycle_counter-last_ntp_sync), flags);
+  snprintf(srv_buf, SRV_BUF_SIZE, html_template, current_period?current_period->timestamp:0, cycle_counter,
+    flash_error_count, (cycle_counter-last_ntp_sync), flags);
   // syncronize template and buffer pointers
   while(strncmp(srv_buf+(i++), "<h2>Dev", 7) != 0);
   while(strncmp(html_template+(templ_i++), "<h2>Dev", 7) != 0);
