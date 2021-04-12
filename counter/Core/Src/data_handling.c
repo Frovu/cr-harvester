@@ -8,9 +8,9 @@
 // if first 4 bytes of flash page contain this, they are counted as saved data lines
 static const uint32_t data_line_signature = 0xdeadbeef;
 
-static const uint16_t struct_size = sizeof(DataLine);
-static const uint16_t signature_size = sizeof(data_line_signature);
-static const uint16_t chunk_size  = sizeof(data_line_signature) + struct_size;
+#define STRUCT_SIZE sizeof(DataLine)
+#define SIGNATURE_SIZE sizeof(data_line_signature)
+#define CHUNK_SIZE sizeof(data_line_signature) + sizeof(DataLine)
 
 extern uint16_t flags;
 extern uint32_t cycle_counter;
@@ -23,7 +23,8 @@ uint16_t flash_page_first = FIRST_DATA_PAGE;    // aka where-to-read (nothing us
 uint16_t flash_pages_used = 0;    // number of lines stored in flash
 uint16_t flash_page_pointer = FIRST_DATA_PAGE;  // pointer to what is assumed first writable unused page, aka where-to-write
 
-uint8_t * buffer;
+uint8_t flash_buf[CHUNK_SIZE];
+uint8_t * buffer = flash_buf;
 
 void reset_flash();
 uint8_t write_to_flash(const DataLine *dl, uint32_t timeout);
@@ -33,12 +34,11 @@ void init_read_flash()
 {
   debug_printf("flash: init read start\r\n");
   uint32_t tickstart = HAL_GetTick();
-  buffer = malloc(chunk_size);
   flash_pages_used = 0;
   flash_page_first = FIRST_DATA_PAGE;
   for (uint16_t page = 0; page < AT25_PAGES_COUNT; ++page)
   {
-    at25_read_block(page * AT25_PAGE_SIZE, buffer, chunk_size);
+    at25_read_block(page * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
     uint32_t *signature = (uint32_t*) buffer;
     if (*signature == data_line_signature)
     { // found saved data line
@@ -64,12 +64,12 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
     return 0;
   }
   uint32_t tickstart = HAL_GetTick();
-  memcpy(buffer, &data_line_signature, signature_size);
-  memcpy(buffer + signature_size, dl, struct_size);
+  memcpy(buffer, &data_line_signature, SIGNATURE_SIZE);
+  memcpy(buffer + SIGNATURE_SIZE, dl, STRUCT_SIZE);
   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
     ++flash_page_pointer;
-    FlashErrno res = at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, chunk_size, DEFAULT_TIMEOUT);
+    FlashErrno res = at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, CHUNK_SIZE, DEFAULT_TIMEOUT);
     if (res == FLASH_ERRNO_OK)
     { // flash write succeeded
       if (flash_pages_used == 0)
@@ -105,12 +105,12 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
   uint32_t tickstart = HAL_GetTick();
   while ((flash_page_first < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
-    at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, chunk_size);
+    at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
     uint32_t *signature = (uint32_t*) buffer;
     if (*signature == data_line_signature)
     { // found saved data line
       debug_printf("flash: successfuly read page %d\r\n", flash_page_first);
-      memcpy(dl, buffer + signature_size, struct_size);
+      memcpy(dl, buffer + SIGNATURE_SIZE, STRUCT_SIZE);
       return 1;
     }
     else
@@ -171,7 +171,7 @@ void data_period_transition(const volatile uint16_t * counts, DateTime *dt, floa
   /*
   ******************* Start new period ******************
   */
-  current_period = malloc(struct_size);
+  current_period = (DataLine*) malloc(STRUCT_SIZE);
   current_period->timestamp = mktime(dt);
   current_period->temperature = t;
   current_period->pressure = p;
@@ -201,7 +201,7 @@ DataStatus data_send_one(uint32_t timeout)
   }
   else // read data from flash
   {
-    line_to_send = malloc(struct_size);
+    line_to_send = (DataLine*) malloc(STRUCT_SIZE);
     if (!read_from_flash(line_to_send, timeout))
     {
       debug_printf("dataline: failed to retrieve from flash\r\n");
