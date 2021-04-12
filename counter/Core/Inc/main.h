@@ -63,6 +63,8 @@ void debug_printf(const char * fmt, ...);
 /* Private defines -----------------------------------------------------------*/
 #define BOARD_LED_Pin GPIO_PIN_13
 #define BOARD_LED_GPIO_Port GPIOC
+#define W5500_RESET_Pin GPIO_PIN_1
+#define W5500_RESET_GPIO_Port GPIOA
 #define W5500_CS_Pin GPIO_PIN_4
 #define W5500_CS_GPIO_Port GPIOA
 #define AT25_CS_Pin GPIO_PIN_0
@@ -71,6 +73,8 @@ void debug_printf(const char * fmt, ...);
 #define LED_DATA_GPIO_Port GPIOA
 #define LED_ERROR_Pin GPIO_PIN_15
 #define LED_ERROR_GPIO_Port GPIOA
+#define BUTTON_RESET_Pin GPIO_PIN_3
+#define BUTTON_RESET_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 #define LED_ON(led) \
   HAL_GPIO_WritePin(led##_GPIO_Port, led##_Pin, GPIO_PIN_SET)
