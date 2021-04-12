@@ -15,13 +15,7 @@ TBD
 
 ##### `POST /api/data`
 
-time (`dt`) is interpreted either as epoch (seconds from 1970) or as `ISO 8601` string if it includes `T` character
-
-short (required) value naming:
-+ `t` for `temperature`
-+ `p` for `pressure`
-+ `c` for `counts` (or data)
-+ `k` for `key`
+refer to root README
 
 ##### `GET /api/sections`
 

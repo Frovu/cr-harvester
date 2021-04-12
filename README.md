@@ -11,6 +11,23 @@ Each device has onboard real time clock (battery backed) and keeps its time in s
 
 Each device has external flash unit of (32 mbits) where data is stored in case of server/connection failure, when connection is restored data is resent to server.
 
+# Protocol description
+
+To save collected data into database, device interacts with server part of the system.
+Device sends HTTP POST request with `urlencoded` or `json` body. Which includes following values:
++ `k` - `device key/id` - unique device identifier to distinguish several sections
++ `dt` - `date/timestamp` - timestamp of counting period beginning
++ `upt` - `uptime` - device uptime at the moment of counting period start (in minutes)
++ `inf` - `info` - different debugging info, if LSB set (number is odd), dev time is trusted, other bits are reserved
++ `ff` - `flash failures` - count of device external flash program/erase failures
++ `t` - `temperature` - air temperature in Celsius with 2 decimal signs after point
++ `p` - `pressure` - air temperature in hPa with 2 decimal signs after point
++ `c` - `counts` - array of 12 integer containing channels impulse counts
+
+note: time (`dt`) is interpreted either as epoch (count of seconds since 1970) or as `ISO 8601` string if it includes `T` character.
+
+# Device description
+
 ## device LED's behavior
 
 Device has 3 informative LED's:
