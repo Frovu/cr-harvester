@@ -178,9 +178,9 @@ uint16_t prepare_html_resp()
 }
 
 // @retval: 0 - idle, 1 - client connected
-uint8_t config_server_run()
+DataStatus config_server_run()
 {
-  uint16_t len, status;
+  uint16_t len; int16_t status;
   switch (getSn_SR(SERVER_SOCKET)) {
     case SOCK_ESTABLISHED:
       len = getSn_RX_RSR(SERVER_SOCKET);
@@ -196,7 +196,7 @@ uint8_t config_server_run()
             memcpy(srv_buf, html_ok, sizeof(html_ok));
             send(SERVER_SOCKET, srv_buf, sizeof(html_ok));
             disconnect(SERVER_SOCKET);
-            return 1;
+            return DATA_CLEAR;
           } else {
             memcpy(srv_buf, html_error, sizeof(html_error));
             send(SERVER_SOCKET, srv_buf, sizeof(html_error));
@@ -219,10 +219,13 @@ uint8_t config_server_run()
     case SOCK_CLOSED:
       status = socket(SERVER_SOCKET, Sn_MR_TCP, CONFIG_SERVER_PORT, 0x00);
       debug_printf("srv: socket(%d) = %d\r\n", SERVER_SOCKET, status);
+      if (status != SERVER_SOCKET) {
+        return DATA_NET_ERROR;
+      }
     default:
       break;
   }
-  return 0;
+  return DATA_OK;
 }
 
 /*************************************************************************

@@ -21,6 +21,7 @@ uint32_t last_ntp_sync = 0;
 int64_t last_period_tick = 0;
 uint32_t last_fix_attempt = -5000;
 uint32_t last_net_attempt = -5000;
+uint32_t last_srv_attempt = -5000;
 DateTime last_period_tm;
 
 uint8_t try_init_dev(device_t dev)
@@ -244,6 +245,25 @@ void event_loop() {
       }
     }
   }
+  /* *********************** CONFIG HTTP SERVER ************************* */
+  if (IS_SET(FLAG_W5500_OK) && (HAL_GetTick() - last_srv_attempt) > 1000) {
+    switch (config_server_run()) {
+      case DATA_OK:
+        break;
+      case DATA_CLEAR:
+       /*  User changed device configuration, we should re-initialize W5500 in case
+        *  of DHCP mode change, re-run DHCP, DNS, NTP queries if servers changed
+        */
+        TOGGLE(FLAG_W5500_OK); // reinit W5500
+        RAISE(FLAG_DHCP_RUN);
+        RAISE(FLAG_DNS_RUN);
+        RAISE(FLAG_NTP_SYNC);
+        break;
+      default:
+        last_srv_attempt = HAL_GetTick();
+        break;
+    }
+  }
   /* ****************** SOMETHING-NOT-OK / NTP SECTION ****************** */
   uint32_t since_last_fix_attempt = HAL_GetTick() - last_fix_attempt;
   // incorporate non-blocking delay for PROBLEM_FIXING_PERIOD ms
@@ -293,17 +313,6 @@ void event_loop() {
     }
   }
 
-  if (IS_SET(FLAG_W5500_OK)) {
-    if (config_server_run())
-    { /* User changed device configuration, we should re-initialize W5500 in case
-      *  of DHCP mode change, re-run DHCP, DNS, NTP queries if servers changed
-      */
-      TOGGLE(FLAG_W5500_OK); // reinit W5500
-      RAISE(FLAG_DHCP_RUN);
-      RAISE(FLAG_DNS_RUN);
-      RAISE(FLAG_NTP_SYNC);
-    }
-  }
   /* *********************** ******************** *********************** */
 }
 void base_periodic_event()
