@@ -260,10 +260,12 @@ void config_save()
   memcpy(buf, &meme_signature, sizeof(meme_signature));
   memcpy(buf + sizeof(meme_signature), cfg, sizeof(Configuration));
   for (uint16_t page = CONFIG_FLASH_PAGE_FIRST; page < CONFIG_FLASH_PAGES_COUNT; ++page) {
-    if (at25_write_block(page * AT25_PAGE_SIZE, buf, sizeof(meme_signature)+sizeof(Configuration), DEFAULT_TIMEOUT))
+    if (at25_write_block(page * AT25_PAGE_SIZE, buf, sizeof(meme_signature)+sizeof(Configuration), DEFAULT_TIMEOUT) == FLASH_ERRNO_OK)
     { // write succeeded
       debug_printf("flash: saved config at page %u\r\n", page);
       return;
+    } else {
+      debug_printf("flash: failed to save cfg to page %u\r\n", page);
     }
   }
 }

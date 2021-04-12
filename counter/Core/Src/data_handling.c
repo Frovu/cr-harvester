@@ -58,10 +58,9 @@ void init_read_flash()
 
 uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
 {
-  if (!at25_is_valid()) {
-    if (IS_SET(FLAG_FLASH_OK)) {
+  if (NOT_SET(FLAG_FLASH_OK) || !at25_is_valid()) {
+    if (IS_SET(FLAG_FLASH_OK))
       TOGGLE(FLAG_FLASH_OK);
-    }
     return 0;
   }
   uint32_t tickstart = HAL_GetTick();
@@ -70,7 +69,8 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
     ++flash_page_pointer;
-    if (at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, chunk_size, DEFAULT_TIMEOUT))
+    FlashErrno res = at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, chunk_size, DEFAULT_TIMEOUT);
+    if (res == FLASH_ERRNO_OK)
     { // flash write succeeded
       if (flash_pages_used == 0)
       {
@@ -80,9 +80,16 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
       debug_printf("flash: successfully wrote page %d (%dms)\r\n", flash_page_pointer - 1, HAL_GetTick() - tickstart);
       return 1;
     }
-    else
+    else if (res == FLASH_ERRNO_FAIL)
     {
       debug_printf("flash: write error on page %d\r\n", flash_page_pointer - 1);
+    }
+    else // flash timed out
+    {
+      debug_printf("flash: timed out page at %d\r\n", flash_page_pointer - 1);
+      if (IS_SET(FLAG_FLASH_OK))
+        TOGGLE(FLAG_FLASH_OK);
+      return 0;
     }
   }
   debug_printf("flash: end of writing loop (p# = %d / %d)\r\n", flash_page_pointer, AT25_PAGES_COUNT);
@@ -90,10 +97,9 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
 }
 
 uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
-  if (!at25_is_valid()) {
-    if (IS_SET(FLAG_FLASH_OK)) {
+  if (NOT_SET(FLAG_FLASH_OK) || !at25_is_valid()) {
+    if (IS_SET(FLAG_FLASH_OK))
       TOGGLE(FLAG_FLASH_OK);
-    }
     return 0;
   }
   uint32_t tickstart = HAL_GetTick();
