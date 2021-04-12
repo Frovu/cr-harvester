@@ -1,5 +1,7 @@
 #include "at25df321.h"
 
+uint32_t flash_error_count = 0;
+
 void at25_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *gpio_bus, uint16_t gpio_pin)
 {
   at25_hspi = hspi;
@@ -47,8 +49,7 @@ void at25_global_unprotect()
   at25_unselect();
 }
 
-// does not care about operation success
-uint8_t at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout)
+FlashErrno at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout)
 {
   uint32_t tickstart = HAL_GetTick();
   WAIT_READY();
@@ -62,8 +63,49 @@ uint8_t at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout)
   at25_unselect();
 
   WAIT_READY();
-  return 1;
+  uint8_t write_ok = at25_write_ok();
+  if (!write_ok)
+    flash_error_count++;
+  return write_ok ? FLASH_ERRNO_OK : FLASH_ERRNO_FAIL;
 }
+
+FlashErrno at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout)
+{
+  uint32_t tickstart = HAL_GetTick();
+  WAIT_READY();
+
+  at25_write_enable();
+  at25_select();
+  at25_transmit_byte(AT25_CMD_BYTE_PROGRAM);
+  at25_transmit_byte((address >> 16) & 0x3F);
+  at25_transmit_byte((address >> 8)  & 0xFF);
+  at25_transmit_byte( address        & 0xFF);
+  for (uint16_t i=0; i < count; ++i) {
+    at25_transmit_byte(data[i]);
+  }
+  at25_unselect();
+
+  WAIT_READY();
+  uint8_t write_ok = at25_write_ok();
+  if (!write_ok)
+    flash_error_count++;
+  return write_ok ? FLASH_ERRNO_OK : FLASH_ERRNO_FAIL;
+}
+
+void at25_read_block(uint32_t address, uint8_t *data, uint16_t count)
+{
+  at25_select();
+  at25_transmit_byte(AT25_CMD_READ_ARRAY);
+  at25_transmit_byte((address >> 16) & 0x3F);
+  at25_transmit_byte((address >> 8)  & 0xFF);
+  at25_transmit_byte( address        & 0xFF);
+
+  for (uint16_t i=0; i < count; ++i) {
+    at25_receive_byte(&data[i]);
+  }
+  at25_unselect();
+}
+
 
 /* "Intelligent" erase algorithm uses 4 or 64 Kbyte erase commands to erase
 *  pages from A to B, if to_page is == 0 it does not care about last pages.
@@ -85,49 +127,16 @@ void at25_erase(uint16_t from_page, uint16_t to_page)
       cmd = AT25_CMD_ERASE_4K;
       erased = PAGES_PER_4K;
     }
-    if(at25_erase_block(page * AT25_PAGE_SIZE, cmd, AT25_ERASE_TIMEOUT)) {
+    FlashErrno res = at25_erase_block(page * AT25_PAGE_SIZE, cmd, AT25_ERASE_TIMEOUT);
+    if (res == FLASH_ERRNO_OK) {
       #ifdef DEBUG_UART
       debug_printf("flash: erase %u succeeded on addr %u\r\n", erased, page*AT25_PAGE_SIZE);
       #endif
-    } else {
+    } else if (res == FLASH_ERRNO_TIMEOUT) {
       #ifdef DEBUG_UART
       debug_printf("flash: erase %u timed out on addr %u\r\n", erased, page*AT25_PAGE_SIZE);
       #endif
       return;
     }
   }
-}
-
-uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout)
-{
-  uint32_t tickstart = HAL_GetTick();
-  WAIT_READY();
-
-  at25_write_enable();
-  at25_select();
-  at25_transmit_byte(AT25_CMD_BYTE_PROGRAM);
-  at25_transmit_byte((address >> 16) & 0x3F);
-  at25_transmit_byte((address >> 8)  & 0xFF);
-  at25_transmit_byte( address        & 0xFF);
-  for (uint16_t i=0; i < count; ++i) {
-    at25_transmit_byte(data[i]);
-  }
-  at25_unselect();
-
-  WAIT_READY();
-  return at25_write_ok();
-}
-
-void at25_read_block(uint32_t address, uint8_t *data, uint16_t count)
-{
-  at25_select();
-  at25_transmit_byte(AT25_CMD_READ_ARRAY);
-  at25_transmit_byte((address >> 16) & 0x3F);
-  at25_transmit_byte((address >> 8)  & 0xFF);
-  at25_transmit_byte( address        & 0xFF);
-
-  for (uint16_t i=0; i < count; ++i) {
-    at25_receive_byte(&data[i]);
-  }
-  at25_unselect();
 }

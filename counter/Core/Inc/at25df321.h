@@ -27,7 +27,7 @@
 #define WAIT_READY()                           \
   do {                                         \
     if (HAL_GetTick() - tickstart > timeout) { \
-      return 0;                                \
+      return FLASH_ERRNO_TIMEOUT;              \
     }                                          \
   } while (!at25_is_ready())
 
@@ -63,6 +63,8 @@ static inline void at25_write_disable() {
   at25_unselect();
 }
 
+extern uint32_t flash_error_count;
+
 void at25_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef *gpio_bus, uint16_t gpio_pin);
 uint8_t at25_read_status_register();
 uint8_t at25_is_ready();
@@ -70,11 +72,18 @@ uint8_t at25_write_ok();
 uint8_t at25_is_valid();
 
 // block protection is not used hence not implemented here
-
 void at25_global_unprotect();
-void at25_erase(uint16_t from_page, uint16_t to_page);
-uint8_t at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout);
-uint8_t at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout);
+
+typedef enum {
+  FLASH_ERRNO_OK = 0,
+  FLASH_ERRNO_TIMEOUT,
+  FLASH_ERRNO_FAIL,
+} FlashErrno;
+
+FlashErrno at25_erase_block(uint32_t address, uint8_t command, uint32_t timeout);
+FlashErrno at25_write_block(uint32_t address, uint8_t *data, uint16_t count, uint32_t timeout);
 void at25_read_block(uint32_t address, uint8_t *data, uint16_t count);
+
+void at25_erase(uint16_t from_page, uint16_t to_page);
 
 #endif

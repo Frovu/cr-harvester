@@ -200,7 +200,6 @@ uint8_t config_server_run()
             send(SERVER_SOCKET, srv_buf, sizeof(html_error));
             disconnect(SERVER_SOCKET);
           }
-          // TODO: send something
         } else if (strncmp(srv_buf, "GET", 3) == 0) {
           len = prepare_html_resp();
           send(SERVER_SOCKET, srv_buf, len);
