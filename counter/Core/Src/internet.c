@@ -131,9 +131,9 @@ uint16_t construct_post_query(DataLine *dl)
     snprintf(http_host, HTTP_HOST_SIZE, "%s:%u", cfg->target_addr, cfg->target_port);
   }
   /* string format general info, see README for protocol description */
-  #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&t=%.2f&p=%.2f"
+  #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&ff=%lu&t=%.2f&p=%.2f"
   content_len = snprintf(http_body, HTTP_BODY_SIZE, PFSTRING,
-    cfg->dev_id, dl->timestamp, dl->cycle, dl->info,
+    cfg->dev_id, dl->timestamp, dl->cycle, dl->info, flash_error_count,
     dl->temperature, dl->pressure);
   /* string format counters */
   for(uint16_t ch = 0; ch < CHANNELS_COUNT; ++ch) {
