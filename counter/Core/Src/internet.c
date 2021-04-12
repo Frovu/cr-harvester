@@ -69,7 +69,8 @@ uint8_t W5500_Init()
 
   wizchip_setnetinfo(&netinfo);
   // wizchip_getnetinfo(&netinfo);
-  DHCP_init(DHCP_SOCKET, dhcp_buf);
+  if (cfg->dhcp_mode == NETINFO_DHCP)
+    DHCP_init(DHCP_SOCKET, dhcp_buf);
   DNS_init(DNS_SOCKET, dns_buf);
   return 1;
 }

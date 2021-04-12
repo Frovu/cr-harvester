@@ -145,7 +145,7 @@ uint8_t update_settings()
 }
 
 uint16_t prepare_html_resp()
-{
+{ // TODO: show amount of data stored
   uint8_t token[16];
   uint8_t in_token = 0;
   uint16_t i = 0, templ_i = 0, tok_i = 0;
