@@ -3,7 +3,8 @@
 
 uint8_t srv_buf[SRV_BUF_SIZE];
 static const uint32_t meme_signature = 0xdeadc0de;
-Configuration *cfg = NULL; // global variable for whole program
+Configuration config_buf;
+Configuration *cfg = &config_buf; // global variable for whole program
 uint8_t config_modified = 0;
 
 typedef enum {
@@ -192,6 +193,7 @@ DataStatus config_server_run()
         debug_printf("srv: got request of len %u\r\n", len);
         if (strncmp(srv_buf, "POST", 4) == 0) {
           if (update_settings()) {
+            config_modified = 1;
             config_save();
             memcpy(srv_buf, html_ok, sizeof(html_ok));
             send(SERVER_SOCKET, srv_buf, sizeof(html_ok));
@@ -232,17 +234,19 @@ DataStatus config_server_run()
 *************************** BEGIN SECTION FLASH ****************************
 **************************************************************************/
 
+void config_set_default()
+{
+  memcpy(cfg, &default_cfg, sizeof(Configuration));
+}
+
 void config_initialize()
 {
-  if (cfg && config_modified) // settings were modified while flash was absent
+  if (config_modified) // settings were modified while flash was absent
   {
     config_save();
   }
   else // try to load config from flash
   {
-    if (cfg == NULL) {
-      cfg = (Configuration*) malloc(sizeof(Configuration));
-    }
     uint8_t buf[sizeof(meme_signature)+sizeof(Configuration)];
     for (uint16_t page = CONFIG_FLASH_PAGE_FIRST; page < CONFIG_FLASH_PAGES_COUNT; ++page) {
       at25_read_block(page * AT25_PAGE_SIZE, buf, sizeof(meme_signature)+sizeof(Configuration));
@@ -254,7 +258,7 @@ void config_initialize()
       }
     }
     debug_printf("init: flash_cfg\tFAIL\r\n");
-    memcpy(cfg, &default_cfg, sizeof(Configuration));
+    config_set_default();
   }
 }
 
@@ -268,6 +272,7 @@ void config_save()
     if (at25_write_block(page * AT25_PAGE_SIZE, buf, sizeof(meme_signature)+sizeof(Configuration), DEFAULT_TIMEOUT) == FLASH_ERRNO_OK)
     { // write succeeded
       debug_printf("flash: saved config at page %u\r\n", page);
+      config_modified = 0;
       return;
     } else {
       debug_printf("flash: failed to save cfg to page %u\r\n", page);

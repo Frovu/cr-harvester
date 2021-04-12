@@ -72,7 +72,6 @@ uint8_t try_init_dev(device_t dev)
 
 void counter_init()
 {
-  // TODO: reset config option
 
   debug_printf("\r\n\r\nINIT\r\n");
   for(uint16_t i=0; i<5; ++i) {
@@ -80,6 +79,29 @@ void counter_init()
     HAL_Delay(30);
   }
   LED_ON(LED_ERROR);
+  // ******************* AT25DF321 ******************
+  at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
+  for (int i=0; !try_init_dev(DEV_FLASH) && i < 5; ++i) {
+    HAL_Delay(100);
+    LED_BLINK_INV(LED_ERROR, 200);
+  }
+  // ******************* CONFIG *********************
+  if (IS_SET(FLAG_FLASH_OK)) {
+    /* Set and save default settings if RESET button is pressed */
+    if (HAL_GPIO_ReadPin(BUTTON_RESET_GPIO_Port, BUTTON_RESET_Pin) == GPIO_PIN_RESET) {
+      debug_printf("INIT DEFAULT CONFIG\r\n");
+      config_set_default();
+      config_save();
+      for(uint16_t i=0; i<16; ++i) {
+        LED_BLINK(LED_DATA,  50);
+        LED_BLINK(LED_ERROR, 50);
+      }
+    } else {
+      config_initialize();
+    }
+  } else {
+    config_set_default();
+  }
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
@@ -93,14 +115,6 @@ void counter_init()
     HAL_Delay(100);
     LED_BLINK_INV(LED_ERROR, 400);
   }
-  // ******************* AT25DF321 ******************
-  at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
-  for (int i=0; !try_init_dev(DEV_FLASH) && i < 5; ++i) {
-    HAL_Delay(100);
-    LED_BLINK_INV(LED_ERROR, 200);
-  }
-  // ******************* CONFIG *********************
-  config_initialize();
   // ******************* W5500 **********************
   for (int i=0; !try_init_dev(DEV_W5500) && i < 3; ++i) {
     HAL_Delay(300);

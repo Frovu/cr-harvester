@@ -35,11 +35,16 @@ typedef struct {
 } Configuration;
 
 static const Configuration default_cfg = {
-  .target_port = 8787,
   .dev_id = "anon",
   .target_addr = "crst.izmiran.ru",
+  .target_path = "/api/data",
+  .target_port = 8787,
   .ntp_addr = "time.google.com",
-  .dhcp_mode = NETINFO_DHCP
+  .local_ip = {192, 168, 1, 217},
+  .local_gw = {192, 168, 1, 1},
+  .local_sn = {255, 255, 255, 0},
+  .local_dns = {8, 8, 8, 8},
+  .dhcp_mode = NETINFO_STATIC,
 };
 
 #define SRV_BUF_SIZE       2048
@@ -85,11 +90,13 @@ extern Configuration *cfg;
 
 uint8_t config_server_run();
 
+void config_set_default();
+
 /* This function is called every time external flash is initialized
 */
 void config_initialize();
 
-/* This function is called only when user changed settings via config server
+/* This function is called only when config changed
 */
 void config_save();
 
