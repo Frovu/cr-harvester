@@ -141,7 +141,7 @@ uint16_t construct_post_query(DataLine *dl)
       "&c[%u]=%u", ch, dl->counts[ch]);
   }
   debug_printf("(%u) %s\r\n", content_len, http_body);
-  return snprintf(http_buf, HTTP_BUF_SIZE, query_template, query_path, http_host, content_len, http_body);
+  return snprintf(http_buf, HTTP_BUF_SIZE, query_template, cfg->target_path, http_host, content_len, http_body);
 }
 
 DataStatus send_data_to_server(DataLine *dl, uint32_t timeout)

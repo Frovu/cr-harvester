@@ -40,6 +40,9 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
   } else if (strcmp(token, "port") == 0) {
     type = T_INT;
     res = &cfg->target_port;
+  } else if (strcmp(token, "path") == 0) {
+    type = T_STRING;
+    res = &cfg->target_path;
   } else if (strcmp(token, "tip") == 0) {
     type = T_IP;
     res = cfg->target_ip;

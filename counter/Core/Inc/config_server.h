@@ -9,20 +9,21 @@
 #include "counter.h"
 #include <string.h>
 
-#define DEV_ID_MAX_LEN  16
-#define ADDR_MAX_LEN    32
-
 /* Config structure fits in one flash page, but in case of first pages corruption
 *  whole first 4K sector is reserved for settings storage
 */
 #define CONFIG_FLASH_PAGE_FIRST  0
 #define CONFIG_FLASH_PAGES_COUNT 16
 
-// TODO: http path setting
+#define DEV_ID_MAX_LEN  16
+#define ADDR_MAX_LEN    32
+#define PATH_MAX_LEN    64
+
 typedef struct {
   uint16_t target_port;
   uint8_t dev_id[DEV_ID_MAX_LEN];
   uint8_t target_addr[ADDR_MAX_LEN];
+  uint8_t target_path[PATH_MAX_LEN];
   uint8_t ntp_addr[ADDR_MAX_LEN];
   uint8_t target_ip[4];  // if dns refuses to work we have an ip saved
   uint8_t ntp_ip[4];     // if dns refuses to work we have an ip saved
@@ -58,8 +59,8 @@ static const uint8_t html_template[] = HTTP_OK_RESP"<html><head><title>NM</title
 "<form method=\"post\">"
 "<p>Secret <input name=\"secret\" value=\"\"></p>"
 "<p>Device ID <input name=\"id\" value=\"$\"></p>"
-"<p>Target domain <input name=\"ta\" value=\"$\">"
-"<b>OR</b> IP <input name=\"tip\" value=\"$\">, Port <input name=\"port\" value=\"$\"></p>"
+"<p>Target domain <input name=\"ta\" value=\"$\"><b>OR</b> IP <input name=\"tip\" value=\"$\">"
+"<br>Target URL Path <input name=\"path\" value=\"$\">, TCP Port <input name=\"port\" value=\"$\"></p>"
 "<p>NTP server domain <input name=\"na\" value=\"$\">"
 "<b>OR</b> IP <input name=\"nip\" value=\"$\"></p>"
 "<p>IP config <input type=\"radio\" name=\"dhcp\" value=\"1\" checked>DHCP <input type=\"radio\" name=\"dhcp\" value=\"0\">Static</p>"

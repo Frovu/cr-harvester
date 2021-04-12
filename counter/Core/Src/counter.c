@@ -71,6 +71,8 @@ uint8_t try_init_dev(device_t dev)
 
 void counter_init()
 {
+  // TODO: reset config option
+
   debug_printf("\r\n\r\nINIT\r\n");
   for(uint16_t i=0; i<5; ++i) {
     LED_BLINK(LED_DATA, 30);
