@@ -17,6 +17,7 @@ extern uint32_t cycle_counter;
 
 DataLine * current_period = NULL;
 DataLine * data_buffer[DATA_BUFFER_LEN];
+DataLine data_line_buffer;
 
 uint16_t buffer_periods_count = 0;
 uint16_t flash_page_first = FIRST_DATA_PAGE;    // aka where-to-read (nothing useful before it)
@@ -201,7 +202,7 @@ DataStatus data_send_one(uint32_t timeout)
   }
   else // read data from flash
   {
-    line_to_send = (DataLine*) malloc(STRUCT_SIZE);
+    line_to_send = &data_line_buffer;
     if (!read_from_flash(line_to_send, timeout))
     {
       debug_printf("dataline: failed to retrieve from flash\r\n");
