@@ -82,7 +82,7 @@ typedef enum {
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 2000)
 #define CHANNELS_COUNT           12
 // if and only if more than DATA_BUFFER_LEN lines fail to send external flash memory is used
-#define DATA_BUFFER_LEN          4
+#define DATA_BUFFER_LEN          2
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1
 
