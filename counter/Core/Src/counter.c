@@ -336,7 +336,7 @@ void base_periodic_event()
 {
   uint16_t flag_ok = 0;
   float t_buf = 0, p_buf = 0;
-  if (IS_SET(FLAG_RTC_OK)) {
+  if (IS_SET(FLAG_RTC_OK)) { // TODO: probably read RTC only one time and then just +60 in IRQ
     for (int i=0; i < 3; ++i) {
       if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
         flag_ok = 1;

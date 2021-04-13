@@ -188,7 +188,7 @@ uint16_t prepare_html_resp()
       templ_i++;
       in_token = 0;
       token_ctl(1, token, srv_buf+i, SRV_BUF_SIZE-i-1);
-      while(srv_buf[++i] != '\0'); // skip bytes written by tokenctl
+      while(srv_buf[i] != '\0') {++i;}; // skip bytes written by tokenctl
     } else if (html_template[templ_i] == '"') {
       if (in_token || tok_i >= 16) {
         in_token = 0;
