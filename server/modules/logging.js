@@ -18,7 +18,7 @@ function switchFiles() {
 		const writeStream = fs.createWriteStream(path.join(DIR, file + '.gz'));
 		fileContents.pipe(zlib.createGzip()).pipe(writeStream).on('finish', (err) => {
 			if (err) global.log(`Failed to gzip: ${err}`);
-			else fs.rmSync(path.join(DIR, file));
+			else fs.unlinkSync(path.join(DIR, file));
 		});
 	});
 }
