@@ -328,7 +328,6 @@ uint8_t run_dns_queries()
 {
   uint8_t dns_ip_buf[4];
   uint8_t target_ip_saved[4];
-  uint8_t ntp_ip_saved[4];
   uint8_t *dns_ip = dns_ip_buf;
   if (cfg->dhcp_mode == NETINFO_DHCP) {
     getDNSfromDHCP(dns_ip);
@@ -343,7 +342,6 @@ uint8_t run_dns_queries()
     debug_printf("dns: failed to resolve %s\r\n", cfg->target_addr);
     return 0;
   }
-  copy_ip(ntp_ip_saved, cfg->ntp_ip);
   if ((cfg->ntp_addr[0] != 0) && DNS_run(dns_ip, cfg->ntp_addr, cfg->ntp_ip) <= 0) {
     debug_printf("dns: failed to resolve %s\r\n", cfg->ntp_addr);
     return 0;
@@ -351,8 +349,7 @@ uint8_t run_dns_queries()
   debug_printf("dns: ok\r\n\t%s = %u.%u.%u.%u\r\n\t%s = %u.%u.%u.%u\r\n",
     cfg->target_addr, cfg->target_ip[0], cfg->target_ip[1], cfg->target_ip[2], cfg->target_ip[3],
     cfg->ntp_addr, cfg->ntp_ip[0], cfg->ntp_ip[1], cfg->ntp_ip[2], cfg->ntp_ip[3]);
-  if ((ip_sum(target_ip_saved) != ip_sum(cfg->target_ip))
-      || (ip_sum(ntp_ip_saved) != ip_sum(cfg->ntp_ip))) {
+  if (ip_sum(target_ip_saved) != ip_sum(cfg->target_ip)) {
       config_save(); // ip was actually modified by dns
    }
 

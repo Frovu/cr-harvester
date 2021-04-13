@@ -236,6 +236,7 @@ void event_loop() {
           if (cfg->dhcp_mode == NETINFO_DHCP) {
             RAISE(FLAG_DHCP_RUN);
           }
+          RAISE(FLAG_DNS_RUN);
           // no break here
         case DATA_NET_NOT_OK:
           last_net_attempt = HAL_GetTick();
