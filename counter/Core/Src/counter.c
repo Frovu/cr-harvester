@@ -219,7 +219,7 @@ void event_loop() {
       TOGGLE(FLAG_FLASH_INIT);
     }
   }
-  if (time_left > SENDING_TIMEOUT + DEFAULT_TIMEOUT)
+  if (time_left > (SENDING_TIMEOUT + DEFAULT_TIMEOUT))
   { /* Reassure that we have enough time before next period, since failed sending try
     *  can possibly take fair amount of time due to big timeouts
     */
