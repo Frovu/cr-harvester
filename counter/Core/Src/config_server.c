@@ -6,6 +6,8 @@ static const uint32_t meme_signature = 0xdeadc0de;
 Configuration config_buf;
 Configuration *cfg = &config_buf; // global variable for whole program
 uint8_t config_modified = 0;
+extern uint16_t buffer_periods_count;
+extern uint16_t flash_pages_used;
 
 typedef enum {
   T_STRING,
@@ -147,10 +149,15 @@ uint8_t update_settings()
 uint16_t prepare_html_resp()
 { // TODO: show amount of data stored
   uint8_t token[16];
+  uint8_t tstmp[24];
   uint8_t in_token = 0;
   uint16_t i = 0, templ_i = 0, tok_i = 0;
-  snprintf(srv_buf, SRV_BUF_SIZE, html_template, current_period?current_period->timestamp:0, cycle_counter,
-    flash_error_count, (cycle_counter-last_ntp_sync), flags);
+  const time_t atstmp = current_period ? current_period->timestamp : 0;
+  DateTime *d = gmtime(&atstmp);
+  snprintf(tstmp, 24, "%u-%u-%u %u:%u:%u", d->tm_year+1900, d->tm_mon+1,
+    d->tm_mday, d->tm_hour, d->tm_min, d->tm_sec);
+  snprintf(srv_buf, SRV_BUF_SIZE, html_template, tstmp, buffer_periods_count,
+    flash_pages_used, cycle_counter, flash_error_count, (cycle_counter-last_ntp_sync), flags);
   // syncronize template and buffer pointers
   while(strncmp(srv_buf+(i++), "<h2>Dev", 7) != 0);
   while(strncmp(html_template+(templ_i++), "<h2>Dev", 7) != 0);
