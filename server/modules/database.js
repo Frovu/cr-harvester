@@ -20,6 +20,13 @@ const DB_TO_PROTOCOL = {
 	info: 'inf'
 };
 
+const COLUMN_TYPE = {
+	temperature: 'float',
+	pressure: 'float',
+	uptime: 'int',
+	info: 'int',
+};
+
 async function getSections() {
 	const res = await pool.query('SELECT * from sections');
 	sections = {};
@@ -35,15 +42,26 @@ function validate(data) {
 // presumes to be called after validate()
 async function insert(data) {
 	const row = {};
-	for(const f in DB_TO_PROTOCOL) row[f] = data[DB_TO_PROTOCOL[f]];
+	for(const f in DB_TO_PROTOCOL) {
+		let val = data[DB_TO_PROTOCOL[f]];
+		if(typeof val === 'undefined')
+			continue;
+		else if(COLUMN_TYPE[f] === 'float')
+			val = parseFloat(val);
+		else if(COLUMN_TYPE[f] === 'int')
+			val = parseInt(val);
+		row[f] = val;
+	}
 	for(const i in data.c) row['c'+i] = parseInt(data.c[i]);
-	row.section = sections[data.k];
+	row.section = sections[data.k].id;
 	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
+	for(const i in row)
+		if(typeof row[i] === 'undefined')
+			delete row[i];
 	const columns = Object.keys(row);
-	const placeholders = Object.keys(columns).map(i=>'$'+i).join();
+	const placeholders = [...columns.keys()].map(i=>'$'+(i+1)).join();
 	const q = `INSERT INTO data (${Object.keys(row).join()}) VALUES (${placeholders}) ` +
 		`ON CONFLICT (dt, section) DO UPDATE SET (${columns.join()}) = (${columns.map(c => 'EXCLUDED.'+c).join()})`;
-	console.log(q)
 	await pool.query(q, Object.values(row));
 }
 
