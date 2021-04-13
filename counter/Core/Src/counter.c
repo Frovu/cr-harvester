@@ -40,6 +40,9 @@ uint8_t try_init_dev(device_t dev)
   case DEV_BMP:
     flagVal = FLAG_BMP_OK;
     status = bmp280_init(&bmp280, &bmp280.params);
+    if (status) {
+      bmp280_force_measurement(&bmp280);
+    }
     break;
   case DEV_FLASH:
     flagVal = FLAG_FLASH_OK;
