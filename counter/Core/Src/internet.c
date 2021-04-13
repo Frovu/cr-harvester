@@ -149,14 +149,15 @@ DataStatus send_data_to_server(DataLine *dl, uint32_t timeout)
 {
   uint32_t tickstart = HAL_GetTick();
   int32_t status; uint16_t length;
-  status = socket(DATA_SOCKET, Sn_MR_TCP, HTTP_PORT, 0x00);
-  debug_printf("send: socket() = %d\r\n", (int16_t)status);
-  if (status != DATA_SOCKET) {
-    return DATA_NET_ERROR;
-  }
   while (HAL_GetTick() - tickstart < timeout)
   {
     switch (getSn_SR(DATA_SOCKET)) {
+    case SOCK_CLOSED:
+      status = socket(DATA_SOCKET, Sn_MR_TCP, HTTP_PORT, 0x00);
+      debug_printf("send: socket() = %d\r\n", (int16_t)status);
+      if (status != DATA_SOCKET) {
+        return DATA_NET_ERROR;
+      }
     case SOCK_INIT:
       status = connect(DATA_SOCKET, cfg->target_ip, cfg->target_port);
       debug_printf("send: connect() = %d\r\n", (int16_t)status);
