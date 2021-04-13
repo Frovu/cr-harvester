@@ -34,6 +34,7 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
   t_type_t type = T_STRING;
   void *res = NULL;
   uint8_t *s_res; uint16_t *i_res;
+  uint16_t ri = 0;
   if (strcmp(token, "id") == 0) {
     type = T_STRING;
     res = cfg->dev_id;
@@ -97,14 +98,34 @@ void token_ctl(uint8_t mode_write, uint8_t *token, uint8_t *dest, uint16_t destl
   {
     switch (type) {
       case T_STRING:
-        memcpy(s_res, dest, destlen);
-        s_res[destlen] = '\0';
+        for (uint16_t i = 0; i < destlen; ++i)
+        { // parse %2f url-encoded
+          if (dest[i] == '%') {
+            uint8_t byte = 0;
+            for (uint16_t j = 0x10; j > 0; j/=0x10) {
+              if (dest[i+1] >= '0' && dest[i+1] <= '9')
+                byte += (dest[i+1] - '0') * j;
+              else if (dest[i+1] >= 'a' && dest[i+1] <= 'f')
+                byte += (dest[i+1] - 'a' + 10) * j;
+              else if (dest[i+1] >= 'A' && dest[i+1] <= 'F')
+                byte += (dest[i+1] - 'A' + 10) * j;
+              else
+                break;
+              i++; // segfault unsafe but who cares
+            }
+            if (byte)
+              s_res[ri++] = byte;
+          } else {
+            s_res[ri++] = dest[i];
+          }
+        }
+        s_res[ri] = '\0';
         break;
       case T_IP:
         parse_ip(dest, s_res);
         break;
       case T_INT:
-	    i_res = (uint16_t*) res;
+        i_res = (uint16_t*) res;
         *i_res = (uint16_t) _stoi(dest);
         break;
     }
@@ -194,9 +215,9 @@ DataStatus config_server_run()
       len = getSn_RX_RSR(SERVER_SOCKET);
       if (len > 0)
       {
+        memset(srv_buf, '\0', SRV_BUF_SIZE); // protect from leftoff garbage
         len = (len < SRV_BUF_SIZE) ? len : SRV_BUF_SIZE;
         len = recv(SERVER_SOCKET, srv_buf, len);
-        srv_buf[len] = '\0';
         debug_printf("srv: got request of len %u\r\n", len);
         if (strncmp(srv_buf, "POST", 4) == 0) {
           if (update_settings()) {
