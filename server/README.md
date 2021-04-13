@@ -32,6 +32,9 @@ DB_PORT=5432
 ### Postgres tables description
 
 ```sql
+CREATE ROLE nm LOGIN PASSWORD '';
+CREATE DATABASE nm;
+
 CREATE TABLE data (
 	id SERIAL PRIMARY KEY,
 	at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -62,4 +65,7 @@ CREATE TABLE sections (
 	channels INTEGER,
 	description TEXT
 );
+
+INSERT INTO sections (key, channels, description)
+VALUES ('anon', 12, 'An unregistered or deconfigured device');
 ```
