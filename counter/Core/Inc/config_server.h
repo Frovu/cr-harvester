@@ -60,7 +60,7 @@ static const uint8_t html_template[] = HTTP_OK_RESP"<html><head><title>NM</title
 "Flash failures: <b>%lu</b><br>"
 "Last ntp sync: <b>%lu</b> min ago<br>Flags: <b>%x</b>"
 "<h2>Device Configuration</h2>"
-"<b>Be caerful</b>, typo or trailing space in config can lead to device hard fault!<br>"
+"<b>Be careful</b>, typo or trailing space in config can lead to device hard fault!<br>"
 "If you specify IP, domain field should be empty!<br><b>Don't forget to set IP config mode!</b>"
 "<form method=\"post\">"
 "<p>Secret <input type=\"password\" name=\"secret\" value=\"\"></p>"
@@ -75,7 +75,7 @@ static const uint8_t html_template[] = HTTP_OK_RESP"<html><head><title>NM</title
 "<p>Subnet <input name=\"sn\" value=\"$\"></p>"
 "<p>DNS <input name=\"dns\" value=\"$\"></p>"
 "above 4 have no effect if DHCP on"
-"<p><input type=\"submit\" value=\"Update Settings\"></p>"
+"<p>Check <b>every</b> setting before pressing <input type=\"submit\" value=\"Update Settings\"></p>"
 "</form></body>"
 "</html>";
 
