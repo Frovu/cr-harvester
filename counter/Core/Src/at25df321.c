@@ -118,9 +118,10 @@ void at25_erase(uint16_t from_page, uint16_t to_page)
   #define PAGES_PER_4K   16
   uint16_t erased;
   uint8_t cmd;
-  for (uint16_t page = from_page; page < to_page; page+=erased)
+  for (uint16_t page = from_page; page < to_page;)
   {
-    if ((to_page == 0) || (to_page - from_page > PAGES_PER_4K)) {
+    /* Erase 64k block if pointer is at 64k block start and end boundry is far enough */
+    if ((page % PAGES_PER_64K == 0) && ((to_page == 0) || (to_page - from_page > PAGES_PER_4K))) {
       cmd = AT25_CMD_ERASE_64K;
       erased = PAGES_PER_64K;
     } else {
@@ -138,5 +139,6 @@ void at25_erase(uint16_t from_page, uint16_t to_page)
       #endif
       return;
     }
+    page = page - page % erased + erased;
   }
 }

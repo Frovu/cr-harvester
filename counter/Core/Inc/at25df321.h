@@ -1,6 +1,7 @@
 #ifndef __AT25DF321_H
 #define __AT25DF321_H
 
+#include "main.h"
 #include "stm32f1xx_hal.h"
 
 #define AT25_BIT_WRITE_OK        (1 << 5)
