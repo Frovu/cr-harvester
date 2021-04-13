@@ -21,6 +21,7 @@ uint32_t last_ntp_sync = 0;
 int64_t last_period_tick = 0;
 uint32_t last_fix_attempt = -5000;
 uint32_t last_net_attempt = -5000;
+uint32_t last_dns_attempt = -5000;
 uint32_t last_srv_attempt = -5000;
 DateTime last_period_tm;
 
@@ -214,7 +215,7 @@ void event_loop() {
   { /* Reassure that we have enough time before next period, since failed sending try
     *  can possibly take fair amount of time due to big timeouts
     */
-    if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 1000)
+    if (IS_SET(FLAG_DATA_SENDING) && IS_SET(FLAG_W5500_OK) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > NET_FIXING_PERIOD)
     {
       switch (data_send_one(SENDING_TIMEOUT)) {
         case DATA_CLEAR:
@@ -240,8 +241,8 @@ void event_loop() {
           // no break here
         case DATA_NET_NOT_OK:
           last_net_attempt = HAL_GetTick();
-          LED_BLINK_INV(LED_DATA, 30);
-          LED_BLINK(LED_ERROR, 100);
+          LED_BLINK_INV(LED_DATA, 100);
+          LED_BLINK(LED_ERROR, 150);
       }
     }
     /* ********************* DHCP / DNS RUN SECTION *********************** */
@@ -252,12 +253,12 @@ void event_loop() {
           TOGGLE(FLAG_DHCP_RUN);
         }
       }
-      if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 500)
+      if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) &&  (HAL_GetTick()-last_dns_attempt > 500))
       { /* The DNS client is ran repeatedly when corresponding flag is set */
         if (run_dns_queries()) {
           TOGGLE(FLAG_DNS_RUN);
         } else {
-          last_net_attempt = HAL_GetTick();
+          last_dns_attempt = HAL_GetTick();
         }
       }
     }

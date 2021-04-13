@@ -72,9 +72,10 @@ typedef enum {
   #define SENDING_TIMEOUT          3000
   #define BASE_PERIOD_LEN_MS       60000
 #endif
+
+#define NET_FIXING_PERIOD          5000
 #define PROBLEM_FIXING_PERIOD      3000
 #define FLASH_INIT_TIME            30000
-
 
 #define NTP_SYNC_PERIOD             30 // in cycles (minutes)
 #define TIME_TRUST_PERIOD          720 // how long is time accounted as trusted after ntp sync
