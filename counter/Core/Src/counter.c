@@ -210,7 +210,7 @@ void event_loop() {
       TOGGLE(FLAG_FLASH_INIT);
     }
   }
-  if (time_left > SENDING_TIMEOUT * 2)
+  if (time_left > SENDING_TIMEOUT + DEFAULT_TIMEOUT)
   { /* Reassure that we have enough time before next period, since failed sending try
     *  can possibly take fair amount of time due to big timeouts
     */
@@ -252,7 +252,7 @@ void event_loop() {
           TOGGLE(FLAG_DHCP_RUN);
         }
       }
-      if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 5000)
+      if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) && since_last_attempt > 500)
       { /* The DNS client is ran repeatedly when corresponding flag is set */
         if (run_dns_queries()) {
           TOGGLE(FLAG_DNS_RUN);
