@@ -207,7 +207,7 @@ DataStatus send_data_to_server(DataLine *dl, uint32_t timeout)
     case SOCK_CLOSE_WAIT:
       debug_printf("send: disconnect()\r\n");
       disconnect(DATA_SOCKET);
-      return DATA_NET_NOT_OK;
+      break;
     default:
       return DATA_NET_ERROR;
     }
