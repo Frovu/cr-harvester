@@ -100,9 +100,14 @@ typedef enum {
 #define GPIO_CH_10      GPIO_PIN_6
 #define GPIO_CH_11      GPIO_PIN_7
 
-static const uint8_t GPIO_LOOKUP_CHANNEL[16] = {
-  -1, -1, -1, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3, -1
+static const uint16_t CHANNELS_GPIO_LIST[CHANNELS_COUNT] =
+{
+  GPIO_CH_0, GPIO_CH_1, GPIO_CH_2, GPIO_CH_3,
+  GPIO_CH_4, GPIO_CH_5, GPIO_CH_6, GPIO_CH_7,
+  GPIO_CH_8, GPIO_CH_9, GPIO_CH_10, GPIO_CH_11
 };
+
+#define GPIO_TO_N(gpio) (__builtin_ctz(gpio))
 
 typedef struct _struct_dl {
   uint32_t timestamp;

@@ -15,6 +15,8 @@ uint16_t flags = FLAGS_INITIAL;
 volatile uint16_t saved_counts[CHANNELS_COUNT];
 volatile uint16_t counters[CHANNELS_COUNT];
 
+int8_t lookup_channel_idx[16] = { [0 ... 15] = -1 }; // 16 GPIO channels
+
 uint32_t cycle_counter = 0;
 uint32_t last_ntp_sync = 0;
 
@@ -76,7 +78,6 @@ uint8_t try_init_dev(device_t dev)
 
 void counter_init()
 {
-
   debug_printf("\r\n\r\nINIT\r\n");
   for(uint16_t i=0; i<5; ++i) {
     LED_BLINK(LED_DATA, 30);
@@ -133,6 +134,10 @@ void counter_init()
     }
   }
   LED_OFF(LED_ERROR);
+  // Fill the Channels EXTI GPIO reverse lookup table
+  for(uint16_t i=0; i<CHANNELS_COUNT; ++i) {
+    lookup_channel_idx[GPIO_TO_N(CHANNELS_GPIO_LIST[i])] = i;
+  }
 }
 
 /* Core device algorithm is described in this function
@@ -397,12 +402,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
   else
   {
-    uint8_t idx = 0;
-    while (GPIO_Pin >>= 1) {
-      ++idx;
-    }
-    idx = GPIO_LOOKUP_CHANNEL[idx];
-    if (idx < CHANNELS_COUNT) {
+    int8_t idx = lookup_channel_idx[GPIO_TO_N(GPIO_Pin)];
+    if (idx >= 0)
+    {
       ++counters[idx];
     }
   }
