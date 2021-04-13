@@ -70,6 +70,7 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
   {
     FlashErrno res = at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, CHUNK_SIZE, DEFAULT_TIMEOUT);
+    ++flash_page_pointer;
     if (res == FLASH_ERRNO_OK)
     { // flash write succeeded
       if (flash_pages_used == 0)
@@ -77,21 +78,20 @@ uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
         flash_page_first = flash_page_pointer - 1;
       }
       ++flash_pages_used;
-      debug_printf("flash: successfully wrote page %d (%dms)\r\n", flash_page_pointer, HAL_GetTick() - tickstart);
+      debug_printf("flash: successfully wrote page %d (%dms)\r\n", flash_page_pointer-1, HAL_GetTick() - tickstart);
       return 1;
     }
     else if (res == FLASH_ERRNO_FAIL)
     {
-      debug_printf("flash: write error on page %d\r\n", flash_page_pointer);
+      debug_printf("flash: write error on page %d\r\n", flash_page_pointer-1);
     }
     else // flash timed out
     {
-      debug_printf("flash: timed out page at %d\r\n", flash_page_pointer);
+      debug_printf("flash: timed out page at %d\r\n", flash_page_pointer-1);
       if (IS_SET(FLAG_FLASH_OK))
         TOGGLE(FLAG_FLASH_OK);
       return 0;
     }
-    ++flash_page_pointer;
   }
   debug_printf("flash: end of writing loop (p# = %d / %d)\r\n", flash_page_pointer, AT25_PAGES_COUNT);
   return 0; // run out of flash pages or timed out
