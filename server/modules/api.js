@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('./database');
+const analyse = require('./analysis');
 db.connect();
 const router = express.Router();
 
