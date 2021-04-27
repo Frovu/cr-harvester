@@ -39,12 +39,14 @@ async function analyse(section, periodStart) {
 		const expectedAmount = chunkLast < dataLast ? CHUNK_SIZE : (1+Math.floor((dataLast - chunk) / PERIOD_LEN_MS));
 		result.missing += expectedAmount - res.rows.length;
 	}
+	return result;
 }
 
 module.exports = {
 	analyse: analyse
 };
 
-setTimeout(()=>{
-	analyse(1, Date.now()-1789*60*1001);
+setTimeout(async ()=>{
+	const r = await analyse(1, Date.now()-60*60*1000);
+	console.log(r)
 }, 1000);

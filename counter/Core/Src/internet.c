@@ -81,7 +81,7 @@ uint8_t W5500_Init()
 // DHCP_IP_CHANGED,  ///< Change IP address by new ip from DHCP
 // DHCP_IP_LEASED,   ///< Stand by
 // DHCP_STOPPED      ///< Stop processing DHCP protocol
-uint8_t W5500_RunDHCP()
+int8_t W5500_RunDHCP()
 {
   switch (DHCP_run()) {
     case DHCP_IP_ASSIGN:
@@ -98,6 +98,7 @@ uint8_t W5500_RunDHCP()
       return 1;
     case DHCP_FAILED:
       debug_printf("dhcp: failed\r\n");
+      return -1;
     case DHCP_STOPPED:
     case DHCP_RUNNING:
       break;

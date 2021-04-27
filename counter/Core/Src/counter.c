@@ -257,8 +257,11 @@ void event_loop() {
     if (IS_SET(FLAG_W5500_OK)) {
       if (IS_SET(FLAG_DHCP_RUN))
       { /* The DHCP client is ran repeatedly when corresponding flag is set */
-        if (W5500_RunDHCP()) {
+        int8_t dhcr = W5500_RunDHCP();
+        if (dhcr > 0) {
           TOGGLE(FLAG_DHCP_RUN);
+        } else if (dhcr < 0) {
+          TOGGLE(FLAG_W5500_OK);
         }
       }
       if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) &&  (HAL_GetTick()-last_dns_attempt > 500))
@@ -323,7 +326,10 @@ void event_loop() {
       try_init_dev(DEV_FLASH);
     }
     if (NOT_SET(FLAG_W5500_OK)) {
-      // TODO: hardware reset
+      HAL_GPIO_WritePin(W5500_RESET_GPIO_Port, W5500_RESET_Pin, GPIO_PIN_RESET);
+      HAL_Delay(100);
+      HAL_GPIO_WritePin(W5500_RESET_GPIO_Port, W5500_RESET_Pin, GPIO_PIN_SET);
+      HAL_Delay(100);
       try_init_dev(DEV_W5500);
     }
     /* Blink ERROR led for n times depending of dev_ok flag bits
@@ -345,7 +351,7 @@ void base_periodic_event()
 {
   uint16_t flag_ok = 0;
   float t_buf = 0, p_buf = 0;
-  if (IS_SET(FLAG_RTC_OK)) { // TODO: probably read RTC only one time and then just +60 in IRQ
+  if (IS_SET(FLAG_RTC_OK)) {
     for (int i=0; i < 3; ++i) {
       if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
         flag_ok = 1;
@@ -359,6 +365,10 @@ void base_periodic_event()
       TOGGLE(FLAG_RTC_OK);
     }
   }
+  /* Since rtc every minute alarm is used, the seconds counter on the period begiining
+   * should always be equal to zero, so we can just zero it out in data struct in case
+   * it was read after some time due to data sending and other possible delays */
+  last_period_tm.tm_sec = 0; // FIXME: if base period not equal to minute!
 
   if (IS_SET(FLAG_BMP_OK)) {
     flag_ok = 0;

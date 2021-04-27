@@ -57,7 +57,7 @@ static const uint8_t query_template[] = "POST %s HTTP/1.1\r\n"
 
 uint8_t W5500_Connected(void);
 uint8_t W5500_Init();
-uint8_t W5500_RunDHCP();
+int8_t W5500_RunDHCP();
 
 int32_t _stoi(uint8_t *string);
 DataStatus send_data_to_server(DataLine *dl, uint32_t timeout);
