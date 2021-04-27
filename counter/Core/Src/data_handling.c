@@ -226,11 +226,11 @@ typedef enum {
 //    0 if sent all
 DataStatus data_send_one(uint32_t timeout)
 {
-  if (buffer_periods_count + flash_pages_used == 0) {
-    return DATA_CLEAR;
-  }
   // determine data source
   DataSource source = last_period ? S_LAST_PERIOD : (buffer_periods_count ? S_BUFFER : S_FLASH);
+  if (source == S_FLASH && !flash_pages_used) {
+    return DATA_CLEAR;
+  }
   DataLine *line_to_send;
   switch (source) {
     case S_LAST_PERIOD:
