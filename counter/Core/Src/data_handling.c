@@ -16,6 +16,7 @@ extern uint16_t flags;
 extern uint32_t cycle_counter;
 
 DataLine * current_period = NULL;
+DataLine * last_period = NULL;
 DataLine * data_buffer[DATA_BUFFER_LEN];
 DataLine data_line_buffer;
 
@@ -101,6 +102,8 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
   if (NOT_SET(FLAG_FLASH_OK) || !at25_is_valid()) {
     if (IS_SET(FLAG_FLASH_OK))
       TOGGLE(FLAG_FLASH_OK);
+    // if flash is broken forget about data saved there
+    flash_pages_used = 0;
     return 0;
   }
   uint32_t tickstart = HAL_GetTick();
@@ -108,16 +111,16 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
   {
     at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
     uint32_t *signature = (uint32_t*) buffer;
+    ++flash_page_first;
     if (*signature == data_line_signature)
     { // found saved data line
-      debug_printf("flash: successfuly read page %d\r\n", flash_page_first);
+      debug_printf("flash: successfuly read page %d\r\n", flash_page_first-1);
       memcpy(dl, buffer + SIGNATURE_SIZE, STRUCT_SIZE);
       return 1;
     }
     else
     {
-      debug_printf("flash: skipping page %d\r\n", flash_page_first);
-      ++flash_page_first;
+      debug_printf("flash: skipping page %d\r\n", flash_page_first-1);
     }
   }
   if (flash_page_first >= AT25_PAGES_COUNT)
@@ -137,37 +140,63 @@ void reset_flash() {
   flash_page_pointer = FIRST_DATA_PAGE;
 }
 
+/* Data saving algorithm works as follows:
+ * - When new period occurs, it looks if last_period is sent/saved and saves it if it isn't,
+ *    after that it saves current_period to last_period and allocates new current_period
+ * - When its possible to send data and last_period is not sent/saved it tries to send it and
+ *    saves if failed to send, otherwise it tries to send data from storage
+ * - Storage consists of energy dependent data_buffer[DATA_BUFFER_LEN] and independent FLASH
+ * - When system wants to save line to storage it looks if FLASH is connected and not full,
+ *    if so, it saves line to next unused page in flash and also saves data_buffer if it is not empty,
+ *    otherwise if flash was not ok, it saves to data_buffer end, shifting it to left if it was full,
+ *    so the buffer will store DATA_BUFFER_LEN of last lines in case of flash being full or broken
+ * - When system wants to save retrieve a line from storage for sending, it first looks
+ *    if data_buffer is not empty, and takes first from there, shifting buffer to the left if send succeeded
+ *    otherwise it takes from flash, incrementing flash_pointer if send succeeded
+ *    note: flash erase happens ONLY after all lines stored were sent or read failed to find valid line
+ */
+static void save_last_period() {
+  /* Save line to buffer if flash is full or not responding */
+  if (NOT_SET(FLAG_FLASH_OK) || flash_page_pointer >= AT25_PAGES_COUNT)
+  {
+    // shift buffer to left if it is full, forgetting the first element
+    if (buffer_periods_count >= DATA_BUFFER_LEN) {
+      buffer_periods_count = DATA_BUFFER_LEN - 1;
+      free(data_buffer[0]);
+      for (uint32_t i = 0; i < DATA_BUFFER_LEN; ++i) {
+        data_buffer[i] = data_buffer[i + 1];
+      }
+    }
+    data_buffer[buffer_periods_count] = last_period;
+    ++buffer_periods_count;
+    debug_printf("period: saved to buffer\r\n");
+  }
+  else /* save data line to flash */
+  { /* if buffer was not in flash, save it there */
+    for (uint32_t i=0; i<buffer_periods_count; ++i) {
+      write_to_flash(data_buffer[i], DEFAULT_TIMEOUT);
+      free(data_buffer[i]);
+    }
+    buffer_periods_count = 0;
+
+    write_to_flash(last_period, DEFAULT_TIMEOUT);
+    free(last_period); // free data, since it is now saved in flash (at least we hope so)
+    debug_printf("period: saved to flash (%d) < %d / %d >\r\n", flash_pages_used, flash_page_first, flash_page_pointer);
+  }
+  last_period = NULL;
+}
+
 void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p)
 {
-  if (current_period)
+  if (current_period) // save period data to send it later in the loop
   {
     debug_printf("period: counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
-    for (uint16_t i=0; i<CHANNELS_COUNT; ++i) {
+    for (uint32_t i=0; i<CHANNELS_COUNT; ++i) {
       current_period->counts[i] = counts[i];
     }
-    if (NOT_SET(FLAG_FLASH_OK))
-    { // if flash is broken forget about data saved there
-      flash_pages_used = 0;
-    }
-    if ((buffer_periods_count < DATA_BUFFER_LEN) && (flash_pages_used == 0))
-    { // save data line to buffer
-      data_buffer[buffer_periods_count] = current_period;
-      ++buffer_periods_count;
-      debug_printf("period: saved to buffer\r\n");
-    }
-    else if (IS_SET(FLAG_FLASH_OK)) // save data line to flash
-    {
-      // if buffer was not in flash, save it
-      for (uint16_t i=0; i<buffer_periods_count; ++i) {
-        write_to_flash(data_buffer[i], DEFAULT_TIMEOUT);
-        free(data_buffer[i]);
-      }
-      buffer_periods_count = 0;
-      write_to_flash(current_period, DEFAULT_TIMEOUT);
-      // free data since it is now saved in flash (at least we hope so)
-      free(current_period);
-      debug_printf("period: saved to flash (%d) < %d / %d >\r\n", flash_pages_used, flash_page_first, flash_page_pointer);
-    }
+    if (last_period)
+      save_last_period();
+    last_period = current_period;
   }
   /*
   ******************* Start new period ******************
@@ -185,49 +214,61 @@ void data_period_transition(const volatile uint16_t * counts, DateTime *dt, floa
   debug_printf("period: start %lu\r\n", current_period->timestamp);
 }
 
+typedef enum {
+  S_LAST_PERIOD,
+  S_BUFFER,
+  S_FLASH
+} DataSource;
+
 // returns
 //    positive number if line sent but there is more remaining
 //    negative number if failed to send
 //    0 if sent all
 DataStatus data_send_one(uint32_t timeout)
 {
-  // if flash_pages_used is >0, buffer_periods_count is 0
-  if (buffer_periods_count + flash_pages_used <= 0) {
+  if (buffer_periods_count + flash_pages_used == 0) {
     return DATA_CLEAR;
   }
+  // determine data source
+  DataSource source = last_period ? S_LAST_PERIOD : (buffer_periods_count ? S_BUFFER : S_FLASH);
   DataLine *line_to_send;
-  if (flash_pages_used == 0)
-  { // data is stored in buffer only
-    line_to_send = data_buffer[0];
-  }
-  else // read data from flash
-  {
-    line_to_send = &data_line_buffer;
-    if (!read_from_flash(line_to_send, timeout))
-    {
-      debug_printf("dataline: failed to retrieve from flash\r\n");
-      return DATA_FLASH_ERROR; // failed to read anything useful from flash, aborting
-    }
+  switch (source) {
+    case S_LAST_PERIOD:
+      line_to_send = last_period;
+      break;
+    case S_BUFFER:
+      line_to_send = data_buffer[0];
+      break;
+    case S_FLASH:
+      line_to_send = &data_line_buffer;
+      if (!read_from_flash(line_to_send, timeout))
+      {
+        debug_printf("dataline: failed to retrieve from flash\r\n");
+        return DATA_FLASH_ERROR; // failed to read anything useful from flash, aborting
+      }
+      break;
   }
 
   debug_printf("()--> %lu / %.2f hPa / %.2f C ()-->\r\n", line_to_send->timestamp,
     line_to_send->pressure, line_to_send->temperature);
   DataStatus status = send_data_to_server(line_to_send, timeout);
 
-  if (status == DATA_OK)
+  if (status == DATA_OK) // data is sent, clear it from storage
   {
-    if (flash_pages_used == 0)
-    { // data was taken from buffer, free and shift buffer to the left
+    switch (source) {
+    case S_LAST_PERIOD:
+      free(last_period);
+      last_period = NULL;
+      break;
+    case S_BUFFER: // free first and shift buffer to the left
       free(line_to_send);
       --buffer_periods_count;
       for (uint16_t i = 0; i < buffer_periods_count; ++i) {
         data_buffer[i] = data_buffer[i + 1];
       }
-    }
-    else
-    { // data was taken from flash, decrement flash counter and erase if nothing left on chip
+      break;
+    case S_FLASH: // decrement flash counter and erase if nothing left on chip
       --flash_pages_used;
-      ++flash_page_first;
       if (flash_pages_used == 0)
       {
         reset_flash();
@@ -241,6 +282,10 @@ DataStatus data_send_one(uint32_t timeout)
   else
   {
     debug_printf("dataline: failed to send\r\n");
+    if (source == S_LAST_PERIOD)
+    { // save last period to storage
+      save_last_period();
+    }
   }
   return status;
 }
