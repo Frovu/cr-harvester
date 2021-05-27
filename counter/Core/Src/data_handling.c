@@ -111,16 +111,16 @@ uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
   {
     at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
     uint32_t *signature = (uint32_t*) buffer;
-    ++flash_page_first;
     if (*signature == data_line_signature)
     { // found saved data line
-      debug_printf("flash: successfuly read page %d\r\n", flash_page_first-1);
+      debug_printf("flash: successfuly read page %d\r\n", flash_page_first);
       memcpy(dl, buffer + SIGNATURE_SIZE, STRUCT_SIZE);
       return 1;
     }
     else
     {
-      debug_printf("flash: skipping page %d\r\n", flash_page_first-1);
+      debug_printf("flash: skipping page %d\r\n", flash_page_first);
+      ++flash_page_first;
     }
   }
   if (flash_page_first >= AT25_PAGES_COUNT)
@@ -267,8 +267,9 @@ DataStatus data_send_one(uint32_t timeout)
         data_buffer[i] = data_buffer[i + 1];
       }
       break;
-    case S_FLASH: // decrement flash counter and erase if nothing left on chip
+    case S_FLASH: // increment flash pointer and erase if nothing left on chip
       --flash_pages_used;
+      ++flash_page_first;
       if (flash_pages_used == 0)
       {
         reset_flash();

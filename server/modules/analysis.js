@@ -47,6 +47,6 @@ module.exports = {
 };
 
 setTimeout(async ()=>{
-	const r = await analyse(1, Date.now()-60*60*1000);
+	const r = await analyse(1, Date.now()-30*60*60*1000);
 	console.log(r)
 }, 1000);
