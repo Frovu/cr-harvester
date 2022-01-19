@@ -27,118 +27,118 @@ uint16_t flash_page_pointer = FIRST_DATA_PAGE;  // pointer to what is assumed fi
 
 uint8_t flash_buf[CHUNK_SIZE];
 uint8_t * buffer = flash_buf;
-
-void reset_flash();
-uint8_t write_to_flash(const DataLine *dl, uint32_t timeout);
-uint8_t read_from_flash(DataLine *dl, uint32_t timeout);
-
-void init_read_flash()
-{
-  debug_printf("flash: init read start\r\n");
-  uint32_t tickstart = HAL_GetTick();
-  flash_pages_used = 0;
-  flash_page_first = FIRST_DATA_PAGE;
-  for (uint16_t page = 0; page < AT25_PAGES_COUNT; ++page)
-  {
-    at25_read_block(page * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
-    uint32_t *signature = (uint32_t*) buffer;
-    if (*signature == data_line_signature)
-    { // found saved data line
-      if (flash_pages_used == 0) {
-        flash_page_first = page;
-      }
-      ++flash_pages_used;
-    }
-    if(page % 100 == 0) {
-      LED_BLINK_INV(BOARD_LED, 3);
-    }
-  }
-  flash_page_pointer = flash_page_first + flash_pages_used;
-  debug_printf("flash: init read done in %lu ms\r\n", HAL_GetTick() - tickstart);
-  debug_printf("flash: found %d records starting from page %d\r\n", flash_pages_used, flash_page_first);
-}
-
-uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
-{
-  if (NOT_SET(FLAG_FLASH_OK) || !at25_is_valid()) {
-    if (IS_SET(FLAG_FLASH_OK))
-      TOGGLE(FLAG_FLASH_OK);
-    return 0;
-  }
-  uint32_t tickstart = HAL_GetTick();
-  memcpy(buffer, &data_line_signature, SIGNATURE_SIZE);
-  memcpy(buffer + SIGNATURE_SIZE, dl, STRUCT_SIZE);
-  while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
-  {
-    FlashErrno res = at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, CHUNK_SIZE, DEFAULT_TIMEOUT);
-    ++flash_page_pointer;
-    if (res == FLASH_ERRNO_OK)
-    { // flash write succeeded
-      if (flash_pages_used == 0)
-      {
-        flash_page_first = flash_page_pointer - 1;
-      }
-      ++flash_pages_used;
-      debug_printf("flash: successfully wrote page %d (%dms)\r\n", flash_page_pointer-1, HAL_GetTick() - tickstart);
-      return 1;
-    }
-    else if (res == FLASH_ERRNO_FAIL)
-    {
-      debug_printf("flash: write error on page %d\r\n", flash_page_pointer-1);
-    }
-    else // flash timed out
-    {
-      debug_printf("flash: timed out page at %d\r\n", flash_page_pointer-1);
-      if (IS_SET(FLAG_FLASH_OK))
-        TOGGLE(FLAG_FLASH_OK);
-      return 0;
-    }
-  }
-  debug_printf("flash: end of writing loop (p# = %d / %d)\r\n", flash_page_pointer, AT25_PAGES_COUNT);
-  return 0; // run out of flash pages or timed out
-}
-
-uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
-  if (NOT_SET(FLAG_FLASH_OK) || !at25_is_valid()) {
-    if (IS_SET(FLAG_FLASH_OK))
-      TOGGLE(FLAG_FLASH_OK);
-    // if flash is broken forget about data saved there
-    flash_pages_used = 0;
-    return 0;
-  }
-  uint32_t tickstart = HAL_GetTick();
-  while ((flash_page_first < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
-  {
-    at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
-    uint32_t *signature = (uint32_t*) buffer;
-    if (*signature == data_line_signature)
-    { // found saved data line
-      debug_printf("flash: successfuly read page %d\r\n", flash_page_first);
-      memcpy(dl, buffer + SIGNATURE_SIZE, STRUCT_SIZE);
-      return 1;
-    }
-    else
-    {
-      debug_printf("flash: skipping page %d\r\n", flash_page_first);
-      ++flash_page_first;
-    }
-  }
-  if (flash_page_first >= AT25_PAGES_COUNT)
-  { // data not found, flash is assumed to be empty
-    reset_flash();
-  }
-  return 0;
-}
-
-void reset_flash() {
-  debug_printf("flash: erasing data section\r\n");
-  uint32_t tickstart = HAL_GetTick();
-  at25_erase(FIRST_DATA_PAGE, flash_page_pointer);
-  debug_printf("flash: erased in %lu ms\r\n", (uint32_t)(HAL_GetTick()-tickstart));
-  flash_page_first = FIRST_DATA_PAGE;
-  flash_pages_used = 0;
-  flash_page_pointer = FIRST_DATA_PAGE;
-}
+//
+// void reset_flash();
+// uint8_t write_to_flash(const DataLine *dl, uint32_t timeout);
+// uint8_t read_from_flash(DataLine *dl, uint32_t timeout);
+//
+// void init_read_flash()
+// {
+//   debug_printf("flash: init read start\r\n");
+//   uint32_t tickstart = HAL_GetTick();
+//   flash_pages_used = 0;
+//   flash_page_first = FIRST_DATA_PAGE;
+//   for (uint16_t page = 0; page < AT25_PAGES_COUNT; ++page)
+//   {
+//     at25_read_block(page * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
+//     uint32_t *signature = (uint32_t*) buffer;
+//     if (*signature == data_line_signature)
+//     { // found saved data line
+//       if (flash_pages_used == 0) {
+//         flash_page_first = page;
+//       }
+//       ++flash_pages_used;
+//     }
+//     if(page % 100 == 0) {
+//       LED_BLINK_INV(BOARD_LED, 3);
+//     }
+//   }
+//   flash_page_pointer = flash_page_first + flash_pages_used;
+//   debug_printf("flash: init read done in %lu ms\r\n", HAL_GetTick() - tickstart);
+//   debug_printf("flash: found %d records starting from page %d\r\n", flash_pages_used, flash_page_first);
+// }
+//
+// uint8_t write_to_flash(const DataLine *dl, uint32_t timeout)
+// {
+//   if (NOT_SET(FLAG_FLASH_OK) || !at25_is_valid()) {
+//     if (IS_SET(FLAG_FLASH_OK))
+//       TOGGLE(FLAG_FLASH_OK);
+//     return 0;
+//   }
+//   uint32_t tickstart = HAL_GetTick();
+//   memcpy(buffer, &data_line_signature, SIGNATURE_SIZE);
+//   memcpy(buffer + SIGNATURE_SIZE, dl, STRUCT_SIZE);
+//   while ((flash_page_pointer < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
+//   {
+//     FlashErrno res = at25_write_block(flash_page_pointer * AT25_PAGE_SIZE, buffer, CHUNK_SIZE, DEFAULT_TIMEOUT);
+//     ++flash_page_pointer;
+//     if (res == FLASH_ERRNO_OK)
+//     { // flash write succeeded
+//       if (flash_pages_used == 0)
+//       {
+//         flash_page_first = flash_page_pointer - 1;
+//       }
+//       ++flash_pages_used;
+//       debug_printf("flash: successfully wrote page %d (%dms)\r\n", flash_page_pointer-1, HAL_GetTick() - tickstart);
+//       return 1;
+//     }
+//     else if (res == FLASH_ERRNO_FAIL)
+//     {
+//       debug_printf("flash: write error on page %d\r\n", flash_page_pointer-1);
+//     }
+//     else // flash timed out
+//     {
+//       debug_printf("flash: timed out page at %d\r\n", flash_page_pointer-1);
+//       if (IS_SET(FLAG_FLASH_OK))
+//         TOGGLE(FLAG_FLASH_OK);
+//       return 0;
+//     }
+//   }
+//   debug_printf("flash: end of writing loop (p# = %d / %d)\r\n", flash_page_pointer, AT25_PAGES_COUNT);
+//   return 0; // run out of flash pages or timed out
+// }
+//
+// uint8_t read_from_flash(DataLine *dl, uint32_t timeout) {
+//   if (NOT_SET(FLAG_FLASH_OK) || !at25_is_valid()) {
+//     if (IS_SET(FLAG_FLASH_OK))
+//       TOGGLE(FLAG_FLASH_OK);
+//     // if flash is broken forget about data saved there
+//     flash_pages_used = 0;
+//     return 0;
+//   }
+//   uint32_t tickstart = HAL_GetTick();
+//   while ((flash_page_first < AT25_PAGES_COUNT) && (HAL_GetTick() - tickstart < timeout))
+//   {
+//     at25_read_block(flash_page_first * AT25_PAGE_SIZE, buffer, CHUNK_SIZE);
+//     uint32_t *signature = (uint32_t*) buffer;
+//     if (*signature == data_line_signature)
+//     { // found saved data line
+//       debug_printf("flash: successfuly read page %d\r\n", flash_page_first);
+//       memcpy(dl, buffer + SIGNATURE_SIZE, STRUCT_SIZE);
+//       return 1;
+//     }
+//     else
+//     {
+//       debug_printf("flash: skipping page %d\r\n", flash_page_first);
+//       ++flash_page_first;
+//     }
+//   }
+//   if (flash_page_first >= AT25_PAGES_COUNT)
+//   { // data not found, flash is assumed to be empty
+//     reset_flash();
+//   }
+//   return 0;
+// }
+//
+// void reset_flash() {
+//   debug_printf("flash: erasing data section\r\n");
+//   uint32_t tickstart = HAL_GetTick();
+//   at25_erase(FIRST_DATA_PAGE, flash_page_pointer);
+//   debug_printf("flash: erased in %lu ms\r\n", (uint32_t)(HAL_GetTick()-tickstart));
+//   flash_page_first = FIRST_DATA_PAGE;
+//   flash_pages_used = 0;
+//   flash_page_pointer = FIRST_DATA_PAGE;
+// }
 
 /* Data saving algorithm works as follows:
  * - When new period occurs, it looks if last_period is sent/saved and saves it if it isn't,
@@ -156,34 +156,17 @@ void reset_flash() {
  *    note: flash erase happens ONLY after all lines stored were sent or read failed to find valid line
  */
 static void save_last_period() {
-  /* Save line to buffer if flash is full or not responding */
-  if (NOT_SET(FLAG_FLASH_OK) || flash_page_pointer >= AT25_PAGES_COUNT)
-  {
-    // shift buffer to left if it is full, forgetting the first element
-    if (buffer_periods_count >= DATA_BUFFER_LEN) {
-      buffer_periods_count = DATA_BUFFER_LEN - 1;
-      free(data_buffer[0]);
-      for (uint32_t i = 0; i < DATA_BUFFER_LEN; ++i) {
-        data_buffer[i] = data_buffer[i + 1];
-      }
+  // shift buffer to left if it is full, forgetting the first element
+  if (buffer_periods_count >= DATA_BUFFER_LEN) {
+    buffer_periods_count = DATA_BUFFER_LEN - 1;
+    free(data_buffer[0]);
+    for (uint32_t i = 0; i < DATA_BUFFER_LEN; ++i) {
+      data_buffer[i] = data_buffer[i + 1];
     }
-    data_buffer[buffer_periods_count] = last_period;
-    ++buffer_periods_count;
-    debug_printf("period: saved to buffer\r\n");
   }
-  else /* save data line to flash */
-  { /* if buffer was not in flash, save it there */
-    for (uint32_t i=0; i<buffer_periods_count; ++i) {
-      write_to_flash(data_buffer[i], DEFAULT_TIMEOUT);
-      free(data_buffer[i]);
-    }
-    buffer_periods_count = 0;
-
-    write_to_flash(last_period, DEFAULT_TIMEOUT);
-    free(last_period); // free data, since it is now saved in flash (at least we hope so)
-    debug_printf("period: saved to flash (%d) < %d / %d >\r\n", flash_pages_used, flash_page_first, flash_page_pointer);
-  }
-  last_period = NULL;
+  data_buffer[buffer_periods_count] = last_period;
+  ++buffer_periods_count;
+  debug_printf("period: saved to buffer\r\n");
 }
 
 void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p)
@@ -227,10 +210,7 @@ typedef enum {
 DataStatus data_send_one(uint32_t timeout)
 {
   // determine data source
-  DataSource source = last_period ? S_LAST_PERIOD : (buffer_periods_count ? S_BUFFER : S_FLASH);
-  if (source == S_FLASH && !flash_pages_used) {
-    return DATA_CLEAR;
-  }
+  DataSource source = last_period ? S_LAST_PERIOD : S_BUFFER;
   DataLine *line_to_send;
   switch (source) {
     case S_LAST_PERIOD:
@@ -238,14 +218,6 @@ DataStatus data_send_one(uint32_t timeout)
       break;
     case S_BUFFER:
       line_to_send = data_buffer[0];
-      break;
-    case S_FLASH:
-      line_to_send = &data_line_buffer;
-      if (!read_from_flash(line_to_send, timeout))
-      {
-        debug_printf("dataline: failed to retrieve from flash\r\n");
-        return DATA_FLASH_ERROR; // failed to read anything useful from flash, aborting
-      }
       break;
   }
 

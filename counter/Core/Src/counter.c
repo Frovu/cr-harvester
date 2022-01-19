@@ -6,10 +6,12 @@
 */
 #include "counter.h"
 
-extern I2C_HandleTypeDef hi2c2;
+extern I2C_HandleTypeDef hi2c1;
 extern SPI_HandleTypeDef hspi1;
+
 BMP280_HandleTypedef bmp280;
 
+Configuration *cfg;
 uint16_t flags = FLAGS_INITIAL;
 
 volatile uint16_t saved_counts[CHANNELS_COUNT];
@@ -17,6 +19,7 @@ volatile uint16_t counters[CHANNELS_COUNT];
 
 int8_t lookup_channel_idx[16] = { [0 ... 15] = -1 }; // 16 GPIO channels
 
+uint32_t second_counter = 0;
 uint32_t cycle_counter = 0;
 uint32_t last_ntp_sync = 0;
 
@@ -32,26 +35,11 @@ uint8_t try_init_dev(device_t dev)
   uint16_t flagVal = 0;
   uint8_t status = 0;
   switch (dev) {
-  case DEV_RTC:
-    flagVal = FLAG_RTC_OK;
-    uint8_t alarm_data[] = RTC_ALARM_CONFIG;
-    status = RTC_init(&hi2c2, RTC_DEFAULT_ADDR, RTC_CONFIG, DEFAULT_TIMEOUT) == HAL_OK;
-    status = status && (RTC_ConfigAlarm(RTC_ALARM_REG, alarm_data, DEFAULT_TIMEOUT) == HAL_OK);
-    status = status && (RTC_ClearAlarm(DEFAULT_TIMEOUT) == HAL_OK);
-    break;
   case DEV_BMP:
     flagVal = FLAG_BMP_OK;
     status = bmp280_init(&bmp280, &bmp280.params);
     if (status) {
       bmp280_force_measurement(&bmp280);
-    }
-    break;
-  case DEV_FLASH:
-    flagVal = FLAG_FLASH_OK;
-    status = at25_is_valid() && at25_is_ready();
-    if (status) {
-      at25_global_unprotect();
-      RAISE(FLAG_FLASH_INIT);
     }
     break;
   case DEV_W5500:
@@ -84,54 +72,18 @@ void counter_init()
     HAL_Delay(30);
   }
   LED_ON(LED_ERROR);
-  // ******************* AT25DF321 ******************
-  at25_init(&hspi1, AT25_CS_GPIO_Port, AT25_CS_Pin);
-  for (int i=0; !try_init_dev(DEV_FLASH) && i < 5; ++i) {
-    HAL_Delay(100);
-    LED_BLINK_INV(LED_ERROR, 200);
-  }
-  // ******************* CONFIG *********************
-  if (IS_SET(FLAG_FLASH_OK)) {
-    /* Set and save default settings if RESET button is pressed */
-    if (HAL_GPIO_ReadPin(BUTTON_RESET_GPIO_Port, BUTTON_RESET_Pin) == GPIO_PIN_RESET) {
-      debug_printf("INIT DEFAULT CONFIG\r\n");
-      config_set_default();
-      config_save();
-      for(uint16_t i=0; i<16; ++i) {
-        LED_BLINK(LED_DATA,  50);
-        LED_BLINK(LED_ERROR, 50);
-      }
-    } else {
-      config_initialize();
-    }
-  } else {
-    config_set_default();
-  }
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
-  bmp280.i2c = &hi2c2;
+  bmp280.i2c = &hi2c1;
   for (int i=0; !try_init_dev(DEV_BMP) && i < 3; ++i) {
     HAL_Delay(300);
     LED_BLINK_INV(LED_ERROR, 200);
-  }
-  // ******************** DS3231 ********************
-  while (!try_init_dev(DEV_RTC)) {
-    HAL_Delay(100);
-    LED_BLINK_INV(LED_ERROR, 400);
   }
   // ******************* W5500 **********************
   for (int i=0; !try_init_dev(DEV_W5500) && i < 3; ++i) {
     HAL_Delay(300);
     LED_BLINK_INV(LED_ERROR, 600);
-  }
-  /* Initial NTP sync happens before first cycle, hence requires
-  *  setting last_period_tick/tm explicitly
-  */
-  if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) != HAL_OK) {
-    if (IS_SET(FLAG_RTC_OK)) {
-      TOGGLE(FLAG_RTC_OK);
-    }
   }
   LED_OFF(LED_ERROR);
   // Fill the Channels EXTI GPIO reverse lookup table
@@ -144,52 +96,14 @@ void counter_init()
 *  it repeatedly reads flags variable and takes appropriate actions
 */
 void event_loop() {
-  if (IS_SET(FLAG_RTC_OK))
-  { /* Counter registration logic may work if and only if RTC is connected, alive
-    *  and produces interrupt signals on every period transition
-    */
-    if (IS_SET(FLAG_EVENT_BASE))
-    {
-      base_periodic_event();
-      if (IS_SET(FLAG_PRE_PERIOD))
-        TOGGLE(FLAG_PRE_PERIOD);
-      TOGGLE(FLAG_EVENT_BASE);
-      RAISE(FLAG_DATA_SENDING); // there is new data to be sent
-      LED_ON(LED_DATA);
-    }
-    if (IS_SET(FLAG_RTC_ALARM))
-    { /* RTC alarm flag essentially repeats BASE EVENT flag, but its made to protect
-      *  from accidential noise interrupts which may occur in case of electrical
-      *  connection problems. Alarm flag forbids BASE flag to be set again
-      *  until alarm bit in RTC register is successfully reset
-      */
-      uint16_t alarm_reset = 0;
-      for(uint16_t i=0; i<3; ++i) {
-        // try reset alarm 3 times, if failed raise RTC reinitializaiton flag
-        if (RTC_ClearAlarm(50) == HAL_OK) {
-          alarm_reset = 1;
-          break;
-        } else {
-          LED_BLINK(LED_ERROR, 50);
-          debug_printf("can't reset RTC alarm\r\n");
-        }
-      }
-      if (alarm_reset) {
-        TOGGLE(FLAG_RTC_ALARM);
-      } else {
-        TOGGLE(FLAG_RTC_OK); // reset RTC OK flag
-      }
-    }
-    else
-    { /* If RTC does not produce alarm IRQ for more than a minute,
-      *  it means that either RTC is mis-configured or I2C bus
-      *  connection is lost or corrupt
-      */
-      if (HAL_GetTick() - last_period_tick > BASE_EVENT_WATCHDOG_MS) {
-        TOGGLE(FLAG_RTC_OK);
-        debug_printf("period watchdog triggered\r\n");
-      }
-    }
+  if (IS_SET(FLAG_EVENT_BASE))
+  {
+    base_periodic_event();
+    if (IS_SET(FLAG_PRE_PERIOD))
+      TOGGLE(FLAG_PRE_PERIOD);
+    TOGGLE(FLAG_EVENT_BASE);
+    RAISE(FLAG_DATA_SENDING); // there is new data to be sent
+    LED_ON(LED_DATA);
   }
   /* ************************ TIMEKEEPIG SECTION ************************ */
   if (cycle_counter - last_ntp_sync > NTP_SYNC_PERIOD)
@@ -211,14 +125,6 @@ void event_loop() {
   }
   int32_t time_left = BASE_PERIOD_LEN_MS - HAL_GetTick() + last_period_tick;
   uint32_t since_last_attempt = HAL_GetTick() - last_net_attempt; // non-blocking delay for net failures
-  /* Perform initial read of external flash. This operation takes alot of time so
-   * its better to do it after NTP sync to not loose one data period */
-  if (IS_SET(FLAG_FLASH_INIT) && (NOT_SET(FLAG_NTP_SYNC) || NOT_SET(FLAG_PRE_PERIOD))) {
-    if (time_left > FLASH_INIT_TIME && NOT_SET(FLAG_EVENT_BASE)) {
-      init_read_flash();
-      TOGGLE(FLAG_FLASH_INIT);
-    }
-  }
   if (time_left > (SENDING_TIMEOUT + DEFAULT_TIMEOUT))
   { /* Reassure that we have enough time before next period, since failed sending try
     *  can possibly take fair amount of time due to big timeouts
@@ -274,31 +180,12 @@ void event_loop() {
       }
     }
   }
-  /* *********************** CONFIG HTTP SERVER ************************* */
-  if (IS_SET(FLAG_W5500_OK) && (HAL_GetTick() - last_srv_attempt) > 1000) {
-    switch (config_server_run()) {
-      case DATA_OK:
-        break;
-      case DATA_CLEAR:
-       /*  User changed device configuration, we should re-initialize W5500 in case
-        *  of DHCP mode change, re-run DHCP, DNS, NTP queries if servers changed
-        */
-        TOGGLE(FLAG_W5500_OK); // reinit W5500
-        RAISE(FLAG_DHCP_RUN);
-        RAISE(FLAG_DNS_RUN);
-        RAISE(FLAG_NTP_SYNC);
-        break;
-      default:
-        last_srv_attempt = HAL_GetTick();
-        break;
-    }
-  }
   /* ****************** SOMETHING-NOT-OK / NTP SECTION ****************** */
   uint32_t since_last_fix_attempt = HAL_GetTick() - last_fix_attempt;
   // incorporate non-blocking delay for PROBLEM_FIXING_PERIOD ms
   if (since_last_fix_attempt > PROBLEM_FIXING_PERIOD && time_left > (PROBLEM_FIXING_PERIOD * 2))
   {
-    if (IS_SET(FLAG_NTP_SYNC) && IS_SET(FLAG_RTC_OK) && IS_SET(FLAG_W5500_OK)
+    if (IS_SET(FLAG_NTP_SYNC) && IS_SET(FLAG_W5500_OK)
         && NOT_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN))
     { /* Syncronize local RTC to NTP time */
       if (try_sync_ntp(SENDING_TIMEOUT)) {
@@ -309,21 +196,10 @@ void event_loop() {
         last_fix_attempt = HAL_GetTick(); // non-blocking delay of PROBLEM_FIXING_PERIOD
       }
     }
-    if (NOT_SET(FLAG_RTC_OK))
-    { /* To restore RTC functionality the only thing we can do is repeatedly try
-      *  to re-initialize I2C peripheral and RTC device itself
-      */
-      if (!try_init_dev(DEV_RTC)) {
-        HAL_I2C_Init(&hi2c2);
-      }
-    }
     if (NOT_SET(FLAG_BMP_OK)) {
       if (!try_init_dev(DEV_BMP)) {
-        HAL_I2C_Init(&hi2c2);
+        HAL_I2C_Init(&hi2c1);
       }
-    }
-    if (NOT_SET(FLAG_FLASH_OK)) {
-      try_init_dev(DEV_FLASH);
     }
     if (NOT_SET(FLAG_W5500_OK)) {
       HAL_GPIO_WritePin(W5500_RESET_GPIO_Port, W5500_RESET_Pin, GPIO_PIN_RESET);
@@ -357,9 +233,7 @@ void base_periodic_event()
         flag_ok = 1;
         break;
       }
-      debug_printf("RTC time read failed!\r\n");
       memset(&last_period_tm, 0, sizeof(last_period_tm)); // protect from garbage readings
-      HAL_Delay(300);
     }
     if (!flag_ok) { // RTC is lost
       TOGGLE(FLAG_RTC_OK);
@@ -387,6 +261,8 @@ void base_periodic_event()
     }
   }
 
+  // TODO: DS18B20 !!!
+
   data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf /100); // /100 for hPa
 
 
@@ -395,27 +271,24 @@ void base_periodic_event()
 
 }
 
+void RTC_IRQ_Callback() {
+  if (++second_counter >= 59) {
+    // save RTC "minute" start tick to extend local time precision up to ms
+    last_period_tick = HAL_GetTick();
+    RAISE(FLAG_EVENT_BASE);
+    for (uint8_t i=0; i<CHANNELS_COUNT; ++i) {
+      saved_counts[i] = counters[i];
+    }
+    ++cycle_counter;
+    second_counter = 0;
+  }
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if (GPIO_Pin == GPIO_RTC_IRQ)
+  int8_t idx = lookup_channel_idx[GPIO_TO_N(GPIO_Pin)];
+  if (idx >= 0)
   {
-    if (NOT_SET(FLAG_RTC_ALARM))
-    { // save RTC minute start tick to extend local time precision up to ms
-      last_period_tick = HAL_GetTick();
-      RAISE(FLAG_RTC_ALARM);
-      RAISE(FLAG_EVENT_BASE);
-      for (uint8_t i=0; i<CHANNELS_COUNT; ++i) {
-        saved_counts[i] = counters[i];
-      }
-      ++cycle_counter;
-    }
-  }
-  else
-  {
-    int8_t idx = lookup_channel_idx[GPIO_TO_N(GPIO_Pin)];
-    if (idx >= 0)
-    {
-      ++counters[idx];
-    }
+    ++counters[idx];
   }
 }

@@ -75,7 +75,7 @@ void debug_printf(const char * fmt, ...) {
   va_start(argptr, fmt);
   int len = vsnprintf(buf, DEBUG_FMT_MAX_SIZE, fmt, argptr);
   va_end(argptr);
-  HAL_UART_Transmit(&huart2, buf, len, 300);
+  HAL_UART_Transmit(&huart1, buf, len, 300);
   #endif
 }
 

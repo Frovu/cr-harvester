@@ -10,8 +10,6 @@
 
 #include "main.h"
 #include "bmp280.h"
-#include "ds3231.h"
-#include "at25df321.h"
 #include "config_server.h"
 
 #include <stdlib.h>
@@ -81,24 +79,24 @@ typedef enum {
 #define TIME_TRUST_PERIOD          720 // how long is time accounted as trusted after ntp sync
 
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 10000)
-#define CHANNELS_COUNT           12
+#define CHANNELS_COUNT           3
 // if and only if more than DATA_BUFFER_LEN lines fail to send external flash memory is used
-#define DATA_BUFFER_LEN          64
+#define DATA_BUFFER_LEN          128
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1
 
-#define GPIO_CH_0       GPIO_PIN_12
-#define GPIO_CH_1       GPIO_PIN_13
-#define GPIO_CH_2       GPIO_PIN_14
+#define GPIO_CH_0       GPIO_PIN_11
+#define GPIO_CH_1       GPIO_PIN_12
+#define GPIO_CH_2       GPIO_PIN_15
 #define GPIO_CH_3       GPIO_PIN_15
-#define GPIO_CH_4       GPIO_PIN_8
-#define GPIO_CH_5       GPIO_PIN_9
-#define GPIO_CH_6       GPIO_PIN_10
-#define GPIO_CH_7       GPIO_PIN_11
-#define GPIO_CH_8       GPIO_PIN_4
-#define GPIO_CH_9       GPIO_PIN_5
-#define GPIO_CH_10      GPIO_PIN_6
-#define GPIO_CH_11      GPIO_PIN_7
+#define GPIO_CH_4       GPIO_PIN_15
+#define GPIO_CH_5       GPIO_PIN_15
+#define GPIO_CH_6       GPIO_PIN_15
+#define GPIO_CH_7       GPIO_PIN_15
+#define GPIO_CH_8       GPIO_PIN_15
+#define GPIO_CH_9       GPIO_PIN_15
+#define GPIO_CH_10      GPIO_PIN_15
+#define GPIO_CH_11      GPIO_PIN_15
 
 static const uint16_t CHANNELS_GPIO_LIST[CHANNELS_COUNT] =
 {
@@ -114,7 +112,9 @@ typedef struct _struct_dl {
   uint32_t cycle;
   uint32_t info;
   float temperature;
+  float temperature_ext;
   float pressure;
+  float voltage;
   uint16_t counts[CHANNELS_COUNT];
 } DataLine;
 
@@ -127,8 +127,11 @@ typedef enum {
   DATA_NET_TIMEOUT
 } DataStatus;
 
+typedef struct tm DateTime;
+
 // for config_server
 extern DataLine * current_period;
+extern uint32_t second_counter;
 extern uint32_t cycle_counter;
 extern uint16_t flags;
 extern uint32_t last_ntp_sync;
@@ -145,6 +148,9 @@ void counter_init();
 void event_loop();
 // Core events handlers
 void base_periodic_event();
+
+HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout);
+HAL_StatusTypeDef RTC_ReadDateTime (DateTime *dt, uint32_t timeout);
 /********************* Data Handling **********************/
 void init_read_flash();
 void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p);

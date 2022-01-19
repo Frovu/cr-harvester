@@ -44,7 +44,7 @@ static const Configuration default_cfg = {
   .local_gw = {192, 168, 1, 1},
   .local_sn = {255, 255, 255, 0},
   .local_dns = {8, 8, 8, 8},
-  .dhcp_mode = NETINFO_STATIC,
+  .dhcp_mode = NETINFO_DHCP,
 };
 
 #define SRV_BUF_SIZE       2048
@@ -52,42 +52,42 @@ static const Configuration default_cfg = {
 
 #define HTTP_OK_RESP "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
 
-static const uint8_t html_template[] = HTTP_OK_RESP"<html><head><title>NM</title></head>"
-"<body style=\"font-family:CourierNew;\"><h1>NM Section Status</h1>"
-"Last period time: <b>%s</b> UTC<br>"
-"Data periods stored: <b>%u + %u</b><br>"
-"Uptime: <b>%lu</b> minutes<br>"
-"Flash failures: <b>%lu</b><br>"
-"Last ntp sync: <b>%lu</b> min ago<br>Flags: <b>%x</b>"
-"<h2>Device Configuration</h2>"
-"<b>Be careful</b>, typo or trailing space in config can lead to device hard fault!<br>"
-"If you specify IP, domain field should be empty!<br><b>Don't forget to set IP config mode!</b>"
-"<form method=\"post\">"
-"<p>Secret <input type=\"password\" name=\"secret\" value=\"\"></p>"
-"<p>Device ID <input name=\"id\" value=\"$\"></p>"
-"<p>Target domain <input name=\"ta\" value=\"$\"> <b>OR</b> IP <input name=\"tip\" value=\"$\">"
-"<br>Target URL Path <input name=\"path\" value=\"$\">, TCP Port <input name=\"port\" value=\"$\"></p>"
-"<p>NTP server domain <input name=\"na\" value=\"$\">"
-"<b> OR</b> IP <input name=\"nip\" value=\"$\"></p>"
-"<p><b>IP config</b> <input type=\"radio\" name=\"dhcp\" value=\"1\" checked>DHCP <input type=\"radio\" name=\"dhcp\" value=\"0\">Static</p>"
-"<p>IP <input name=\"ip\" value=\"$\"></p>"
-"<p>Gateway <input name=\"gw\" value=\"$\"></p>"
-"<p>Subnet <input name=\"sn\" value=\"$\"></p>"
-"<p>DNS <input name=\"dns\" value=\"$\"></p>"
-"above 4 have no effect if DHCP on"
-"<p>Check <b>every</b> setting before pressing <input type=\"submit\" value=\"Update Settings\"></p>"
-"</form></body>"
-"</html>";
-
-static const uint8_t html_ok[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
-"<h2 style=\"color:green;\">Device configuration updated!</h2></body></html>";
-
-static const uint8_t html_error[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
-"<h2 style=\"color:red;\">Invalid secret code!</h2></body></html>";
+// static const uint8_t html_template[] = HTTP_OK_RESP"<html><head><title>NM</title></head>"
+// "<body style=\"font-family:CourierNew;\"><h1>NM Section Status</h1>"
+// "Last period time: <b>%s</b> UTC<br>"
+// "Data periods stored: <b>%u + %u</b><br>"
+// "Uptime: <b>%lu</b> minutes<br>"
+// "Flash failures: <b>%lu</b><br>"
+// "Last ntp sync: <b>%lu</b> min ago<br>Flags: <b>%x</b>"
+// "<h2>Device Configuration</h2>"
+// "<b>Be careful</b>, typo or trailing space in config can lead to device hard fault!<br>"
+// "If you specify IP, domain field should be empty!<br><b>Don't forget to set IP config mode!</b>"
+// "<form method=\"post\">"
+// "<p>Secret <input type=\"password\" name=\"secret\" value=\"\"></p>"
+// "<p>Device ID <input name=\"id\" value=\"$\"></p>"
+// "<p>Target domain <input name=\"ta\" value=\"$\"> <b>OR</b> IP <input name=\"tip\" value=\"$\">"
+// "<br>Target URL Path <input name=\"path\" value=\"$\">, TCP Port <input name=\"port\" value=\"$\"></p>"
+// "<p>NTP server domain <input name=\"na\" value=\"$\">"
+// "<b> OR</b> IP <input name=\"nip\" value=\"$\"></p>"
+// "<p><b>IP config</b> <input type=\"radio\" name=\"dhcp\" value=\"1\" checked>DHCP <input type=\"radio\" name=\"dhcp\" value=\"0\">Static</p>"
+// "<p>IP <input name=\"ip\" value=\"$\"></p>"
+// "<p>Gateway <input name=\"gw\" value=\"$\"></p>"
+// "<p>Subnet <input name=\"sn\" value=\"$\"></p>"
+// "<p>DNS <input name=\"dns\" value=\"$\"></p>"
+// "above 4 have no effect if DHCP on"
+// "<p>Check <b>every</b> setting before pressing <input type=\"submit\" value=\"Update Settings\"></p>"
+// "</form></body>"
+// "</html>";
+//
+// static const uint8_t html_ok[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
+// "<h2 style=\"color:green;\">Device configuration updated!</h2></body></html>";
+//
+// static const uint8_t html_error[] = HTTP_OK_RESP"<html><head><title>NM</title></head><body>"
+// "<h2 style=\"color:red;\">Invalid secret code!</h2></body></html>";
 
 static const uint8_t secret[] = "alpine";
 
-extern Configuration *cfg;
+extern Configuration * cfg;
 
 uint8_t config_server_run();
 

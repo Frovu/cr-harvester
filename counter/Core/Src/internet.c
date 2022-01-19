@@ -133,10 +133,10 @@ uint16_t construct_post_query(DataLine *dl)
     snprintf(http_host, HTTP_HOST_SIZE, "%s:%u", cfg->target_addr, cfg->target_port);
   }
   /* string format general info, see README for protocol description */
-  #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&ff=%lu&t=%.2f&p=%.2f"
+  #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&t=%.2f&te=%.2f&p=%.2f&v=%.2f"
   content_len = snprintf(http_body, HTTP_BODY_SIZE, PFSTRING,
-    cfg->dev_id, dl->timestamp, dl->cycle, dl->info, flash_error_count,
-    dl->temperature, dl->pressure);
+    cfg->dev_id, dl->timestamp, dl->cycle, dl->info,
+    dl->temperature, dl->temperature_ext, dl->pressure, dl->voltage);
   /* string format counters */
   for(uint16_t ch = 0; ch < CHANNELS_COUNT; ++ch) {
     content_len += snprintf(http_body+content_len, HTTP_BODY_SIZE-content_len,
@@ -351,7 +351,7 @@ uint8_t run_dns_queries()
     cfg->target_addr, cfg->target_ip[0], cfg->target_ip[1], cfg->target_ip[2], cfg->target_ip[3],
     cfg->ntp_addr, cfg->ntp_ip[0], cfg->ntp_ip[1], cfg->ntp_ip[2], cfg->ntp_ip[3]);
   if (ip_sum(target_ip_saved) != ip_sum(cfg->target_ip)) {
-      config_save(); // ip was actually modified by dns
+      //config_save(); // ip was actually modified by dns
    }
 
   return 1;
