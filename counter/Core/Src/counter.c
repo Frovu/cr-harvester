@@ -71,6 +71,7 @@ void counter_init()
     LED_BLINK(LED_DATA, 30);
     HAL_Delay(30);
   }
+  LED_ON(BOARD_LED);
   LED_ON(LED_ERROR);
   cfg = malloc(sizeof(Configuration));
   memcpy(cfg, &default_cfg, sizeof(Configuration));

@@ -217,6 +217,8 @@ DataStatus data_send_one(uint32_t timeout)
       line_to_send = last_period;
       break;
     case S_BUFFER:
+      if (!buffer_periods_count)
+        return DATA_CLEAR;
       line_to_send = data_buffer[0];
       break;
   }
