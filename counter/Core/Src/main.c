@@ -115,6 +115,7 @@ int main(void)
   MX_RTC_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_RTCEx_SetSecond_IT(&hrtc);
   counter_init();
 
   /* USER CODE END 2 */

@@ -11,7 +11,7 @@ extern SPI_HandleTypeDef hspi1;
 
 BMP280_HandleTypedef bmp280;
 
-Configuration *cfg;
+Configuration * cfg;
 uint16_t flags = FLAGS_INITIAL;
 
 volatile uint16_t saved_counts[CHANNELS_COUNT];
@@ -72,6 +72,8 @@ void counter_init()
     HAL_Delay(30);
   }
   LED_ON(LED_ERROR);
+  cfg = malloc(sizeof(Configuration));
+  memcpy(cfg, &default_cfg, sizeof(Configuration));
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
