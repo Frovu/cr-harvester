@@ -230,17 +230,15 @@ void base_periodic_event()
 {
   uint16_t flag_ok = 0;
   float t_buf = 0, p_buf = 0;
-  if (IS_SET(FLAG_RTC_OK)) {
-    for (int i=0; i < 3; ++i) {
-      if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
-        flag_ok = 1;
-        break;
-      }
-      memset(&last_period_tm, 0, sizeof(last_period_tm)); // protect from garbage readings
+  for (int i=0; i < 3; ++i) {
+    if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
+      flag_ok = 1;
+      break;
     }
-    if (!flag_ok) { // RTC is lost
-      TOGGLE(FLAG_RTC_OK);
-    }
+    memset(&last_period_tm, 0, sizeof(last_period_tm)); // protect from garbage readings
+  }
+  if (!flag_ok) { // RTC is lost
+    debug_printf("RTC readout failed\r\n");
   }
   /* Since rtc every minute alarm is used, the seconds counter on the period begiining
    * should always be equal to zero, so we can just zero it out in data struct in case
@@ -275,7 +273,7 @@ void base_periodic_event()
 }
 
 void RTC_IRQ_Callback() {
-  if (++second_counter >= 59) {
+  if (++second_counter > 59) {
     // save RTC "minute" start tick to extend local time precision up to ms
     last_period_tick = HAL_GetTick();
     RAISE(FLAG_EVENT_BASE);
@@ -285,6 +283,7 @@ void RTC_IRQ_Callback() {
     ++cycle_counter;
     second_counter = 0;
   }
+  debug_printf("-%d-\r\n", second_counter);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)

@@ -185,6 +185,7 @@ void data_period_transition(const volatile uint16_t * counts, DateTime *dt, floa
   ******************* Start new period ******************
   */
   current_period = (DataLine*) malloc(STRUCT_SIZE);
+  memset(current_period, 0, STRUCT_SIZE);
   current_period->timestamp = mktime(dt);
   current_period->temperature = t;
   current_period->pressure = p;

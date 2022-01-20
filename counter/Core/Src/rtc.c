@@ -1,5 +1,5 @@
 #include "counter.h"
-#define CENTURY 2000
+#define CENTURY 2000 - 1900
 
 RTC_TimeTypeDef rtcTime = { 0 };
 RTC_DateTypeDef rtcDate = { 0 };

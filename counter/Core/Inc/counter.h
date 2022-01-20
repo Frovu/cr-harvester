@@ -75,8 +75,8 @@ typedef enum {
 #define PROBLEM_FIXING_PERIOD      3000
 #define FLASH_INIT_TIME            30000
 
-#define NTP_SYNC_PERIOD             30 // in cycles (minutes)
-#define TIME_TRUST_PERIOD          720 // how long is time accounted as trusted after ntp sync
+#define NTP_SYNC_PERIOD             3 // in cycles (minutes)
+#define TIME_TRUST_PERIOD          360 // how long is time accounted as trusted after ntp sync
 
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 10000)
 #define CHANNELS_COUNT           3
