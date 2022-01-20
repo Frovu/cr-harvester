@@ -75,13 +75,13 @@ typedef enum {
 #define PROBLEM_FIXING_PERIOD      3000
 #define FLASH_INIT_TIME            30000
 
-#define NTP_SYNC_PERIOD             3 // in cycles (minutes)
+#define NTP_SYNC_PERIOD             15 // in cycles (minutes)
 #define TIME_TRUST_PERIOD          360 // how long is time accounted as trusted after ntp sync
 
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 10000)
 #define CHANNELS_COUNT           3
-// if and only if more than DATA_BUFFER_LEN lines fail to send external flash memory is used
-#define DATA_BUFFER_LEN          128
+
+#define DATA_BUFFER_LEN          360 // 36*360 = 12960 Bytes
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1
 

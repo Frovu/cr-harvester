@@ -75,6 +75,8 @@ void counter_init()
   LED_ON(LED_ERROR);
   cfg = malloc(sizeof(Configuration));
   memcpy(cfg, &default_cfg, sizeof(Configuration));
+  debug_printf("sizeof(DataLine) = %d\r\n", sizeof(DataLine));
+  debug_printf("DATA_BUFFER_LEN = %d\r\n", DATA_BUFFER_LEN);
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
