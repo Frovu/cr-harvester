@@ -20,8 +20,10 @@ Device sends HTTP POST request with `urlencoded` or `json` body. Which includes 
 + `upt` - `uptime` - device uptime at the moment of counting period start (in minutes)
 + `inf` - `info` - different debugging info, if LSB set (number is odd), dev time is trusted, other bits are reserved
 + `ff` - `flash failures` - count of device external flash program/erase failures
-+ `t` - `temperature` - air temperature in Celsius with 2 decimal signs after point
++ `t` - `temperature` - air temperature in Celsius .2f near the device core (bmp280)
++ `te` - `temperature_ext` - air temperature in Celsius .2f temperature measured by ds18b20 (optional)
 + `p` - `pressure` - air temperature in hPa with 2 decimal signs after point
++ `v` - `voltage` - device supply voltage (optional)
 + `c` - `counts` - array of 12 integer containing channels impulse counts
 
 note: time (`dt`) is interpreted either as epoch (count of seconds since 1970) or as `ISO 8601` string if it includes `T` character.

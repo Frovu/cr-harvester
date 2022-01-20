@@ -14,6 +14,8 @@ function connect() {
 
 // convert between db column name and protocol short token, see project root README
 const DB_TO_PROTOCOL = {
+	voltage: 'v',
+	temperature_ext: 'te',
 	temperature: 't',
 	pressure: 'p',
 	uptime: 'upt',
@@ -21,6 +23,8 @@ const DB_TO_PROTOCOL = {
 };
 
 const COLUMN_TYPE = {
+	voltage: 'float',
+	temperature_ext: 'float',
 	temperature: 'float',
 	pressure: 'float',
 	uptime: 'int',
@@ -34,7 +38,7 @@ async function getSections() {
 	return sections;
 }
 
-function validate(data) {
+function validate(data) { // TODO: validate better
 	return data.k && Object.keys(sections).includes(data.k)
 		&& typeof data.c === 'object' && data.dt;
 }
@@ -42,7 +46,7 @@ function validate(data) {
 // presumes to be called after validate()
 async function insert(data) {
 	const row = {};
-	for(const f in DB_TO_PROTOCOL) {
+	for (const f in DB_TO_PROTOCOL) {
 		let val = data[DB_TO_PROTOCOL[f]];
 		if(typeof val === 'undefined')
 			continue;
@@ -52,7 +56,10 @@ async function insert(data) {
 			val = parseInt(val);
 		row[f] = val;
 	}
-	for(const i in data.c) row['c'+i] = parseInt(data.c[i]);
+	for (let i=0; i < sections[data.k].channels; ++i) {
+		const val = parseInt(data.c[i]);
+		if (val) row['c'+i] = val;
+	}
 	row.section = sections[data.k].id;
 	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
 	for(const i in row)
