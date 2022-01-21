@@ -169,11 +169,11 @@ static void save_last_period() {
   debug_printf("period: saved to buffer\r\n");
 }
 
-void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p)
+void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p, float te, float v)
 {
   if (current_period) // save period data to send it later in the loop
   {
-    debug_printf("period: counts b/f = %d / %d\r\n", buffer_periods_count, flash_pages_used);
+    debug_printf("period: counts b/f = %d / %d, V=%.4f\r\n", buffer_periods_count, flash_pages_used, v);
     for (uint32_t i=0; i<CHANNELS_COUNT; ++i) {
       current_period->counts[i] = counts[i];
     }
@@ -188,7 +188,9 @@ void data_period_transition(const volatile uint16_t * counts, DateTime *dt, floa
   memset(current_period, 0, STRUCT_SIZE);
   current_period->timestamp = mktime(dt);
   current_period->temperature = t;
+  current_period->temperature_ext = te;
   current_period->pressure = p;
+  current_period->voltage = v;
   current_period->cycle = cycle_counter;
   uint32_t info = 0;
   if (NOT_SET(FLAG_TIME_TRUSTED)) {

@@ -80,8 +80,9 @@ typedef enum {
 
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 10000)
 #define CHANNELS_COUNT           3
-
 #define DATA_BUFFER_LEN          360 // 36*360 = 12960 Bytes
+
+#define ADC_PRESCALER            10
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1
 
@@ -153,7 +154,7 @@ HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout);
 HAL_StatusTypeDef RTC_ReadDateTime (DateTime *dt, uint32_t timeout);
 /********************* Data Handling **********************/
 void init_read_flash();
-void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p);
+void data_period_transition(const volatile uint16_t * counts, DateTime *dt, float t, float p, float te, float v);
 DataStatus data_send_one(uint32_t timeout);
 /********************* Data Sending **********************/
 

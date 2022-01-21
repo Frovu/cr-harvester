@@ -29,13 +29,6 @@
 /* ********************************************************************* */
 /* ********************************************************************* */
 
-__STATIC_INLINE void delay_us(volatile uint32_t us)
-{
-  uint32_t start_cycle = DWT->CYCCNT;
-  us *= HAL_RCC_GetHCLKFreq() / 1000000;
-  while ((DWT->CYCCNT - start_cycle) < us);
-}
-
 #define DS18B20_PRESENCE 0x0
 
 #define DS18B20_ROM_READ      0x33

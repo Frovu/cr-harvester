@@ -8,6 +8,7 @@
 
 extern I2C_HandleTypeDef hi2c1;
 extern SPI_HandleTypeDef hspi1;
+extern ADC_HandleTypeDef hadc1;
 
 BMP280_HandleTypedef bmp280;
 
@@ -84,6 +85,8 @@ void counter_init()
   memcpy(cfg, &default_cfg, sizeof(Configuration));
   debug_printf("sizeof(DataLine) = %d\r\n", sizeof(DataLine));
   debug_printf("DATA_BUFFER_LEN = %d\r\n", DATA_BUFFER_LEN);
+  bool adc_ok = HAL_ADCEx_Calibration_Start(&hadc1) == HAL_OK;
+  debug_printf("init: ADC\t%s\r\n", adc_ok ? "OK" : "FAIL");
   // ******************** BMP280 ********************
   bmp280_init_default_params(&bmp280.params);
   bmp280.addr = BMP280_I2C_ADDRESS_0;
@@ -93,6 +96,8 @@ void counter_init()
     LED_BLINK_INV(LED_ERROR, 200);
   }
   // ******************** DS18B20 ********************
+  OW_INIT();
+  HAL_Delay(100);
   for (int i=0; !try_init_dev(DEV_DS18B20) && i < 3; ++i) {
     HAL_Delay(100);
     LED_BLINK_INV(LED_ERROR, 200);
@@ -242,7 +247,7 @@ void event_loop() {
 void base_periodic_event()
 {
   uint16_t flag_ok = 0;
-  float t_buf = 0, p_buf = 0, te_buf = 0;
+  float t_buf = 0, p_buf = 0, te_buf = 0, v_buf = 0;
   for (int i=0; i < 3; ++i) {
     if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
       flag_ok = 1;
@@ -291,8 +296,15 @@ void base_periodic_event()
     }
   }
 
-  data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf /100); // /100 for hPa
+  HAL_ADC_Start(&hadc1);
+  if (HAL_ADC_PollForConversion(&hadc1, 500) == HAL_OK) {
+    v_buf = HAL_ADC_GetValue(&hadc1) * 3.3 / 4096 * ADC_PRESCALER;
+  } else {
+    debug_printf("ADC readout failed\r\n");
+  }
+  HAL_ADC_Stop(&hadc1);
 
+  data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf/100, te_buf, v_buf); // /100 for hPa
 
   // blink onboard led to show that we are alive
   LED_BLINK_INV(BOARD_LED, 10);

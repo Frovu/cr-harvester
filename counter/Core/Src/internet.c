@@ -133,7 +133,7 @@ uint16_t construct_post_query(DataLine *dl)
     snprintf(http_host, HTTP_HOST_SIZE, "%s:%u", cfg->target_addr, cfg->target_port);
   }
   /* string format general info, see README for protocol description */
-  #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&t=%.2f&te=%.2f&p=%.2f&v=%.2f"
+  #define PFSTRING "k=%s&dt=%lu&upt=%lu&inf=%lu&t=%.2f&te=%.2f&p=%.2f&v=%.4f"
   content_len = snprintf(http_body, HTTP_BODY_SIZE, PFSTRING,
     cfg->dev_id, dl->timestamp, dl->cycle, dl->info,
     dl->temperature, dl->temperature_ext, dl->pressure, dl->voltage);

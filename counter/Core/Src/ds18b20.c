@@ -5,6 +5,12 @@
 
 #include "ds18b20.h"
 
+__STATIC_INLINE void delay_us(volatile uint32_t us)
+{
+  us *= (HAL_RCC_GetHCLKFreq() / 1000000) / 9;
+  while (us--);
+}
+
 uint8_t ow_reset_presence(void)
 {
   OW_LOW();
@@ -42,6 +48,7 @@ void ow_write_bit(uint8_t bit)
     OW_LOW();
     delay_us(5);
     OW_HIGH();
+    delay_us(55);
   } else {   // WRITE 0
     OW_LOW();
     delay_us(60);
@@ -76,7 +83,6 @@ uint8_t ow_crc8(uint8_t *data, uint32_t len)
 
 HAL_StatusTypeDef ds18b20_init(void)
 {
-  OW_INIT();
   if (ow_reset_presence() != DS18B20_PRESENCE) {
     return HAL_ERROR;
   }
@@ -104,7 +110,7 @@ HAL_StatusTypeDef ds18b20_read_temperature(float *temperature) {
   ow_write(DS18B20_ROM_SKIP);  // Broadcast
   ow_write(DS18B20_MEM_READ);  // Read scratchpad
   uint8_t data[8];
-  for (uint32_t i = 0; i < 6; ++ i) {
+  for (uint32_t i = 0; i < 8; ++ i) {
     data[i] = ow_read();
   }
   uint8_t crc = ow_read();
