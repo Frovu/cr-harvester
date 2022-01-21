@@ -101,5 +101,3 @@ void debug_printf(const char * fmt, ...);
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
