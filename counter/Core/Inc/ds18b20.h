@@ -8,23 +8,26 @@
 #ifndef DS18B20_H_
 #define DS18B20_H_
 
-/* The pin defined in main.h */
-#define _OW_GPIO_PIN OW_DS18B20
+#include "counter.h"
 
-#define _OW_GPIO _OW_GPIO_PIN##_GPIO_Port
-#define _OW_PIN  _OW_GPIO_PIN##_Pin
-
+/* ********************************************************************* */
+/* ************** To change ow pin manually change these *************** */
+/* ********************************************************************* */
+#define OW_GPIO GPIOB
 #define OW_INIT() \
-  HAL_GPIO_DeInit(GPIOB, GPIO_PIN_##_OW_PIN); \
-  _OW_GPIO->CRH |= GPIO_CRH_MODE##_OW_PIN;       \
-  _OW_GPIO->CRH |= GPIO_CRH_CNF##_OW_PIN##_0;      \
-  _OW_GPIO->CRH &= ~GPIO_CRH_CNF##_OW_PIN##_1
+  HAL_GPIO_DeInit(OW_GPIO, GPIO_PIN_12); \
+  OW_GPIO->CRH |= GPIO_CRH_MODE12;    \
+  OW_GPIO->CRH |= GPIO_CRH_CNF12_0; \
+  OW_GPIO->CRH &= ~GPIO_CRH_CNF12_1
 #define OW_HIGH() \
-  _OW_GPIO->ODR |= GPIO_ODR_ODR##_OW_PIN
+  OW_GPIO->ODR |= GPIO_ODR_ODR12
 #define OW_LOW() \
-  _OW_GPIO->ODR &= ~GPIO_ODR_ODR##_OW_PIN
+  OW_GPIO->ODR &= ~GPIO_ODR_ODR12
 #define OW_READ() \
-  (_OW_GPIO->IDR & GPIO_IDR_IDR##_OW_PIN ? 1 : 0)
+  (OW_GPIO->IDR & GPIO_IDR_IDR12 ? 1 : 0)
+/* ********************************************************************* */
+/* ********************************************************************* */
+/* ********************************************************************* */
 
 __STATIC_INLINE void delay_us(volatile uint32_t us)
 {
@@ -61,8 +64,8 @@ __STATIC_INLINE void delay_us(volatile uint32_t us)
 uint8_t ow_reset_presence(void);
 uint8_t ow_read_bit(void);
 uint8_t ow_read(void);
-uint8_t ow_write_bit(uint8_t bit);
-uint8_t ow_write(uint8_t byte);
+void    ow_write_bit(uint8_t bit);
+void    ow_write(uint8_t byte);
 uint8_t ow_crc8(uint8_t *data, uint32_t len);
 
 HAL_StatusTypeDef ds18b20_init(void);

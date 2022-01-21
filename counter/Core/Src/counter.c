@@ -35,6 +35,13 @@ uint8_t try_init_dev(device_t dev)
   uint16_t flagVal = 0;
   uint8_t status = 0;
   switch (dev) {
+  case DEV_DS18B20:
+    flagVal = FLAG_DS18B20_OK;
+    status = ds18b20_init() == HAL_OK;
+    if (status) {
+      ds18b20_start_conversion();
+    }
+    break;
   case DEV_BMP:
     flagVal = FLAG_BMP_OK;
     status = bmp280_init(&bmp280, &bmp280.params);
@@ -58,8 +65,8 @@ uint8_t try_init_dev(device_t dev)
     RAISE(flagVal);
   }
   #ifdef DEBUG_UART
-  debug_printf("init: %s\t%s\r\n", dev == DEV_RTC ? "RTC" : dev == DEV_BMP ? "BMP280"
-    : dev == DEV_FLASH ? "FLASH" : dev == DEV_W5500 ? "W5500" : "x", status ? "OK" : "FAIL");
+  debug_printf("init: %s\t%s\r\n", dev == DEV_DS18B20 ? "DS18B20" : dev == DEV_BMP ? "BMP280"
+    : dev == DEV_W5500 ? "W5500" : "x", status ? "OK" : "FAIL");
   #endif
   return status;
 }
@@ -82,11 +89,16 @@ void counter_init()
   bmp280.addr = BMP280_I2C_ADDRESS_0;
   bmp280.i2c = &hi2c1;
   for (int i=0; !try_init_dev(DEV_BMP) && i < 3; ++i) {
-    HAL_Delay(300);
+    HAL_Delay(100);
+    LED_BLINK_INV(LED_ERROR, 200);
+  }
+  // ******************** DS18B20 ********************
+  for (int i=0; !try_init_dev(DEV_DS18B20) && i < 3; ++i) {
+    HAL_Delay(100);
     LED_BLINK_INV(LED_ERROR, 200);
   }
   // ******************* W5500 **********************
-  for (int i=0; !try_init_dev(DEV_W5500) && i < 3; ++i) {
+  for (int i=0; !try_init_dev(DEV_W5500) && i < 5; ++i) {
     HAL_Delay(300);
     LED_BLINK_INV(LED_ERROR, 600);
   }
@@ -143,10 +155,6 @@ void event_loop() {
           break;
         case DATA_OK:
           LED_BLINK_INV(LED_DATA, 30);
-          break;
-        case DATA_FLASH_ERROR:
-          if (IS_SET(FLAG_FLASH_OK))
-            TOGGLE(FLAG_FLASH_OK);
           break;
         case DATA_NET_ERROR:
           if (IS_SET(FLAG_W5500_OK))
@@ -206,6 +214,9 @@ void event_loop() {
         HAL_I2C_Init(&hi2c1);
       }
     }
+    if (NOT_SET(FLAG_DS18B20_OK)) {
+      try_init_dev(DEV_DS18B20);
+    }
     if (NOT_SET(FLAG_W5500_OK)) {
       HAL_GPIO_WritePin(W5500_RESET_GPIO_Port, W5500_RESET_Pin, GPIO_PIN_RESET);
       HAL_Delay(100);
@@ -231,7 +242,7 @@ void event_loop() {
 void base_periodic_event()
 {
   uint16_t flag_ok = 0;
-  float t_buf = 0, p_buf = 0;
+  float t_buf = 0, p_buf = 0, te_buf = 0;
   for (int i=0; i < 3; ++i) {
     if (RTC_ReadDateTime(&last_period_tm, DEFAULT_TIMEOUT) == HAL_OK) {
       flag_ok = 1;
@@ -263,8 +274,22 @@ void base_periodic_event()
       TOGGLE(FLAG_BMP_OK);
     }
   }
-
-  // TODO: DS18B20 !!!
+  if (IS_SET(FLAG_DS18B20_OK)) {
+    flag_ok = 0;
+    for (int i=0; i < 3; ++i) {
+      if (ds18b20_read_temperature(&te_buf) == HAL_OK) {
+        flag_ok = 1;
+        break;
+      }
+      debug_printf("DS18B20 readout failed\r\n");
+      HAL_Delay(200);
+    }
+    if (flag_ok) {
+      ds18b20_start_conversion();
+    } else { // lost sensot
+      TOGGLE(FLAG_DS18B20_OK);
+    }
+  }
 
   data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf /100); // /100 for hPa
 

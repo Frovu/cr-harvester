@@ -36,7 +36,7 @@ uint8_t ow_read(void)
   return data;
 }
 
-uint8_t ow_write_bit(uint8_t bit)
+void ow_write_bit(uint8_t bit)
 {
   if (bit) { // WRITE 1
     OW_LOW();
@@ -50,7 +50,7 @@ uint8_t ow_write_bit(uint8_t bit)
   delay_us(3); // recovery time
 }
 
-uint8_t ow_write(uint8_t data)
+void ow_write(uint8_t data)
 {
   for (uint32_t i = 0; i < 8; ++i) {
     ow_write_bit(data >> i & 0x1);
@@ -61,7 +61,7 @@ uint8_t ow_crc8(uint8_t *data, uint32_t len)
 {
   uint8_t crc = 0, byte, mix;
   while (len--) {
-    uint8_t byte = *data++;
+    byte = *data++;
     for (uint8_t i = 8; i; --i) {
       mix = (crc ^ byte) & 0x01;
       crc >>= 1;
@@ -76,6 +76,7 @@ uint8_t ow_crc8(uint8_t *data, uint32_t len)
 
 HAL_StatusTypeDef ds18b20_init(void)
 {
+  OW_INIT();
   if (ow_reset_presence() != DS18B20_PRESENCE) {
     return HAL_ERROR;
   }
@@ -114,6 +115,6 @@ HAL_StatusTypeDef ds18b20_read_temperature(float *temperature) {
   int32_t raw = data[1] << 8 | data[0];
   // if sign bits are set, account for two's compliment by subtracting 0x10000 (flip all bits and add 1, but negative)
   *temperature = (float) (raw & 0xF000 ? raw - 0x10000 : raw) / 16.0;
-  
+
   return HAL_OK;
 }

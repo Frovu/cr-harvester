@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file           : counter.c
+  * @file           : counter.h
   * @brief          : Header file for core counter logic
   ******************************************************************************
 */
@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "bmp280.h"
+#include "ds18b20.h"
 #include "config_server.h"
 
 #include <stdlib.h>
@@ -27,7 +28,7 @@
 #define FLAG_TIME_TRUSTED   0x08
 
 #define FLAG_BMP_OK         0x10
-#define FLAG_FLASH_OK       0x20
+#define FLAG_DS18B20_OK     0x20
 #define FLAG_RTC_OK         0x40
 #define FLAG_W5500_OK       0x80
 
@@ -44,9 +45,8 @@
 #define FLAG_OK_SHIFT       0x04
 
 typedef enum {
-  DEV_RTC,
+  DEV_DS18B20,
   DEV_BMP,
-  DEV_FLASH,
   DEV_W5500
 } device_t;
 
