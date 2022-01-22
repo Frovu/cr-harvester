@@ -35,39 +35,14 @@ DB_PORT=5432
 CREATE ROLE nm LOGIN PASSWORD '';
 CREATE DATABASE nm;
 
-CREATE TABLE data (
-	id SERIAL PRIMARY KEY,
-	at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	section integer NOT NULL,
-	dt TIMESTAMP NOT NULL,
-	temperature_ext real,
-	temperature real,
-	pressure real,
-	voltage real,
-	c0 integer,
-	c1 integer,
-	c2 integer,
-	c3 integer,
-	c4 integer,
-	c5 integer,
-	c6 integer,
-	c7 integer,
-	c8 integer,
-	c9 integer,
-	c10 integer,
-	c11 integer,
-	uptime integer,
-	info integer,
-	UNIQUE (dt, section)
-);
-
-CREATE TABLE sections (
+CREATE TABLE devices (
 	id SERIAL PRIMARY KEY,
 	key TEXT NOT NULL,
 	channels INTEGER,
-	description TEXT
+	description TEXT,
+	type TEXT NOT NULL DEFAULT 'nm'
 );
 
-INSERT INTO sections (key, channels, description)
+INSERT INTO devices (key, channels, description)
 VALUES ('anon', 12, 'An unregistered or deconfigured device');
 ```

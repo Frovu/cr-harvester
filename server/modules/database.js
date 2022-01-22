@@ -1,5 +1,6 @@
+const fs = require('fs');
 const Pool = require('pg').Pool;
-let pool = {}, sections = {};
+let pool = {}, devices = {};
 
 function connect() {
 	module.exports.pool = pool = new Pool({
@@ -9,7 +10,9 @@ function connect() {
 		password: process.env.DB_PASSWORD,
 		port: process.env.DB_PORT,
 	});
-	getSections().then(s => global.log(`DB connected, auth keys: ${Object.keys(s).join()}`));
+	prepareTables().then(() => {
+		getDevices().then(s => global.log(`DB connected, auth keys: ${Object.keys(s).join()}`));
+	});
 }
 
 // convert between db column name and protocol short token, see project root README
@@ -22,6 +25,8 @@ const DB_TO_PROTOCOL = {
 	info: 'inf'
 };
 
+const MUON_CHANNELS = [ 'c0', 'c1', 'n_v' ];
+
 const COLUMN_TYPE = {
 	voltage: 'float',
 	temperature_ext: 'float',
@@ -31,15 +36,20 @@ const COLUMN_TYPE = {
 	info: 'int',
 };
 
-async function getSections() {
-	const res = await pool.query('SELECT * from sections');
-	sections = {};
-	res.rows.forEach(r => sections[r.key] = r);
-	return sections;
+async function prepareTables() {
+	const q = fs.readFileSync('tables.sql', 'utf8');
+	await pool.query(q);
+}
+
+async function getDevices() {
+	const res = await pool.query('SELECT * from devices');
+	devices = {};
+	res.rows.forEach(r => devices[r.key] = r);
+	return devices;
 }
 
 function validate(data) { // TODO: validate better
-	return data.k && Object.keys(sections).includes(data.k)
+	return data.k && Object.keys(devices).includes(data.k)
 		&& typeof data.c === 'object' && data.dt;
 }
 
@@ -56,26 +66,36 @@ async function insert(data) {
 			val = parseInt(val);
 		row[f] = val;
 	}
-	for (let i=0; i < sections[data.k].channels; ++i) {
-		const val = parseInt(data.c[i]);
-		if (val) row['c'+i] = val;
+	const type = devices[data.k].type;
+	if (type === 'muon') {
+		for (const i in MUON_CHANNELS) {
+			const val = parseInt(data.c[i]);
+			if (val) row[MUON_CHANNELS[i]] = val;
+		}
+	} else if (type === 'nm') {
+		for (let i=0; i < devices[data.k].channels; ++i) {
+			const val = parseInt(data.c[i]);
+			if (val) row['c'+i] = val;
+		}
+	} else {
+		throw new Error(`Unknown device type: ${type}`) ;
 	}
-	row.section = sections[data.k].id;
+	row.device_id = devices[data.k].id;
 	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
-	for(const i in row)
-		if(typeof row[i] === 'undefined')
+	for (const i in row)
+		if (typeof row[i] === 'undefined')
 			delete row[i];
 	const columns = Object.keys(row);
 	const placeholders = [...columns.keys()].map(i=>'$'+(i+1)).join();
-	const q = `INSERT INTO data (${Object.keys(row).join()}) VALUES (${placeholders}) ` +
-		`ON CONFLICT (dt, section) DO UPDATE SET (${columns.join()}) = (${columns.map(c => 'EXCLUDED.'+c).join()})`;
+	const q = `INSERT INTO ${type}_data (${Object.keys(row).join()}) VALUES (${placeholders}) ` +
+		`ON CONFLICT (dt, device_id) DO UPDATE SET (${columns.join()}) = (${columns.map(c => 'EXCLUDED.'+c).join()})`;
 	await pool.query(q, Object.values(row));
 }
 
 module.exports = {
-	pool: pool,
-	insert: insert,
-	connect: connect,
-	validate: validate,
-	getSections: getSections
+	pool,
+	insert,
+	connect,
+	validate,
+	getDevices
 };
