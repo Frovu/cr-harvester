@@ -29,8 +29,8 @@
 
 #define FLAG_BMP_OK         0x10
 #define FLAG_DS18B20_OK     0x20
-#define FLAG_RTC_OK         0x40
-#define FLAG_W5500_OK       0x80
+#define FLAG_W5500_OK       0x40
+#define FLAG_RTC_OK         0x80
 
 #define FLAG_DHCP_RUN       0x100
 #define FLAG_NTP_SYNC       0x200
@@ -41,7 +41,7 @@
 
 #define FLAGS_INITIAL (FLAG_RTC_ALARM | FLAG_NTP_SYNC | FLAG_DATA_SENDING | FLAG_PRE_PERIOD | FLAG_RTC_OK)
 
-#define FLAG_OK_MASK        (FLAG_BMP_OK | FLAG_W5500_OK)
+#define FLAG_OK_MASK        (FLAG_BMP_OK | FLAG_DS18B20_OK | FLAG_W5500_OK)
 #define FLAG_OK_SHIFT       0x04
 
 typedef enum {
@@ -82,6 +82,8 @@ typedef enum {
 #define CHANNELS_COUNT           3
 #define DATA_BUFFER_LEN          360 // 36*360 = 12960 Bytes
 
+#define ADC_SAMPLING_DELAY       10 // ms
+#define ADC_OVERSAMPLING         32
 #define ADC_PRESCALER            10
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1

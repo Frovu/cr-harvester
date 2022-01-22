@@ -35,10 +35,10 @@ typedef struct {
 } Configuration;
 
 static const Configuration default_cfg = {
-  .dev_id = "anon",
+  .dev_id = "muon-pioneer",
   .target_addr = "crst.izmiran.ru",
-  .target_path = "/",
-  .target_port = 8005,
+  .target_path = "/api/data",
+  .target_port = 3388,
   .ntp_addr = "time.google.com",
   .local_ip = {192, 168, 1, 217},
   .local_gw = {192, 168, 1, 1},

@@ -31,6 +31,23 @@ uint32_t last_dns_attempt = -5000;
 uint32_t last_srv_attempt = -5000;
 DateTime last_period_tm;
 
+float read_adc(void) {
+  uint32_t raw, sum = 0;
+  for (uint32_t i=0; i < ADC_OVERSAMPLING; ++i) {
+    HAL_ADC_Start(&hadc1);
+    if (HAL_ADC_PollForConversion(&hadc1, 500) == HAL_OK) {
+      raw = HAL_ADC_GetValue(&hadc1);
+      sum += raw;
+    } else {
+      debug_printf("ADC readout failed\r\n");
+      return -1;
+    }
+    HAL_Delay(ADC_SAMPLING_DELAY);
+  }
+  HAL_ADC_Stop(&hadc1);
+  return ((float) sum  * ADC_PRESCALER / ADC_OVERSAMPLING) * 3.3 / 4096;
+}
+
 uint8_t try_init_dev(device_t dev)
 {
   uint16_t flagVal = 0;
@@ -296,13 +313,7 @@ void base_periodic_event()
     }
   }
 
-  HAL_ADC_Start(&hadc1);
-  if (HAL_ADC_PollForConversion(&hadc1, 500) == HAL_OK) {
-    v_buf = HAL_ADC_GetValue(&hadc1) * 3.3 / 4096 * ADC_PRESCALER;
-  } else {
-    debug_printf("ADC readout failed\r\n");
-  }
-  HAL_ADC_Stop(&hadc1);
+  v_buf = read_adc();
 
   data_period_transition(saved_counts, &last_period_tm, t_buf, p_buf/100, te_buf, v_buf); // /100 for hPa
 
@@ -322,7 +333,7 @@ void RTC_IRQ_Callback() {
     ++cycle_counter;
     second_counter = 0;
   }
-  debug_printf("-%d-\r\n", second_counter);
+  debug_printf("[ %02d:%02d:%02d .%03d ]\r\n", last_period_tm.tm_hour, last_period_tm.tm_min, second_counter, HAL_GetTick() % 1000);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
