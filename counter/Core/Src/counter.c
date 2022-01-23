@@ -406,6 +406,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       RAISE(FLAG_EVENT_BASE);
       for (uint8_t i=0; i<CHANNELS_COUNT; ++i) {
         saved_counts[i] = counters[i];
+        counters[i] = 0;
       }
       ++cycle_counter;
     }
