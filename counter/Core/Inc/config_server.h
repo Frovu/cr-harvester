@@ -37,8 +37,8 @@ typedef struct {
 static const Configuration default_cfg = {
   .dev_id = "muon-pioneer",
   .target_addr = "crst.izmiran.ru",
-  .target_path = "/api/data",
-  .target_port = 3388,
+  .target_path = "/nm/api/data",
+  .target_port = 80,
   .ntp_addr = "time.google.com",
   .local_ip = {192, 168, 1, 217},
   .local_gw = {192, 168, 1, 1},
