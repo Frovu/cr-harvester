@@ -165,6 +165,7 @@ static void save_last_period() {
     }
   }
   data_buffer[buffer_periods_count] = last_period;
+  last_period = NULL;
   ++buffer_periods_count;
   debug_printf("period: saved to buffer\r\n");
 }
