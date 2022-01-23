@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('./database');
-const analyse = require('./analysis');
+// const analyse = require('./analysis');
 db.connect();
 const router = express.Router();
 
@@ -18,8 +18,10 @@ router.get('/data', (req, res) => {
 router.post('/data', async (req, res) => {
 	// log every request to not loose data in case of some protocol validation issues
 	global.log(`(${req.headers['x-forwarded-for']}) >>> ${JSON.stringify(req.body)}`);
-	if(!req.body || !db.validate(req.body))
+	if (!req.body || !db.validate(req.body))
 		return res.sendStatus(400);
+	if (!db.authorize(req.body))
+		return res.sendStatus(401);
 	try {
 		await db.insert(req.body);
 		return res.sendStatus(200);

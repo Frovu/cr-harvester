@@ -11,7 +11,7 @@ function connect() {
 		port: process.env.DB_PORT,
 	});
 	prepareTables().then(() => {
-		getDevices().then(s => global.log(`DB connected, auth keys: ${Object.keys(s).join()}`));
+		fetchDevices().then(s => global.log(`DB connected, auth keys: ${Object.keys(s).join()}`));
 	});
 }
 
@@ -41,19 +41,21 @@ async function prepareTables() {
 	await pool.query(q);
 }
 
-async function getDevices() {
+async function fetchDevices() {
 	const res = await pool.query('SELECT * from devices');
 	devices = {};
 	res.rows.forEach(r => devices[r.key] = r);
 	return devices;
 }
 
-function validate(data) { // TODO: validate better
-	return data.k && Object.keys(devices).includes(data.k)
-		&& typeof data.c === 'object' && data.dt;
+function authorize(data) {
+	return data.k && Object.keys(devices).includes(data.k);
 }
 
-// presumes to be called after validate()
+function validate(data) { // TODO: validate better
+	return typeof data.c === 'object' && data.dt;
+}
+
 async function insert(data) {
 	const row = {};
 	for (const f in DB_TO_PROTOCOL) {
@@ -96,6 +98,7 @@ module.exports = {
 	pool,
 	insert,
 	connect,
+	authorize,
 	validate,
-	getDevices
+	devices
 };
