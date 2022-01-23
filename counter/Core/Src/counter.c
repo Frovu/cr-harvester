@@ -329,6 +329,7 @@ void RTC_IRQ_Callback() {
     RAISE(FLAG_EVENT_BASE);
     for (uint8_t i=0; i<CHANNELS_COUNT; ++i) {
       saved_counts[i] = counters[i];
+      counters[i] = 0;
     }
     ++cycle_counter;
     second_counter = 0;
