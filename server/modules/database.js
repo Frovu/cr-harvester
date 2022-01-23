@@ -70,12 +70,12 @@ async function insert(data) {
 	if (type === 'muon') {
 		for (const i in MUON_CHANNELS) {
 			const val = parseInt(data.c[i]);
-			if (val) row[MUON_CHANNELS[i]] = val;
+			if (!isNaN(val)) row[MUON_CHANNELS[i]] = val;
 		}
 	} else if (type === 'nm') {
 		for (let i=0; i < devices[data.k].channels; ++i) {
 			const val = parseInt(data.c[i]);
-			if (val) row['c'+i] = val;
+			if (!isNaN(val)) row['c'+i] = val;
 		}
 	} else {
 		throw new Error(`Unknown device type: ${type}`) ;
@@ -83,7 +83,7 @@ async function insert(data) {
 	row.device_id = devices[data.k].id;
 	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
 	for (const i in row)
-		if (typeof row[i] === 'undefined')
+		if (typeof row[i] === 'undefined' || isNaN(row[i]))
 			delete row[i];
 	const columns = Object.keys(row);
 	const placeholders = [...columns.keys()].map(i=>'$'+(i+1)).join();
