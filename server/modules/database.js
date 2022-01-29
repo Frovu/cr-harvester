@@ -84,6 +84,7 @@ async function insert(data) {
 	}
 	row.device_id = devices[data.k].id;
 	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
+	row.dt = `to_timestamp(${(row.dt.getTime()/1000).toFixed()})`;
 	for (const i in row)
 		if (typeof row[i] === 'undefined' || isNaN(row[i]))
 			delete row[i];
