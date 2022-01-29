@@ -83,14 +83,14 @@ async function insert(data) {
 		throw new Error(`Unknown device type: ${type}`) ;
 	}
 	row.device_id = devices[data.k].id;
-	row.dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
-	row.dt = `to_timestamp(${(row.dt.getTime()/1000).toFixed()})`;
+	const dt = new Date(data.dt.toString().includes('T') ? data.dt : parseInt(data.dt * 1000));
+	const timestamp = `to_timestamp(${(dt.getTime()/1000).toFixed()})`;
 	for (const i in row)
 		if (typeof row[i] === 'undefined' || isNaN(row[i]))
 			delete row[i];
 	const columns = Object.keys(row);
 	const placeholders = [...columns.keys()].map(i=>'$'+(i+1)).join();
-	const q = `INSERT INTO ${type}_data (${Object.keys(row).join()}) VALUES (${placeholders}) ` +
+	const q = `INSERT INTO ${type}_data (dt, ${Object.keys(row).join()}) VALUES (${timestamp}, ${placeholders}) ` +
 		`ON CONFLICT (dt, device_id) DO UPDATE SET (${columns.join()}) = (${columns.map(c => 'EXCLUDED.'+c).join()})`;
 	await pool.query(q, Object.values(row));
 }
