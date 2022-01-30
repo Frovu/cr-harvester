@@ -46,3 +46,15 @@ CREATE TABLE devices (
 INSERT INTO devices (key, channels, description)
 VALUES ('anon', 12, 'An unregistered or deconfigured device');
 ```
+
+### stations.json content example
+
+```json
+[
+	{
+		"name": "Moscow Neutron Monitor",
+		"devices": ["mos-nm-1", "mos-nm-2", "(keys for database)"]
+	}
+]
+
+```

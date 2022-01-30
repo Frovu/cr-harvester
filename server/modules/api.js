@@ -1,15 +1,12 @@
 const express = require('express');
 const db = require('./database');
-// const analyse = require('./analysis');
+const stations = require('./stations');
 db.connect();
 const router = express.Router();
 
-// router.get('/sections', (req, res) => {
-// 	// hide devices authority keys
-// 	const sections = db.getSections();
-// 	for(const s in sections) sections[s].key = undefined;
-// 	return res.status(200).json(Object.values(sections));
-// });
+router.get('/stations', (req, res) => {
+	return res.status(200).json(stations.get());
+});
 
 router.get('/data', (req, res) => {
 	return res.sendStatus(501);
