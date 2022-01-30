@@ -91,7 +91,7 @@ async function insert(data) {
 	const columns = Object.keys(row);
 	const placeholders = [...columns.keys()].map(i=>'$'+(i+1)).join();
 	const q = `INSERT INTO ${type}_data (dt, ${Object.keys(row).join()}) VALUES (${timestamp}, ${placeholders}) ` +
-		`ON CONFLICT (dt, device_id) DO UPDATE SET (${columns.join()}) = (${columns.map(c => 'EXCLUDED.'+c).join()})`;
+		`ON CONFLICT (dt, device_id) DO UPDATE SET (at, ${columns.join()}) = (CURRENT_TIMESTAMP, ${columns.map(c => 'EXCLUDED.'+c).join()})`;
 	await pool.query(q, Object.values(row));
 }
 

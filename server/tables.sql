@@ -39,3 +39,11 @@ CREATE TABLE IF NOT EXISTS muon_data (
 	info integer,
 	UNIQUE (dt, device_id)
 );
+
+CREATE TABLE IF NOT EXISTS devices (
+	id SERIAL PRIMARY KEY,
+	key TEXT NOT NULL,
+	channels INTEGER,
+	description TEXT,
+	type TEXT NOT NULL DEFAULT 'nm'
+);
