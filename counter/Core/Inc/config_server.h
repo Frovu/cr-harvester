@@ -35,7 +35,7 @@ typedef struct {
 } Configuration;
 
 static const Configuration default_cfg = {
-  .dev_id = "muon-pioneer",
+  .dev_id = "muon-anon",
   .target_addr = "crst.izmiran.ru",
   .target_path = "/nm/api/data",
   .target_port = 80,

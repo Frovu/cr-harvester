@@ -12,7 +12,7 @@ HAL_StatusTypeDef RTC_WriteDateTime(DateTime *dt, uint32_t timeout) {
     rtcTime.Minutes = dt->tm_min;
     rtcTime.Seconds = dt->tm_sec;
     rtcDate.Date    = dt->tm_mday;
-    rtcDate.Month   = dt->tm_mon;
+    rtcDate.Month   = dt->tm_mon + 1;
     rtcDate.Year    = dt->tm_year % 100;
     status = HAL_RTC_SetDate(&hrtc, &rtcDate, RTC_FORMAT_BIN);
     if (status != HAL_OK) return status;
@@ -30,7 +30,8 @@ HAL_StatusTypeDef RTC_ReadDateTime (DateTime *dt, uint32_t timeout) {
     dt->tm_min  = rtcTime.Minutes;
     dt->tm_sec  = rtcTime.Seconds;
     dt->tm_mday = rtcDate.Date;
-    dt->tm_mon  = rtcDate.Month;
+    dt->tm_mon  = rtcDate.Month - 1;
     dt->tm_year = rtcDate.Year + CENTURY;
+//    debug_printf("rtc reads %04d-%02d-%02d %02d:%02d:%02d\r\n", rtcDate.Year + 2000, rtcDate.Month, rtcDate.Date, rtcTime.Hours, rtcTime.Minutes, rtcTime.Seconds);
     return HAL_OK;
 }
