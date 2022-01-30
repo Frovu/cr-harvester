@@ -1,0 +1,19 @@
+
+body {
+	font-family: Courier New;
+	background-color: rgb(30, 0, 30);
+	margin: 1em;
+	color: white;
+}
+
+p {
+	padding-left: 1em;
+}
+
+.error {
+	color: red;
+}
+
+#select-station {
+
+}
