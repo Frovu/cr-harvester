@@ -1,3 +1,5 @@
+import * as mailing from './mailing.js';
+import * as stats from './stats.js';
 
 function show(name, station) {
 	const stations = document.getElementById('select-station');
@@ -8,19 +10,9 @@ function show(name, station) {
 	}
 	const statusEl = document.getElementById('status');
 	const descEl = document.getElementById('description');
-	const mailEl = document.getElementById('mailing');
 	descEl.innerHTML = station.description || 'Empty';
 	statusEl.innerHTML = '<span class="ok">Online</span>';
-	const mailing = {};
-	for (const email of station.mailing.failures)
-		mailing[email] = 'FAILURES';
-	for (const email of station.mailing.events) {
-		if (mailing[email])
-			mailing[email] += ', EVENTS';
-		else
-			mailing[email] = 'EVENTS';
-	}
-	mailEl.innerHTML = Object.keys(mailing).map(m => `${m}<i> - ${mailing[m]}</i>`).join('<br>\n');
+	mailing.init(station);
 	window.localStorage.setItem('station', name);
 	const devdiv = document.getElementById('devices-div');
 	const stadiv = document.getElementById('status-div');

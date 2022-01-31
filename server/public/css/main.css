@@ -50,13 +50,24 @@ input:focus {
 	outline: none;
 }
 
-button:hover {
-	background-color: orange;
-	color: black;
+input:invalid {
+	border: 2px red inset;
+	outline: none;
 }
 
 button:active {
 	border-style: inset;
+}
+
+button.active {
+	background-color: red;
+	border-style: inset;
+	color: black;
+}
+
+button:hover {
+	background-color: orange;
+	color: black;
 }
 
 .ok {
