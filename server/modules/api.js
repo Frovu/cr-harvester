@@ -4,13 +4,30 @@ const stations = require('./stations');
 db.connect();
 const router = express.Router();
 
+router.post('/stations/subscribe', (req, res) => {
+	const badRequest = (txt) => res.status(400).json({ error: txt });
+	const body = req.body;
+	if (!body || !body.station || !body.email || !body.options || !body.secret)
+		return badRequest('Bad request!');
+	if (!stations.get()[body.station])
+		return badRequest('Invalid station name!');
+	if (body.options.length && !stations.validate(body.email))
+		return badRequest('Invalid email address!');
+	if (!stations.authorize(body.secret))
+		return badRequest('Wrong secret key!');
+	try {
+		stations.subscribe(body.station, body.email, body.options);
+		return res.sendStatus(200);
+	} catch(e) {
+		global.log(`Exception in subscribe: ${e}`);
+		return res.sendStatus(500);
+	}
+});
+
 router.get('/stations', (req, res) => {
 	return res.status(200).json(stations.get());
 });
 
-router.get('/data', (req, res) => {
-	return res.sendStatus(501);
-});
 
 router.post('/data', async (req, res) => {
 	// log every request to not loose data in case of some protocol validation issues
