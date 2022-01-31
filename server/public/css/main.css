@@ -36,6 +36,20 @@ button {
 	background-color: rgb(30,30,30);
 }
 
+input {
+	font-family: inherit;
+	font-size: 11pt;
+	border: 2px white inset;
+	padding: 2px;
+	color: inherit;
+	background-color: rgb(30,30,30);
+}
+
+input:focus {
+	border: 2px orange inset;
+	outline: none;
+}
+
 button:hover {
 	background-color: orange;
 	color: black;
