@@ -15,8 +15,26 @@
 			<a id="status"></a>
 			<h4>Description</h4>
 			<a id="description"></a>
-			<h4>Mailing list</h4>
+			<h4>Mailing list <button id="sub">Subscribe</button><button id="unsub">Unsubscribe</button></h4>
+			<div id="sub-form" >
+				<p>
+				<label for="email">&nbsp;Email: </label>
+				<input type="text" name="email" value="" placeholder="email@example.com">
+				</p>
+				<p>
+					<label for="secret">Secret: </label>
+					<input type="password" name="secret" value="">
+				</p>
+				<p>
+					<button id="submit">Submit</button>
+					<a id="sub-options">
+						<label><input type="checkbox" id="sub-failures">FAILURES</label>
+						<label>	<input type="checkbox" id="sub-events">EVENTS</label>
+					</a>
+				</p>
+			</div>
 			<a id="mailing"></a>
+
 		</div>
 		<div id="devices-div" hidden="">
 			<h4>Devices</h4>

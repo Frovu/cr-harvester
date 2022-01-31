@@ -27,6 +27,24 @@ p {
 	padding-left: 2em;
 }
 
+button {
+	margin-right: 10px;
+	font-family: inherit;
+	font-size: 11pt;
+	border: 2px black outset;
+	color: inherit;
+	background-color: rgb(30,30,30);
+}
+
+button:hover {
+	background-color: orange;
+	color: black;
+}
+
+button:active {
+	border-style: inset;
+}
+
 .ok {
 	color: rgb(0, 255, 80);
 }
@@ -48,4 +66,12 @@ p {
 .station-option.active {
 	font-weight: bold;
 	color: red;
+}
+
+#sub-options {
+	user-select: none;
+}
+
+#sub-options label:hover {
+	color: orange;
 }
