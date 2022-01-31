@@ -50,11 +50,20 @@ VALUES ('anon', 12, 'An unregistered or deconfigured device');
 ### stations.json content example
 
 ```json
-[
-	{
-		"name": "Moscow Neutron Monitor",
-		"devices": ["mos-nm-1", "mos-nm-2", "(keys for database)"]
+{
+	"Moscow Neutron Monitor": {
+		"description": "Neutron monitor located at IZMIRAN, has 5 sections, 6 channels in each. <link>",
+		"mailing": {
+			"events": ["sfrovis@gmail.com"],
+			"issues": ["sfrovis@gmail.com"]
+		}
+	},
+	"Muon Pioneer": {
+		"description": "Single direction muon telescope. <link>",
+		"mailing": {
+			"events": ["sfrovis@gmail.com"],
+			"issues": ["sfrovis@gmail.com"]
+		}
 	}
-]
-
+}
 ```
