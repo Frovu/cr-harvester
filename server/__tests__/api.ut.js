@@ -2,6 +2,7 @@
 global.log = (a) => { };
 // global.log = (a) => { console.log(a); };
 const db = require('../modules/database');
+const stations = require('../modules/stations.js');
 db.pool.query = jest.fn((q, args) => {
 	if (args[0] == 87) { // muon
 		return q.includes('muon_data') && q.includes('n_v');
@@ -13,6 +14,7 @@ db.pool.query = jest.fn((q, args) => {
 	}
 	return true;
 });
+jest.spyOn(stations, 'subscribe').mockImplementation(()=>{});
 jest.spyOn(db, 'connect').mockImplementation(()=>{});
 // jest.spyOn(db, 'authorize').mockImplementation(d => d.k === 'valid_key');
 // jest.spyOn(db, 'getDevices').mockImplementation(()=>{return {
@@ -30,16 +32,72 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true, inflate: true }));
 app.use('/api', require('../modules/api.js'));
 
-describe('api', () => {
-	xdescribe('GET /devices', () => {
-		it('responds with 200', async () => {
-			const res = await request(app).get('/api/devices');
+describe('API', () => {
+	describe('GET /stations', () => {
+		it('responds with stations list', async () => {
+			const res = await request(app).get('/api/stations');
 			expect(res.status).toEqual(200);
+			expect(JSON.parse(res.text)).toEqual(stations.get());
 		});
-		it('does not show auth keys', async () => {
-			const res = await request(app).get('/api/devices');
-			const b = res.body;
-			expect(b).toEqual([{asd: 'asd'}]);
+	});
+	describe('POST /stations/subscribe', () => {
+		const station = Object.keys(stations.get())[0];
+		const secret = process.env.SECRET_KEY;
+		it('responds 400 to invalid emails', async () => {
+			let res = await request(app).post('/api/stations/subscribe').send({
+				station, secret,
+				email: 'asd',
+				options: ['failures']
+			});
+			expect(res.status).toEqual(400);
+			res = await request(app).post('/api/stations/subscribe').send({
+				station, secret,
+				email: 123,
+				options: ['failures']
+			});
+			expect(res.status).toEqual(400);
+			res = await request(app).post('/api/stations/subscribe').send({
+				station, secret,
+				email: 'asdasd@asdasd',
+				options: ['failures']
+			});
+			expect(res.status).toEqual(400);
+		});
+		it('responds 400 to invalid secret', async () => {
+			let res = await request(app).post('/api/stations/subscribe').send({
+				station, secret: null,
+				email: 'email@example.com',
+				options: ['failures']
+			});
+			expect(res.status).toEqual(400);
+			res = await request(app).post('/api/stations/subscribe').send({
+				station, secret: 'asdsad',
+				email: 'email@example.com',
+				options: ['failures']
+			});
+			expect(res.status).toEqual(400);
+		});
+		it('responds 400 to invalid station', async () => {
+			let res = await request(app).post('/api/stations/subscribe').send({
+				station: 'moscow', secret,
+				email: 'email@example.com',
+				options: ['failures']
+			});
+			expect(res.status).toEqual(400);
+			res = await request(app).post('/api/stations/subscribe').send({
+				station: 1, secret,
+				email: 'email@example.com',
+				options: ['failures']
+			});
+			expect(res.status).toEqual(400);
+		});
+		it('works fine with correct input', async () => {
+			let res = await request(app).post('/api/stations/subscribe').send({
+				station, secret,
+				email: 'email@example.com',
+				options: ['failures']
+			});
+			expect(res.status).toEqual(200);
 		});
 	});
 	describe('POST /data', () => {
