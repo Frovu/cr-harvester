@@ -17,6 +17,12 @@ body {
 	}
 }
 
+@media (min-width: 1600px) {
+	body {
+		grid-template-columns: 360px 1fr 2fr;
+	}
+}
+
 p {
 	padding-left: 2em;
 }
