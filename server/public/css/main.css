@@ -97,6 +97,14 @@ button:hover {
 	user-select: none;
 }
 
+#sub-message {
+	color: orange;
+}
+
+#sub-message.error {
+	color: red;
+}
+
 #sub-options label:hover {
 	color: orange;
 }
