@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/stations/subscribe', (req, res) => {
 	const badRequest = (txt) => res.status(400).json({ error: txt });
 	const body = req.body;
-	if (!body || !body.station || !body.email || !body.options || !body.secret)
+	if (!body || !body.station || !body.email || !body.options)
 		return badRequest('Bad request!');
 	if (!stations.get()[body.station])
 		return badRequest('Invalid station name!');

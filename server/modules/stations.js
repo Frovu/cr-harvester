@@ -23,9 +23,10 @@ function subscribe(station, email, options=[]) {
 	const mailing = stations[station].mailing;
 	for (const opt of OPTIONS) {
 		if (options.includes(opt)) {
-			mailing[opt].push(email);
+			if (!mailing[opt].includes(email))
+				mailing[opt].push(email);
 		} else {
-			mailing[opt] = mailing[opt].filter(e => e === email);
+			mailing[opt] = mailing[opt].filter(e => e !== email);
 		}
 	}
 	commit();

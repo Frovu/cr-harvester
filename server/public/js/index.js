@@ -12,6 +12,7 @@ function show(name, station) {
 	const descEl = document.getElementById('description');
 	descEl.innerHTML = station.description || 'Empty';
 	statusEl.innerHTML = '<span class="ok">Online</span>';
+	station.name = name;
 	mailing.init(station);
 	window.localStorage.setItem('station', name);
 	const devdiv = document.getElementById('devices-div');

@@ -108,3 +108,7 @@ button:hover {
 #sub-options label:hover {
 	color: orange;
 }
+
+#subscribed {
+	line-height: 1.75em;
+}

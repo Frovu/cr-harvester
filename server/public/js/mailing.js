@@ -9,43 +9,48 @@ function showMessage(html, error=true) {
 	msgTimeout = setTimeout(() => { parent.innerHTML = '<br>'; }, 2000);
 }
 
-async function subscribe(unsub=false) {
+async function subscribe(station, unsub=false) {
 	const secret = document.getElementById('secret');
 	const mailEl = document.getElementById('email');
 	const email = mailEl.value;
-	let options;
-	for (const op of ['failures', 'events']) {
-		const el = document.getElementById('sub-' + op);
-		if (el.checked)
-			options = options ? options.concat(op) : [op];
+	let options = [];
+	if (!unsub) {
+		for (const op of ['failures', 'events']) {
+			const el = document.getElementById('sub-' + op);
+			if (el.checked)
+				options.push(op);
+		}
+		if (!options.length) {
+			return showMessage('Select desired options');
+		}
 	}
 	if (!email || !email.includes('@'))
 		return showMessage('Doesn\'t look like an email');
-	const res = await fetch('stations/subscribe', {
+	const res = await fetch('api/stations/subscribe', {
 		method: 'POST',
 		body: JSON.stringify({
 			secret: secret.value,
-			email: email,
-			options: options
+			station,
+			email,
+			options
 		}),
 		headers: { 'Content-Type': 'application/json' }
 	}).catch(e => console.error(e));
 	if (res && res.status === 400) {
-		const resp = await res.json();
-		console.log(resp)
+		const body = await res.json();
+		showMessage('Error: ' + body.error);
 	} else if (res && res.status === 200) {
 		const subEl = document.getElementById('subscribed');
 		showMessage((unsub ? 'Removed: ' : 'Subscribed: ')+email, false);
-		if (unsub)
-			subEl.innerHTML = subEl.innerHTML.split('<br>').filter(l => !l.includes(email)).join('<br>');
-		else
-			subEl.innerHTML = email + ' - ' + options.map(o => o.toUpperCase()).join(', ');
+		subEl.innerHTML = subEl.innerHTML.split('<br>').filter(l => !l.includes(email)).join('<br>');
+		if (!unsub)
+			subEl.innerHTML = `${email} - <i>${options.map(o => o.toUpperCase()).join(', ')}</i><br>\n`+subEl.innerHTML;
 	} else {
 		showMessage('Failed to fetch server');
 	}
 }
 
-export function showForm(type) {
+export function showForm(station, type) {
 	const form = document.getElementById('sub-form');
 	const mail = document.getElementById('email');
 	const secr = document.getElementById('secret');
@@ -56,7 +61,7 @@ export function showForm(type) {
 	mail.value = '';
 	secr.value = '';
 	subm.innerHTML = type === 'sub' ? 'Subscribe' : 'Unsubscribe';
-	subm.onclick = () => type === 'sub' ? subscribe() : subscribe(false);
+	subm.onclick = () => type === 'sub' ? subscribe(station) : subscribe(station, true);
 }
 
 export function hideForm() {
@@ -85,7 +90,7 @@ export function init(station) {
 			btn.classList.toggle('active');
 			btns.forEach(b => b.id !== btn.id && b.classList.remove('active'));
 			if (btn.classList.contains('active'))
-				showForm(btn.id);
+				showForm(station.name, btn.id);
 			else
 				hideForm();
 		});
