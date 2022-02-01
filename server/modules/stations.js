@@ -46,7 +46,7 @@ async function stats(station) {
 			lastIp: ipCache[dev]
 		};
 	}
-	console.log(stat);
+	return stat;
 }
 
 function subscribe(station, email, options=[]) {
@@ -67,5 +67,6 @@ module.exports = {
 	authorize,
 	subscribe,
 	logIp,
+	stats,
 	get
 };

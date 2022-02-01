@@ -78,6 +78,10 @@ button:hover {
 	color: red;
 }
 
+.warn {
+	color: darkorange;
+}
+
 .station-option {
 	color: lightblue;
 	text-decoration: underline;

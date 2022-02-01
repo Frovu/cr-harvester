@@ -1,7 +1,7 @@
 import * as mailing from './mailing.js';
 import * as stats from './stats.js';
 
-function show(station) {
+async function show(station) {
 	const stations = document.getElementById('select-station');
 	for (const c of stations.children) {
 		c.classList.remove('active');
@@ -11,8 +11,9 @@ function show(station) {
 	const statusEl = document.getElementById('status');
 	const descEl = document.getElementById('description');
 	descEl.innerHTML = station.description || 'Empty';
-	statusEl.innerHTML = '<span class="ok">Online</span>';
+	statusEl.innerHTML = '<span class="error">Unknown</span>';
 	mailing.init(station);
+	stats.init(station.id);
 	window.localStorage.setItem('station', station.id);
 	const devdiv = document.getElementById('devices-div');
 	const stadiv = document.getElementById('status-div');
