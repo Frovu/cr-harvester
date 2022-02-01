@@ -1,20 +1,19 @@
 import * as mailing from './mailing.js';
 import * as stats from './stats.js';
 
-function show(name, station) {
+function show(station) {
 	const stations = document.getElementById('select-station');
 	for (const c of stations.children) {
 		c.classList.remove('active');
-		if (c.innerHTML === name)
+		if (c.innerHTML === station.name)
 			c.classList.add('active');
 	}
 	const statusEl = document.getElementById('status');
 	const descEl = document.getElementById('description');
 	descEl.innerHTML = station.description || 'Empty';
 	statusEl.innerHTML = '<span class="ok">Online</span>';
-	station.name = name;
 	mailing.init(station);
-	window.localStorage.setItem('station', name);
+	window.localStorage.setItem('station', station.id);
 	const devdiv = document.getElementById('devices-div');
 	const stadiv = document.getElementById('status-div');
 	devdiv.hidden = null;
@@ -30,9 +29,10 @@ async function load() {
 		for (const s in stations) {
 			const el = document.createElement('p');
 			el.classList.add('station-option');
-			el.innerHTML = s;
+			stations[s].id = s;
+			el.innerHTML = stations[s].name;
 			el.addEventListener('click', () => {
-				show(s, stations[s]);
+				show(stations[s]);
 			});
 			sel.append(el);
 		}
@@ -40,7 +40,7 @@ async function load() {
 			sel.innerHTML = '<p class="error">No stations are configured.<p>';
 		} else {
 			const saved = window.localStorage.getItem('station');
-			if (saved && stations[saved]) show(saved, stations[saved]);
+			if (saved && stations[saved]) show(stations[saved]);
 		}
 	} else {
 		sel.innerHTML = '<p class="error">Failed to fetch stations list<p>';

@@ -42,6 +42,17 @@ describe('API', () => {
 			expect(JSON.parse(res.text)).toEqual(stations.get());
 		});
 	});
+	describe('GET /stations:id', () => {
+		it('responds 404 to unknown station id', async () => {
+			const res = await request(app).get('/api/stations/asdasdads');
+			expect(res.status).toEqual(404);
+		});
+		it('responds 200 to known station id', async () => {
+			const station = Object.keys(stations.get())[0];
+			const res = await request(app).get('/api/stations/'+station);
+			expect(res.status).toEqual(200);
+		});
+	});
 	describe('POST /stations/subscribe', () => {
 		const station = Object.keys(stations.get())[0];
 		const secret = process.env.SECRET_KEY;

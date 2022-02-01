@@ -24,6 +24,18 @@ router.post('/stations/subscribe', (req, res) => {
 	}
 });
 
+router.get('/stations/:id', (req, res) => {
+	try {
+		if (!stations.get()[req.params.id])
+			return res.sendStatus(404);
+		return res.sendStatus(200).json(stations.stats(req.params.id));
+	} catch(e) {
+		global.log(`Exception in get station: ${e}`);
+		return res.sendStatus(500);
+	}
+});
+
+
 router.get('/stations', (req, res) => {
 	return res.status(200).json(stations.get());
 });

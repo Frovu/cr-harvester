@@ -69,5 +69,3 @@ module.exports = {
 	logIp,
 	get
 };
-
-setTimeout(()=>stats('Muon Pioneer'), 300);

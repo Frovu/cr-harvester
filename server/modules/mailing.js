@@ -27,4 +27,6 @@ async function send(to, subject, html) {
 	console.log('Message sent: %s', info.messageId);
 }
 
-module.exports = send;
+module.exports = {
+	send
+};
