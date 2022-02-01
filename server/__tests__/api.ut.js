@@ -3,6 +3,7 @@ global.log = (a) => { };
 // global.log = (a) => { console.log(a); };
 const db = require('../modules/database');
 const stations = require('../modules/stations.js');
+const mailing = require('../modules/mailing.js');
 db.pool.query = jest.fn((q, args) => {
 	if (args[0] == 87) { // muon
 		return q.includes('muon_data') && q.includes('n_v');
@@ -16,6 +17,7 @@ db.pool.query = jest.fn((q, args) => {
 });
 jest.spyOn(stations, 'subscribe').mockImplementation(()=>{});
 jest.spyOn(db, 'connect').mockImplementation(()=>{});
+jest.spyOn(mailing, 'send').mockImplementation(()=>{});
 // jest.spyOn(db, 'authorize').mockImplementation(d => d.k === 'valid_key');
 // jest.spyOn(db, 'getDevices').mockImplementation(()=>{return {
 // 	'akey': {key: 'akey', asd: 'asd', type: 'nm'}

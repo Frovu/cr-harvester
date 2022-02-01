@@ -27,6 +27,12 @@ DB_HOST=localhost
 DB_NAME=
 DB_PASSWORD=
 DB_PORT=5432
+
+SMTP_SERVER=mail.izmiran.ru
+SMTP_USER=
+SMTP_PASS=
+
+ADMIN_SECERT=1234
 ```
 
 ### Postgres tables description
@@ -53,6 +59,7 @@ VALUES ('anon', 12, 'An unregistered or deconfigured device');
 {
 	"Moscow Neutron Monitor": {
 		"description": "Neutron monitor located at IZMIRAN, has 5 sections, 6 channels in each. <link>",
+		"devices": [""],
 		"mailing": {
 			"events": ["sfrovis@gmail.com"],
 			"issues": ["sfrovis@gmail.com"]
@@ -60,6 +67,7 @@ VALUES ('anon', 12, 'An unregistered or deconfigured device');
 	},
 	"Muon Pioneer": {
 		"description": "Single direction muon telescope. <link>",
+		"devices": ["muon-anon"],
 		"mailing": {
 			"events": ["sfrovis@gmail.com"],
 			"issues": ["sfrovis@gmail.com"]

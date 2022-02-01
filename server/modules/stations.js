@@ -1,5 +1,6 @@
 const fs = require('fs');
 const validator = require('email-validator');
+const email = require('./mailing');
 
 const JSON_PATH = 'stations.json';
 const stations = fs.existsSync(JSON_PATH) ? JSON.parse(fs.readFileSync(JSON_PATH)) : {};
