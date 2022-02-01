@@ -1,9 +1,12 @@
 const fs = require('fs');
-const Pool = require('pg').Pool;
+const pg = require('pg');
 let pool = {}, devices = {};
+pg.types.setTypeParser(1114, function(stringValue) {
+	return new Date(stringValue + '+0000'); // interpret pg 'timestamp without time zone' as utc
+});
 
 function connect() {
-	module.exports.pool = pool = new Pool({
+	module.exports.pool = pool = new pg.Pool({
 		user: process.env.DB_USER,
 		host: process.env.DB_HOST,
 		database: process.env.DB_NAME,
@@ -43,7 +46,7 @@ async function prepareTables() {
 
 async function fetchDevices() {
 	const res = await pool.query('SELECT * from devices');
-	devices = {};
+	module.exports.devices = devices = {};
 	res.rows.forEach(r => devices[r.key] = r);
 	return devices;
 }

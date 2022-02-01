@@ -31,9 +31,12 @@ router.get('/stations', (req, res) => {
 
 router.post('/data', async (req, res) => {
 	// log every request to not loose data in case of some protocol validation issues
-	global.log(`(${req.headers['x-forwarded-for']}) >>> ${JSON.stringify(req.body)}`);
+	const from = req.headers['x-forwarded-for'];
+	global.log(`(${from}) >>> ${JSON.stringify(req.body)}`);
 	if (!req.body || !db.validate(req.body))
 		return res.sendStatus(400);
+	if (from)
+		stations.logIp(req.body.k);
 	if (!db.authorize(req.body))
 		return res.sendStatus(401);
 	try {
