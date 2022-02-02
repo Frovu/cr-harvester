@@ -97,6 +97,17 @@ button:hover {
 	color: red;
 }
 
+.device-container {
+	display: grid;
+	grid-auto-flow: column;
+}
+
+.device-plot {
+	position: relative;
+	display: block;
+	max-height: 240px;
+}
+
 .device-status {
 	width: fit-content;
 	padding: 1em;
