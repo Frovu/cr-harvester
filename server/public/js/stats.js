@@ -5,17 +5,17 @@ let interval;
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 function getPlotSize(parent) {
-	const height = parent.offsetHeight - 20;
-	return { width: height * 1.5, height: height};
+	let height = parent.offsetHeight - 40;
+	return { width: Math.floor(height * 1.5), height: height};
 }
-function createPlot(parent, config, data) {
+function createPlot(parent, sizeEl, config, data=null) {
 	const el = document.createElement('div');
 	el.classList.add('device-plot');
-	// const axis = { scale: config.units ||  },
+	const color = config.color || 'rgba(200,200,100,1)';
+	const gray = 'rgba(255,255,255,0.1)';
 	const plot = new uPlot({
-		// ...getPlotSize(parent),
-		width: 600,
-		height: 480,
+		title: config.name,
+		...getPlotSize(sizeEl),
 		// tzDate: ts => uPlot.tzDate(new Date(ts), 'UTC'),
 		cursor: {
 			drag: { dist: 12 },
@@ -24,25 +24,33 @@ function createPlot(parent, config, data) {
 		series: [
 			{ value: '{HH}:{mm} UTC' }, // '{YYYY}-{MM}-{DD} {HH}:{mm} UTC'
 			{
-				stroke: 'red',
+				stroke: color,
 				label: config.name,
-				value: (u, v) => v == null ? '-' : v.toFixed(config.precision||0) + (config.units ? '' : ' '+config.units),
+				value: (u, v) => v == null ? '-' : v.toFixed(config.precision||0) + (!config.units ? '' : '\n'+config.units),
+				points: { size: 7 , fill: 'transparent', stroke: color }
 			}
 		],
 		axes: [
-			{},
 			{
-				values: (u, vals) => vals.map(v => v.toFixed(config.precision||0) + (config.units ? '' : ' '+config.units))
+				stroke: 'darkgrey',
+				grid: { stroke: gray, width: 1 },
+				values: '{HH}:{mm}',
+				size: 30
+
+			},
+			{
+				// space: 32,
+				grid: { stroke: gray, width: 1 },
+				ticks: { stroke: gray, width: 1 },
+				stroke: 'darkgrey',
+				values: (u, vals) => vals.map(v => v.toFixed(config.precision||0) + (!config.units ? '' : '\n'+config.units))
 			}
-		]
+		],
+		legend: { show: false }
 	}, data, el);
 	parent.addEventListener('resize', () => {
-		plot.setSize(getPlotSize(parent));
+		plot.setSize(getPlotSize(sizeEl));
 	});
-	// window.addEventListener('resize', () => {
-	// 	console.log(getPlotSize(parent))
-	// 	plot.setSize(getPlotSize(parent));
-	// });
 	parent.append(el);
 	return plot;
 }
@@ -57,7 +65,7 @@ function intervalToString(seconds) {
 
 function devStatusHtml(name, status, stats, statusPlus='') {
 	const ll = stats && stats.lastLine;
-	const uptime = ll && ll.uptime;
+	const uptime = ll && ll.uptime*60;
 	const dt = ll && ll.dt;
 	return `
 <h4>${name}</h4>
@@ -94,9 +102,7 @@ async function update(stationId, elements, plots) {
 					const time = data.map(r => new Date(r.dt).getTime()/1000);
 					for (const f in plots[dev]) {
 						const row = data.map(r => r[f]);
-						console.log(f, time, row)
 						plots[dev][f].setData([time, row]);
-						plots[dev][f].redraw();
 					}
 				}
 			} else {
@@ -144,7 +150,8 @@ export async function init(stationId, plotsConfig) {
 		if (plotsConfig) {
 			plots[dev] = {};
 			for (const p in plotsConfig) {
-				plots[dev][p] = createPlot(el, plotsConfig);
+				plots[dev][p] = createPlot(el, devStEl, plotsConfig[p], stats[dev].data);
+
 
 			}
 
