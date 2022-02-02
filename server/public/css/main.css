@@ -24,7 +24,7 @@ body {
 }
 
 p {
-	padding-left: 2em;
+	margin-left: 2em;
 }
 
 button {
@@ -95,6 +95,21 @@ button:hover {
 .station-option.active {
 	font-weight: bold;
 	color: red;
+}
+
+.device-status {
+	width: fit-content;
+	padding: 1em;
+	background-color: rgba(30, 20, 30, 0.5);
+	border: 2px rgba(50, 20, 50, 0.9) solid;
+}
+
+.device-status h4 {
+	text-decoration: underline;
+	margin: 0.5em 0 1em 1em;
+}
+.device-status p {
+	margin:0.5em 1em 0.5em 2.5em;
 }
 
 #sub-options {

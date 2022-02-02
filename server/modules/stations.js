@@ -37,7 +37,7 @@ async function stats(station) {
 		const res = await db.pool.query(q);
 		let lastLine = res.rows[res.rows.length-1];
 		if (!lastLine) {
-			const lres = await db.pool.query(`SELECT dt, uptime FROM ${dev.type}_data WHERE device_id=${dev.id} ORDER BY dt DESC LIMIT 1`);
+			const lres = await db.pool.query(`SELECT at, dt, uptime FROM ${dev.type}_data WHERE device_id=${dev.id} ORDER BY dt DESC LIMIT 1`);
 			lastLine = lres.rows[0];
 		}
 		stat[devKey] = {

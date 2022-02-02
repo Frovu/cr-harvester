@@ -11,7 +11,7 @@ async function show(station) {
 	const statusEl = document.getElementById('status');
 	const descEl = document.getElementById('description');
 	descEl.innerHTML = station.description || 'Empty';
-	statusEl.innerHTML = '<span class="error">Unknown</span>';
+	statusEl.innerHTML = '<span class="error">-----</span>';
 	mailing.init(station);
 	stats.init(station.id);
 	window.localStorage.setItem('station', station.id);

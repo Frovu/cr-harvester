@@ -1,6 +1,7 @@
 
 let interval;
-let statInterval;
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 function intervalToString(seconds) {
 	const days = Math.floor(seconds / 86400);
@@ -48,13 +49,11 @@ async function update(stationId, elements, plots) {
 		const statusEl = document.getElementById('status');
 		const status = ok===Object.keys(data).length ? 'Online' : ok > 0 ? 'Online partially' : 'Offline';
 		const sclass = ok===Object.keys(data).length ? 'ok' : ok > 0 ? 'warn' : 'error';
-		const html = s => `<span class="${sclass}">${status}</span> (${s.toFixed(0)} second${s==1?'':'s'} ago)`;
-		statusEl.innerHTML = html(0);
-		const updated = new Date();
-		clearInterval(statInterval);
-		statInterval = setInterval(() => {
-			statusEl.innerHTML = html((new Date() - updated) / 1000);
-		}, 1000);
+		for (const a of '\\|/-\\|/') {
+			statusEl.innerHTML = `<span class="warn">-${a}${a}${a}-</span>`;
+			await delay(125);
+		}
+		statusEl.innerHTML = `<span class="${sclass}">${status}</span>`;
 	} catch (e) {
 		console.error(e);
 		const parent = document.getElementById('devices');
@@ -85,5 +84,5 @@ export async function init(stationId) {
 		parent.append(el);
 	}
 	update(stationId, elements, plots);
-	interval = setInterval(() => update(stationId, elements, plots), 20000);
+	interval = setInterval(() => update(stationId, elements, plots), 10000);
 }
