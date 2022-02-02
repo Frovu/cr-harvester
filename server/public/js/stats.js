@@ -11,12 +11,17 @@ function intervalToString(seconds) {
 	return `${n} ${days ? 'day' : hours ? 'hour' : minutes ? 'minute' : 'second'}${n>1?'s':''}`;
 }
 
-function devStatusHtml(name, status, uptime, ip, statusPlus='') {
+function devStatusHtml(name, status, stats, statusPlus='') {
+	const ll = stats && stats.lastLine;
+	const uptime = ll && ll.uptime;
+	const dt = ll && ll.dt;
 	return `
 <h4>${name}</h4>
+<p><span class="time">${dt}</span></p>
 <p>Status: <span class="${status==='Online'?'ok':'error'}">${status}</span>${statusPlus}</p>
-<p>Uptime: ${uptime?intervalToString(uptime*60):'N/A'}</p>
-<p>IP: ${ip||'N/A'}</p>
+<p>Uptime: ${uptime?intervalToString(uptime):'N/A'}</p>
+<p>IP: ${stats&&stats.lastIp||'N/A'}</p>
+
 `;
 }
 
@@ -36,13 +41,12 @@ async function update(stationId, elements, plots) {
 				const online = timePast < 100000; // 1.5 minutes
 				if (online) {
 					ok += 1;
-					el.innerHTML = devStatusHtml(dev, 'Online', stat.lastLine.uptime, stat.lastIp);
+					el.innerHTML = devStatusHtml(dev, 'Online', stat);
 				} else {
-					el.innerHTML = devStatusHtml(dev, 'Lost', null, null, `&nbsp;(${intervalToString(timePast/1000)} ago)`);
+					el.innerHTML = devStatusHtml(dev, 'Lost', stat, `&nbsp;(${intervalToString(timePast/1000)} ago)`);
 				}
 			} else {
-				// TODO
-				plot.destroy();
+				plot && plot.destroy();
 				el.innerHTML = devStatusHtml(dev, 'N/A');
 			}
 		}
@@ -63,7 +67,7 @@ async function update(stationId, elements, plots) {
 	}
 }
 
-export async function init(stationId) {
+export async function init(stationId, plotsConfig) {
 	if (interval) clearInterval(interval);
 	const parent = document.getElementById('devices');
 	parent.innerHTML = '';
@@ -84,5 +88,5 @@ export async function init(stationId) {
 		parent.append(el);
 	}
 	update(stationId, elements, plots);
-	interval = setInterval(() => update(stationId, elements, plots), 10000);
+	interval = setInterval(() => update(stationId, elements, plots), 20000);
 }

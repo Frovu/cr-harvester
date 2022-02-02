@@ -13,7 +13,7 @@ async function show(station) {
 	descEl.innerHTML = station.description || 'Empty';
 	statusEl.innerHTML = '<span class="error">-----</span>';
 	mailing.init(station);
-	stats.init(station.id);
+	stats.init(station.id, station.plotsConfig);
 	window.localStorage.setItem('station', station.id);
 	const devdiv = document.getElementById('devices-div');
 	const stadiv = document.getElementById('status-div');
