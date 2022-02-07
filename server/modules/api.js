@@ -49,7 +49,7 @@ router.post('/data', async (req, res) => {
 	if (!req.body || !db.validate(req.body))
 		return res.sendStatus(400);
 	if (from)
-		stations.logIp(req.body.k);
+		stations.logIp(req.body.k, from);
 	if (!db.authorize(req.body))
 		return res.sendStatus(401);
 	try {

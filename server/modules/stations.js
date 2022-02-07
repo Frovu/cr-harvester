@@ -43,7 +43,7 @@ async function stats(station) {
 		stat[devKey] = {
 			lastLine,
 			data: res.rows,
-			lastIp: ipCache[dev]
+			lastIp: ipCache[devKey]
 		};
 	}
 	return stat;

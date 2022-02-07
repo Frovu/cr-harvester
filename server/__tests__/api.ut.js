@@ -16,6 +16,7 @@ db.pool.query = jest.fn((q, args) => {
 	return true;
 });
 jest.spyOn(stations, 'subscribe').mockImplementation(()=>{});
+jest.spyOn(stations, 'stats').mockImplementation(()=>{});
 jest.spyOn(db, 'connect').mockImplementation(()=>{});
 jest.spyOn(mailing, 'send').mockImplementation(()=>{});
 // jest.spyOn(db, 'authorize').mockImplementation(d => d.k === 'valid_key');
