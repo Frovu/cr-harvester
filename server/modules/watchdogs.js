@@ -3,7 +3,7 @@ const stations = require('./stations');
 const DATA_WATCHDOG_M   = 5;
 const INTEGRITY_CHECK_M = 60; // 1 hour
 
-const DATA_WATCHDOG_MS   = 3000// DATA_WATCHDOG_M * 60000;
+const DATA_WATCHDOG_MS   = DATA_WATCHDOG_M * 60000;
 const INTEGRITY_CHECK_MS = INTEGRITY_CHECK_M * 60000;
 
 let watchdogs = {};
