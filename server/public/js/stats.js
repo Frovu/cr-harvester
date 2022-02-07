@@ -123,8 +123,7 @@ async function update(stationId, elements, plots) {
 		console.error(e);
 		const parent = document.getElementById('devices');
 		parent.innerHTML = '<a class="error">Failed to update status!</a>';
-		if (interval) clearInterval(interval);
-		return setTimeout(() => init(stationId), 3000);
+		return setTimeout(() => update(stationId, elements, plots), 3000);
 	}
 }
 
@@ -149,12 +148,8 @@ export async function init(stationId, plotsConfig) {
 		parent.append(el);
 		if (plotsConfig) {
 			plots[dev] = {};
-			for (const p in plotsConfig) {
+			for (const p in plotsConfig)
 				plots[dev][p] = createPlot(el, devStEl, plotsConfig[p], stats[dev].data);
-
-
-			}
-
 		}
 	}
 	update(stationId, elements, plots);
