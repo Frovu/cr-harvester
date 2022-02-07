@@ -1,5 +1,6 @@
 const fs = require('fs');
 const validator = require('email-validator');
+const mailer = require('./mailing');
 const db = require('./database');
 
 const STATS_H = process.env.STATS_H || 1;
@@ -12,15 +13,40 @@ const commit = () => {
 	});
 };
 
+const ALERTS_DELAY_MS = 30 * 60 * 1000; // don't send alerts more often than 1 per hour per station
 const OPTIONS = [ 'failures', 'events' ];
 const ipCache = {};
+const alertsLog = { failures: {}, events: {} };
 
 function authorize(key) {
 	return process.env.SECRET_KEY === key;
 }
 
-function get() {
+function list() {
 	return stations;
+}
+
+function get(id) {
+	return stations[id];
+}
+
+async function sendDeviceAlert(devId, html, type='failures') {
+	const addresses = [];
+	let parentStation;
+	for (const station of Object.values(stations)) {
+		if (station.devices.includes(devId) && station.mailing) {
+			for (const mail of station.mailing[type])
+				if (!addresses.includes(mail))
+					addresses.push(mail);
+			parentStation = station.name;
+		}
+	}
+	const lastAlert = alertsLog[type][parentStation];
+	if (lastAlert && lastAlert - new Date() < ALERTS_DELAY_MS)
+		return global.log(`Alert's too soon for '${parentStation}'`);
+	global.log(`Sending '${parentStation}' alerts to: ${addresses}`);
+	alertsLog[type][parentStation] = new Date();
+	await mailer.send(addresses, parentStation, html);
 }
 
 function logIp(dev, addr) {
@@ -64,9 +90,11 @@ function subscribe(station, email, options=[]) {
 
 module.exports = {
 	validate: validator.validate,
+	sendDeviceAlert,
 	authorize,
 	subscribe,
 	logIp,
 	stats,
+	list,
 	get
 };
