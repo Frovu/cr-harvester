@@ -90,7 +90,7 @@ export function init(station) {
 			btn.classList.toggle('active');
 			btns.forEach(b => b.id !== btn.id && b.classList.remove('active'));
 			if (btn.classList.contains('active'))
-				showForm(station.name, btn.id);
+				showForm(station.id, btn.id);
 			else
 				hideForm();
 		});
