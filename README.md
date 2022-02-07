@@ -1,36 +1,43 @@
-# neutron-monitor
-Embedded system for neutron monitor data collection.
+# cr-harvester
+Scalable embedded system for cosmic rays data collection.
 
-## brief description
+## System features
 
-System consists of N counter devices of 1-12 channels connected to neutron monitor sections and a master web server which serves mostly as proxy to database.
++ Unlimited number of devices
++ Web page with all devices statuses
++ Email alerts when a device stops to send data
++ Supported device types: nm, muon
 
-Each device has internet (over ethernet) connection to server and is sending data at every UTC (minute) beginning.
+## Data API
 
-Each device has onboard real time clock (battery backed) and keeps its time in sync via NTP.
-
-Each device has external flash unit of (32 mbits) where data is stored in case of server/connection failure, when connection is restored data is resent to server.
-
-# Protocol description
-
-To save collected data into database, device interacts with server part of the system.
-Device sends HTTP POST request with `urlencoded` or `json` body. Which includes following values:
-+ `k` - `device key/id` - unique device identifier to distinguish several sections
+When data is collected, the device sends HTTP POST request with `urlencoded` or `json` body. Which includes following values:
++ `k` - `device key/id` - unique device identifier
 + `dt` - `date/timestamp` - timestamp of counting period beginning
 + `upt` - `uptime` - device uptime at the moment of counting period start (in minutes)
 + `inf` - `info` - different debugging info, if LSB set (number is odd), dev time is trusted, other bits are reserved
 + `ff` - `flash failures` - count of device external flash program/erase failures
 + `t` - `temperature` - air temperature in Celsius .2f near the device core (bmp280)
 + `te` - `temperature_ext` - air temperature in Celsius .2f temperature measured by ds18b20 (optional)
-+ `p` - `pressure` - air temperature in hPa with 2 decimal signs after point
++ `p` - `pressure` - air pressure in mb .2f
 + `v` - `voltage` - device supply voltage (optional)
-+ `c` - `counts` - array of 12 integer containing channels impulse counts
++ `c` - `counts` - array of N integers
 
 note: time (`dt`) is interpreted either as epoch (count of seconds since 1970) or as `ISO 8601` string if it includes `T` character.
 
 # Device description
 
-## device LED's behavior
+## Features
+
++ Timekeeping functionality: internal or external RTC
++ Internet connection: Ethernet, WiFi or GSM
++ Time syncing functionality: NTP or GPS
++ Onboard BMP280 pressure sensor
++ (optional) DS18B20 External temperature sensor
++ (optional) External flash memory for data persistence in case of transmission failures
++ (optional) ADC for device supply voltage measurements
++ (optional) Device configuration HTTP server
+
+## LED's behavior
 
 Device has 3 informative LED's:
 - green led on stm32 board
@@ -51,7 +58,7 @@ ERROR_LED (red)  led behaves as follows:
 - it **blinks** shortly after data sending try is failed
 - it **blinks** with period of ~500ms when some of device peripherals is lost or fails to answer
 
-## device LED's most common patterns
+## LED's most common patterns
 1. **green and blue** leds are **lit** - whole flash memory is being read
 2. **red and green** leds are **lit** - device failed to initialize RTC peripheral on start
 3. **red** led **blinks** with period of ~500ms - something is wrong with device peripherals
