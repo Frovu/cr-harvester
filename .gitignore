@@ -1,6 +1,6 @@
 server/node_modules
 server/.env
-server/stations.json
+server/config.json
 server/logs
 
 counter/Release

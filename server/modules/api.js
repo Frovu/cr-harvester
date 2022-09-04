@@ -37,14 +37,11 @@ router.get('/stations/:id', async (req, res) => {
 	}
 });
 
-
 router.get('/stations', (req, res) => {
 	return res.status(200).json(stations.list());
 });
 
-
 router.post('/data', async (req, res) => {
-	// log every request to not loose data in case of some protocol validation issues
 	const from = req.headers['x-forwarded-for'];
 	const sendStatus = status => {
 		res.sendStatus(status);
