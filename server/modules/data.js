@@ -5,6 +5,19 @@ pg.types.setTypeParser(1114, function(stringValue) {
 	return new Date(stringValue + '+0000'); // interpret pg 'timestamp without time zone' as utc
 });
 
+const SHORT_NAMES = {
+	key: 'k',
+	time: 'dt',
+	counts: 'c',
+	voltage: 'v',
+	temperature_ext: 'te',
+	flash_failures: 'ff',
+	temperature: 't',
+	pressure: 'p',
+	uptime: 'upt',
+	info: 'inf'
+};
+
 const pool = module.exports.pool = new pg.Pool({
 	user: process.env.DB_USER,
 	host: process.env.DB_HOST,
@@ -39,3 +52,13 @@ ${dev.fields.map(c => c+' REAL,').join('\n')}`;
 	}
 }
 initTables();
+
+async function select(device, where, limit) {
+	const dev = config.devices[device];
+	const fields = (dev.counters || []).concat(dev.fields || []);
+	const sel = fields.map(f => `COALESCE(${device}_corrections.${f}, ${device}_raw.${f})`).join(', ');
+	const query = `SELECT server_time, time, uptime, info, ${sel} FROM
+		${device}_raw r LEFT OUTER JOIN ${device}_corrections c ON r.time = c.time
+		${where ? 'WHERE '+where : ''} ${limit ? 'LIMIT '+limit : ''}`;
+	return pool.query(query);
+}
