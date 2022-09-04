@@ -1,8 +1,6 @@
 const express = require('express');
-const db = require('./database');
+const db = require('./data');
 const stations = require('./stations');
-const watchdogs = require('./watchdogs');
-db.connect();
 const router = express.Router();
 
 router.post('/stations/subscribe', (req, res) => {
@@ -26,9 +24,9 @@ router.post('/stations/subscribe', (req, res) => {
 });
 
 router.get('/stations/:id', async (req, res) => {
+	if (!stations.get(req.params.id))
+		return res.sendStatus(404);
 	try {
-		if (!stations.get(req.params.id))
-			return res.sendStatus(404);
 		const stat = await stations.stats(req.params.id);
 		return res.status(200).json(stat);
 	} catch(e) {
@@ -55,7 +53,6 @@ router.post('/data', async (req, res) => {
 		return sendStatus(401);
 	try {
 		await db.insert(req.body);
-		watchdogs.gotData(req.body);
 		return sendStatus(200);
 	} catch(e) {
 		global.log(`Exception inserting data: ${e}`);
