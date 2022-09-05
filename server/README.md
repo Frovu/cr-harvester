@@ -25,7 +25,8 @@ Note that device id must use underscores for spaces
 		"device_id": {
 			"description": "text",
 			"counters": ["c1", "c2", "c3", "c4"],
-			"fields": ["temperature"]
+			"fields": ["temperature"],
+			"secret": "1234"
 		}
 	},
 	"experiments": {

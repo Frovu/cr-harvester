@@ -11,7 +11,8 @@ Scalable embedded system for cosmic rays data collection.
 ## Data API
 
 When data is collected, the device sends HTTP POST request with `urlencoded` or `json` body. Which includes following values:
-+ `k` - `device key/id` - unique device identifier
++ `k` - `key` - unique device identifier
++ `s` - `secret` - device secret key (only if configured)
 + `dt` - `date/timestamp` - timestamp of counting period beginning
 + `upt` - `uptime` - device uptime at the moment of counting period start (in minutes)
 + `inf` - `info` - different debugging info, if LSB set (number is odd), dev time is trusted, other bits are reserved
