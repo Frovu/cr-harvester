@@ -65,14 +65,20 @@ ${dev.fields.map(c => c+' REAL,').join('\n')}`;
 }
 initTables();
 
-function select(device, where, limit) {
+async function selectEmails(stations) {
+	const query = `SELECT DISTINCT email FROM subscriptions WHERE station IN (${stations.map((_,i)=>'$'+(i+1)).join()})`;
+	const res = await query(query, stations);
+	return res.rows.flat();
+}
+
+async function select(device, where, limit) {
 	const dev = config.devices[device];
 	const fields = (dev.counters || []).concat(dev.fields || []);
 	const sel = fields.map(f => `COALESCE(${device}_corrections.${f}, ${device}_raw.${f}) as ${f}`).join(', ');
-	const query = `SELECT r.server_time as server_time, r.time as time, uptime, info,
+	const query = `SELECT * FROM (SELECT r.server_time as server_time, r.time as time, uptime, info,
 		${sel} FROM ${device}_raw r LEFT OUTER JOIN ${device}_corrections c USING time
-		${where ? 'WHERE '+where : ''} ${limit ? 'LIMIT '+limit : ''}`;
-	return pool.query(query);
+		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) ORDER BY time`;
+	return await pool.query(query);
 }
 
 async function insert(body) {
@@ -100,7 +106,7 @@ async function insert(body) {
 		row[name] = val;
 	}
 	const query = `INSERT INTO ${devId}_raw (time,${Object.keys(row).join()})
-VALUES (to_timestamp(${(time.getTime()/1000).toFixed()}),${Object.keys(row).map((v,i)=>'$'+(i+1)).join()})
+VALUES (to_timestamp(${(time.getTime()/1000).toFixed()}),${Object.keys(row).map((_,i)=>'$'+(i+1)).join()})
 ON CONFLICT (time) DO UPDATE SET (server_time,${Object.keys(row).join()}
 = (CURRENT_TIMESTAMP,${Object.keys(row).map(c=>'EXCLUDED.'+c).join()})`;
 	await pool.execute(query, Object.values(row));
@@ -108,6 +114,8 @@ ON CONFLICT (time) DO UPDATE SET (server_time,${Object.keys(row).join()}
 }
 
 module.exports = {
+	pool,
+	selectEmails,
 	select,
 	insert
 };

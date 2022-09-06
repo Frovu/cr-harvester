@@ -41,22 +41,15 @@ router.get('/stations', (req, res) => {
 
 router.post('/data', async (req, res) => {
 	const from = req.headers['x-forwarded-for'];
-	const sendStatus = status => {
-		res.sendStatus(status);
-		global.log(`[${status}] (${from}) ${JSON.stringify(req.body)}`);
-	};
-	if (!req.body || !db.validate(req.body))
-		return sendStatus(400);
-	if (from)
-		stations.logIp(req.body.k, from);
-	if (!db.authorize(req.body))
-		return sendStatus(401);
 	try {
-		await db.insert(req.body);
-		return sendStatus(200);
+		const status = await db.insert(req.body);
+		res.sendStatus(status);
+		stations.gotData(req.body.k, from);
+		global.log(`[${status}] (${from}) ${JSON.stringify(req.body)}`);
 	} catch(e) {
 		global.log(`Exception inserting data: ${e}`);
-		return sendStatus(500);
+		global.log(`[500] (${from}) ${JSON.stringify(req.body)}`);
+		res.sendStatus(500);
 	}
 });
 

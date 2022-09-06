@@ -30,7 +30,8 @@ Note that device id must use underscores for spaces
 		}
 	},
 	"experiments": {
-		"station_name": {
+		"station_id": {
+			"name": "",
 			"description": "text",
 			"devices": ["device_id"]
 		}
