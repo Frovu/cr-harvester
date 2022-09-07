@@ -2,44 +2,60 @@ import React from 'react';
 
 import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
+import './DevicePane.css';
 
 class StatusPlot extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
+			title: props.title,
 			options: {
-				title: "Chart",
-				width: 400,
-				height: 300,
+				// title: props.title,
+				width: 128,
+				height: 128,
+				legend: { show: false },
+				cursor: { show: false },
 				series: [
 					{
-						label: "Date"
 					},
 					{
-						label: "",
 						points: { show: false },
-						stroke: "blue",
-						fill: "blue"
+						stroke: props.color
 					}
 				],
-				scales: { x: { time: false } },
+				axes: [
+					{
+						// grid: { stroke: 'grey', width: 1 },
+						size: 0
+					},
+					{
+						grid: { stroke: 'grey', width: 1 },
+						stroke: 'darkgrey',
+						gap: -8,
+						size: 28, // TODO: dynamic size
+						space: 48,
+						values: (u, vals) => vals.map(v => v.toFixed())
+					}
+				],
 			},
 			data: [
-				[...new Array(100000)].map((_, i) => i),
-				[...new Array(100000)].map((_, i) => i % 1000)
+				[...new Array(32)].map((_, i) => new Date().getTime() - 100000 + i*100),
+				[...new Array(32)].map((_, i) => 50 + Math.random() * (10 + Math.random()) * Math.random() * 100)
 			]
 		};
 	}
+
 	render() {
 		return (
-			<UPlotReact
-				key="uplot-div"
-				options={this.state.options}
-				data={this.state.data}
-			/>
+			<div className="StatusPlot">
+				<div className="StatusPlotTitle">{this.state.title}</div>
+				<UPlotReact
+					options={this.state.options}
+					data={this.state.data}
+				/>
+			</div>
 		);
 	}
-
 }
 
 class DevicePane extends React.Component {
@@ -52,7 +68,11 @@ class DevicePane extends React.Component {
 
 	render() {
 		return (
-			<StatusPlot />
+			<>
+				<StatusPlot title="title0" color="cyan"/>
+				<StatusPlot title="title1" color="magenta"/>
+				<StatusPlot title="title2" color="yellow"/>
+			</>
 		);
 	}
 };

@@ -1,0 +1,13 @@
+.StatusPlot {
+	position: relative;
+	margin: 8px;
+	padding: 2px;
+	border: 2px white solid;
+}
+
+.StatusPlotTitle {
+	z-index: 2;
+	position: absolute;
+	top: 2px;
+	right: 4px
+}

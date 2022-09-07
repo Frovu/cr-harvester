@@ -1,8 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 body {
-	--color-bg: darkgrey;
+	--color-bg: black;
 	--color-text: red;
 
+	font-size: 16px;
 	font-family: 'Roboto Mono', monospace;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -11,4 +12,9 @@ body {
 
 	background-color: var(--color-bg);
 	color: var(--color-text);
+}
+
+.u-series, .u-value, .u-title {
+	font-family: 'Roboto Mono', monospace;
+	font-size: 16px !important;
 }
