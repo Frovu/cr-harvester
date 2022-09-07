@@ -37,7 +37,12 @@ const pool = module.exports.pool = new pg.Pool({
 	port: process.env.DB_PORT,
 });
 
+const tableRaw = (id) => id.replace(' ', '_').replace('-', '_') + '_raw';
+const tableCorr = (id) => id.replace(' ', '_').replace('-', '_') + '_corr';
+
 async function initTables() {
+	if (!config.devices || !Object.keys(config.devices).length)
+		global.log('(!) Zero devices configured, open README for configuration guide.');
 	await pool.query(`CREATE TABLE IF NOT EXISTS subscriptions (
 		station TEXT,
 		email TEXT,
@@ -45,20 +50,20 @@ async function initTables() {
 	)`);
 	for (const devId in config.devices) {
 		const dev = config.devices[devId];
-		const qr = `CREATE TABLE IF NOT EXISTS ${devId}_raw (
+		const qr = `CREATE TABLE IF NOT EXISTS ${tableRaw(devId)} (
 id SERIAL PRIMARY KEY,
 server_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 time TIMESTAMP NOT NULL UNIQUE,
-${dev.counters.map(c => c+' INTEGER,').join('\n')}
-${dev.fields.map(c => c+' REAL,').join('\n')}
+${dev.counters.map(c => c+' INTEGER').join(',\n')},
+${dev.fields.map(c => c+' REAL').join(',\n')},
 uptime INTEGER,
 info INTEGER)`;
-		const qc = `CREATE TABLE IF NOT EXISTS ${devId}_corrections (
+		const qc = `CREATE TABLE IF NOT EXISTS ${tableCorr(devId)} (
 id SERIAL PRIMARY KEY,
 server_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 time TIMESTAMP NOT NULL UNIQUE,
-${dev.counters.map(c => c+' INTEGER,').join('\n')}
-${dev.fields.map(c => c+' REAL,').join('\n')}`;
+${dev.counters.map(c => c+' INTEGER').join(',\n')},
+${dev.fields.map(c => c+' REAL').join(',\n')})`;
 		await pool.query(qr);
 		await pool.query(qc);
 	}
@@ -74,9 +79,9 @@ async function selectEmails(stations) {
 async function select(device, where, limit) {
 	const dev = config.devices[device];
 	const fields = (dev.counters || []).concat(dev.fields || []);
-	const sel = fields.map(f => `COALESCE(${device}_corrections.${f}, ${device}_raw.${f}) as ${f}`).join(', ');
+	const sel = fields.map(f => `COALESCE(${tableCorr(device)}.${f}, ${tableRaw(device)}.${f}) as ${f}`).join(', ');
 	const query = `SELECT * FROM (SELECT r.server_time as server_time, r.time as time, uptime, info,
-		${sel} FROM ${device}_raw r LEFT OUTER JOIN ${device}_corrections c USING time
+		${sel} FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c USING time
 		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) ORDER BY time`;
 	return await pool.query(query);
 }
@@ -105,7 +110,7 @@ async function insert(body) {
 			continue; // FIXME: log maybe?
 		row[name] = val;
 	}
-	const query = `INSERT INTO ${devId}_raw (time,${Object.keys(row).join()})
+	const query = `INSERT INTO ${tableRaw(devId)} (time,${Object.keys(row).join()})
 VALUES (to_timestamp(${(time.getTime()/1000).toFixed()}),${Object.keys(row).map((_,i)=>'$'+(i+1)).join()})
 ON CONFLICT (time) DO UPDATE SET (server_time,${Object.keys(row).join()}
 = (CURRENT_TIMESTAMP,${Object.keys(row).map(c=>'EXCLUDED.'+c).join()})`;

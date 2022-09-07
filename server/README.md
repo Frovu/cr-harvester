@@ -29,7 +29,7 @@ Note that device id must use underscores for spaces
 			"secret": "1234"
 		}
 	},
-	"experiments": {
+	"stations": {
 		"station_id": {
 			"name": "",
 			"description": "text",
