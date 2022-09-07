@@ -38,10 +38,10 @@ const pool = module.exports.pool = new pg.Pool({
 });
 
 async function initTables() {
-	await pool.execute(`CREATE TABLE IF NOT EXISTS subscriptions (
+	await pool.query(`CREATE TABLE IF NOT EXISTS subscriptions (
 		station TEXT,
 		email TEXT,
-		UNIQUE (startion, email)
+		UNIQUE (station, email)
 	)`);
 	for (const devId in config.devices) {
 		const dev = config.devices[devId];
@@ -59,8 +59,8 @@ server_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 time TIMESTAMP NOT NULL UNIQUE,
 ${dev.counters.map(c => c+' INTEGER,').join('\n')}
 ${dev.fields.map(c => c+' REAL,').join('\n')}`;
-		await pool.execute(qr);
-		await pool.execute(qc);
+		await pool.query(qr);
+		await pool.query(qc);
 	}
 }
 initTables();
@@ -109,7 +109,7 @@ async function insert(body) {
 VALUES (to_timestamp(${(time.getTime()/1000).toFixed()}),${Object.keys(row).map((_,i)=>'$'+(i+1)).join()})
 ON CONFLICT (time) DO UPDATE SET (server_time,${Object.keys(row).join()}
 = (CURRENT_TIMESTAMP,${Object.keys(row).map(c=>'EXCLUDED.'+c).join()})`;
-	await pool.execute(query, Object.values(row));
+	await pool.query(query, Object.values(row));
 	return 200;
 }
 

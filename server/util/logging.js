@@ -12,8 +12,6 @@ function switchFiles() {
 	if (!fs.existsSync(DIR)) fs.mkdirSync(DIR);
 	currentFile = filename();
 	writeStream = fs.createWriteStream(path(currentFile), {flags: 'a'});
-	fs.symlink(path(currentFile), path('last.log'))
-		.catch(e => global.log(`Failed to symlink log: ${e}`));
 	// gzip all not gziped log files except current
 	fs.readdirSync(DIR).forEach(file => {
 		if (!file.endsWith('.log') || file === currentFile) return;

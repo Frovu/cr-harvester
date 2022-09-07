@@ -42,5 +42,5 @@ function gotData(devId, ipAddr) {
 
 module.exports = {
 	validate: validator.validate,
-	gotdata
+	gotData
 };
