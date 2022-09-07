@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
-global.log = require('./modules/logging.js');
+global.log = require('./util/logging.js');
 
 const app = express();
 
