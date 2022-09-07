@@ -1,8 +1,8 @@
 'use strict';
-const config = require('./config').config;
+const config = require('../util/config').config;
 const db = require('./data');
 const validator = require('email-validator');
-const mailer = require('./mailing');
+const mailer = require('../util/mailing');
 
 const DEFAULT_WATCHDOG_MS = 5 * 60000;
 const ALERTS_DELAY_MS = 60 * 60 * 1000; // don't send alerts more often than 1 per hour per device

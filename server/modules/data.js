@@ -1,5 +1,5 @@
 'use strict';
-const config = require('./config').config;
+const config = require('../util/config').config;
 
 const pg = require('pg');
 pg.types.setTypeParser(1114, function(stringValue) {
