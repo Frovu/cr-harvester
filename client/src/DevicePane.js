@@ -5,14 +5,15 @@ import 'uplot/dist/uPlot.min.css';
 import './DevicePane.css';
 
 function StatusPlot(props) {
+	const max = Math.max.apply(Math, props.data[1]);
 	const options = {
 		width: 128,
 		height: 128,
 		legend: { show: false },
 		cursor: { show: false },
+		padding: [12, 0, 0, 0],
 		series: [
-			{
-			},
+			{ },
 			{
 				points: { show: false },
 				stroke: props.color
@@ -20,16 +21,17 @@ function StatusPlot(props) {
 		],
 		axes: [
 			{
-				// grid: { stroke: 'gray', width: 1 },
-				// ticks: { stroke: 'gray', width: 1 },
 				size: 0
 			},
 			{
-				grid: { stroke: 'gray', width: 1 },
-				stroke: 'darkgrey',
-				gap: -8,
-				size: 28, // TODO: dynamic size
-				space: 48,
+				// grid: { stroke: 'rgb(64,64,64)', width: 1 },
+				stroke: 'grey',
+				gap: -7,
+				size: 3 + 7 * max.toFixed().length,
+				splits: u => [
+					u.series[1].min + (u.series[1].max - u.series[1].min) / 6,
+					u.series[1].max - (u.series[1].max - u.series[1].min) / 5
+				],
 				values: (u, vals) => vals.map(v => v.toFixed())
 			}
 		],
@@ -43,11 +45,11 @@ function StatusPlot(props) {
 }
 
 const COLORS = {
-	voltage: 'darkgray',
+	voltage: 'yellow',
 	temperature_ext: 'cyan', // eslint-disable-line
 	temperature: 'cyan',
 	pressure: 'magenta',
-	default: 'yellow'
+	default: 'white'
 };
 
 export default function DevicePane(props) {
@@ -63,7 +65,7 @@ export default function DevicePane(props) {
 			<div className="DeviceStatus">
 				<h3>{props.id}</h3>
 				[ {online ? 'ONLINE' : 'LOST'} ]<br/>
-				IP: {props.data.ip || 'N/A'}
+				IP: {props.data.ip || 'N/A'}<br/>
 			</div>
 			<div className="StatusPlots">
 				{toDraw.map(i => [i, fields[i]]).map(([i, f]) => (

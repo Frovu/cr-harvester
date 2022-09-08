@@ -1,5 +1,7 @@
 .DevicePane {
+	border: 2px rgb(32,32,32) solid;
 	display: flex;
+	align-items: center;
 	margin-left: 64px;
 }
 
@@ -17,12 +19,15 @@
 	position: relative;
 	margin: 8px;
 	padding: 2px;
-	border: 2px gray solid;
+	border: 2px rgb(32,32,32) solid;
 }
 
 .StatusPlotTitle {
+	color: grey;
 	z-index: 2;
 	position: absolute;
 	top: 2px;
-	right: 4px
+	right: -2px;
+	width: 100%;
+	text-align: center;
 }
