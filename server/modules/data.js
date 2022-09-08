@@ -92,7 +92,7 @@ async function selectAll(limit) {
 	const result = {};
 	for (const dev in config.devices) {
 		const res = await select(dev, null, limit);
-		result[dev] = { rows: res.rows, fields: res.fields };
+		result[dev] = { rows: res.rows, fields: res.fields.map(f => f.name) };
 	}
 	return result;
 }

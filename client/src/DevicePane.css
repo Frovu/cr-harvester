@@ -1,8 +1,24 @@
+.DevicePane {
+	display: flex;
+	margin: 64px;
+}
+
+.DeviceStatus {
+	margin: 16px;
+	width: 256px;
+}
+
+.StatusPlots {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: left;
+}
+
 .StatusPlot {
 	position: relative;
 	margin: 8px;
 	padding: 2px;
-	border: 2px white solid;
+	border: 2px gray solid;
 }
 
 .StatusPlotTitle {

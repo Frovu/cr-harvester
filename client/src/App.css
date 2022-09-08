@@ -1,5 +1,6 @@
 .App {
 	margin: 0 auto;
+	margin-top: 12rem; /* FIXME:  */
 	text-align: center;
 	width: fit-content;
 }

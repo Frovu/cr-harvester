@@ -53,9 +53,12 @@ function StatusPanes(props) {
 	const query = useQuery('stats', async () => {
 		const para = new URLSearchParams({ limit: props.rowLimit || DEFAULT_LIMIT }).toString();
 		const resp = await fetch(process.env.REACT_APP_API + '/stations?' + para);
-		return await resp.json();
+		const data = await resp.json();
+		console.log('got data', data);
+		return data;
 	});
 	const data = query.data;
+
 	return (
 		<>
 			<StatusInfo { ...query } />
@@ -63,8 +66,7 @@ function StatusPanes(props) {
 				{data ? Object.keys(data).map(id => (
 					<DevicePane
 						id = { id }
-						ip = { data[id].ip }
-						data = { data[id].data }
+						data = { data[id] }
 					/>
 				)) : ''}
 			</div>
