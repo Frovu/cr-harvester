@@ -50,8 +50,8 @@ class StatusPlot extends React.Component {
 			<div className="StatusPlot">
 				<div className="StatusPlotTitle">{this.state.title}</div>
 				<UPlotReact
-					options={this.state.options}
-					data={this.state.data}
+					options={ this.state.options }
+					data={ this.state.data }
 				/>
 			</div>
 		);
@@ -62,7 +62,9 @@ class DevicePane extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			active: false,
+			id: props.id,
+			ip: props.ip,
+			data: props.data
 		};
 	}
 
@@ -76,6 +78,5 @@ class DevicePane extends React.Component {
 		);
 	}
 };
-
 
 export default DevicePane;

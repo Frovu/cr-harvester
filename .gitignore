@@ -8,6 +8,7 @@ counter/Debug
 
 # dependencies
 client/node_modules
+client/.env
 client/.pnp
 .pnp.js
 client/build

@@ -17,8 +17,6 @@ ADMIN_SECERT=1234
 
 ### config.json content example
 
-Note that device id must use underscores for spaces
-
 ```json
 {
 	"devices": {
