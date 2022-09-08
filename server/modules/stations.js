@@ -39,8 +39,9 @@ function gotData(devId, ipAddr) {
 	watchdogs[devId] = setTimeout(() => alertDeviceLost(devId));
 }
 
-
 module.exports = {
 	validate: validator.validate,
-	gotData
+	getIp: id => ipCache[id],
+	list: () => config.stations,
+	gotData,
 };

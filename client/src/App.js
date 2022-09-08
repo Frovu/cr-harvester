@@ -17,7 +17,7 @@ export default function App() {
 function StatusPanes(props) {
 	const { isLoading, error, data, isFetching } = useQuery('stats', async () => {
 		const query = new URLSearchParams({ limit: props.rowLimit || DEFAULT_LIMIT }).toString();
-		const resp = await fetch(process.env.API + '?' + query);
+		const resp = await fetch(process.env.REACT_APP_API + '/stations?' + query);
 		return await resp.json();
 	});
 

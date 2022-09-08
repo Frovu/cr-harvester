@@ -23,19 +23,19 @@ router.post('/stations/subscribe', (req, res) => {
 	}
 });
 
-router.get('/stations/:id', async (req, res) => {
-	if (!stations.get(req.params.id))
-		return res.sendStatus(404);
+router.get('/stations', async (req, res) => {
 	try {
-		const stat = await stations.stats(req.params.id);
-		return res.status(200).json(stat);
+		const devData = await db.selectAll(parseInt(req.query.limit));
+		for (const dev in devData)
+			devData[dev].ip = stations.getIp(dev);
+		return res.status(200).json(devData);
 	} catch(e) {
-		global.log(`Exception in get station: ${e}`);
+		global.log(`Exception in get stations: ${e.stack}`);
 		return res.sendStatus(500);
 	}
 });
 
-router.get('/stations', (req, res) => {
+router.get('/stations/list', (req, res) => {
 	return res.status(200).json(stations.list());
 });
 

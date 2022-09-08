@@ -79,11 +79,22 @@ async function selectEmails(stations) {
 async function select(device, where, limit) {
 	const dev = config.devices[device];
 	const fields = (dev.counters || []).concat(dev.fields || []);
-	const sel = fields.map(f => `COALESCE(${tableCorr(device)}.${f}, ${tableRaw(device)}.${f}) as ${f}`).join(', ');
+	const sel = fields.map(f => `COALESCE(c.${f}, r.${f}) as ${f}`).join(', ');
 	const query = `SELECT * FROM (SELECT r.server_time as server_time, r.time as time, uptime, info,
-		${sel} FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c USING time
-		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) ORDER BY time`;
+		${sel} FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
+		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) rev ORDER BY time`;
 	return await pool.query(query);
+}
+
+async function selectAll(limit) {
+	if (!limit || isNaN(limit))
+		limit = 60;
+	const result = {};
+	for (const dev in config.devices) {
+		const res = await select(dev, null, limit);
+		result[dev] = { rows: res.rows, fields: res.fields };
+	}
+	return result;
 }
 
 async function insert(body) {
@@ -121,6 +132,7 @@ ON CONFLICT (time) DO UPDATE SET (server_time,${Object.keys(row).join()}
 module.exports = {
 	pool,
 	selectEmails,
+	selectAll,
 	select,
 	insert
 };
