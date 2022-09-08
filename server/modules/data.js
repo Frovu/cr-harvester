@@ -80,10 +80,11 @@ async function select(device, where, limit) {
 	const dev = config.devices[device];
 	const fields = (dev.counters || []).concat(dev.fields || []);
 	const sel = fields.map(f => `COALESCE(c.${f}, r.${f}) as ${f}`).join(', ');
-	const query = `SELECT * FROM (SELECT r.server_time as server_time, r.time as time, uptime, info,
-		${sel} FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
+	const text = `SELECT * FROM (SELECT
+		EXTRACT(EPOCH FROM r.server_time)::integer as server_time, EXTRACT(EPOCH FROM r.time)::integer as time,
+		${sel}, uptime, info FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
 		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) rev ORDER BY time`;
-	return await pool.query(query);
+	return await pool.query({ text, rowMode: 'array' });
 }
 
 async function selectAll(limit) {

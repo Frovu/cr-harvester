@@ -1,11 +1,10 @@
 .DevicePane {
 	display: flex;
-	margin: 64px;
+	margin-left: 64px;
 }
 
 .DeviceStatus {
-	margin: 16px;
-	width: 256px;
+	min-width: 12rem;
 }
 
 .StatusPlots {

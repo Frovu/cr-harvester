@@ -5,10 +5,6 @@ import 'uplot/dist/uPlot.min.css';
 import './DevicePane.css';
 
 function StatusPlot(props) {
-	const data = [
-		[...new Array(32)].map((_, i) => new Date().getTime() - 100000 + i*100),
-		[...new Array(32)].map((_, i) => 50 + Math.random() * (10 + Math.random()) * Math.random() * 100)
-	];
 	const options = {
 		width: 128,
 		height: 128,
@@ -41,25 +37,40 @@ function StatusPlot(props) {
 	return (
 		<div className="StatusPlot">
 			<div className="StatusPlotTitle">{props.title}</div>
-			<UPlotReact options={options} data={data} />
+			<UPlotReact options={options} data={props.data} />
 		</div>
 	);
 }
 
+const COLORS = {
+	voltage: 'darkgray',
+	temperature_ext: 'cyan', // eslint-disable-line
+	temperature: 'cyan',
+	pressure: 'magenta',
+	default: 'yellow'
+};
+
 export default function DevicePane(props) {
-	const data = props.data;
-	console.log(props.data);
 	const online = 'ONLINE';
+	const fields = props.data.fields;
+	const toDraw = fields.map((f, i) => (
+		f.includes('time') || ['info', 'flash_failures'].includes(f) ||
+		(f === 'temperature' && fields.includes('temperature_ext')) ? null : i
+	)).filter(i => i != null);
+	const time = props.data.columns[fields.indexOf('time')];
 	return (
 		<div className="DevicePane">
 			<div className="DeviceStatus">
 				<h3>{props.id}</h3>
 				[ {online ? 'ONLINE' : 'LOST'} ]<br/>
-				IP: {data.ip || 'N/A'}
+				IP: {props.data.ip || 'N/A'}
 			</div>
 			<div className="StatusPlots">
-				{data.fields.map((f, i) => (
-					<StatusPlot color="red" title={i}/>
+				{toDraw.map(i => [i, fields[i]]).map(([i, f]) => (
+					<StatusPlot
+						key={f} title={f.split('_')[0]}
+						data={[ time, props.data.columns[i] ]}
+						color={COLORS[f]||COLORS.default}/>
 				))}
 			</div>
 		</div>

@@ -54,6 +54,14 @@ function StatusPanes(props) {
 		const para = new URLSearchParams({ limit: props.rowLimit || DEFAULT_LIMIT }).toString();
 		const resp = await fetch(process.env.REACT_APP_API + '/stations?' + para);
 		const data = await resp.json();
+		for (const dev in data) {
+			const len = data[dev].rows.length, colLen = data[dev].fields.length, rows = data[dev].rows;
+			const cols = Array(colLen).fill().map(_ => Array(len));
+			for (let i = 0; i < len; ++i)
+				for (let j = 0; j < colLen; ++j)
+					cols[j][i] = rows[i][j];
+			data[dev].columns = cols;
+		}
 		console.log('got data', data);
 		return data;
 	});
@@ -65,8 +73,10 @@ function StatusPanes(props) {
 			<div className="App">
 				{data ? Object.keys(data).map(id => (
 					<DevicePane
-						id = { id }
-						data = { data[id] }
+						key={id}
+						id={id}
+						data={data[id]}
+						updatedAt={query.dataUpdatedAt}
 					/>
 				)) : ''}
 			</div>
