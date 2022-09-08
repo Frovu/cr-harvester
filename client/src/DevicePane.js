@@ -44,6 +44,14 @@ function StatusPlot(props) {
 	);
 }
 
+function intervalToString(seconds) {
+	const days = Math.floor(seconds / 86400);
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor(seconds / 60);
+	const n = days || hours || minutes || seconds.toFixed(0);
+	return `${n} ${days ? 'day' : hours ? 'hour' : minutes ? 'minute' : 'second'}${n>1?'s':''}`;
+}
+
 const COLORS = {
 	voltage: 'yellow',
 	temperature_ext: 'cyan', // eslint-disable-line
@@ -53,21 +61,31 @@ const COLORS = {
 };
 
 export default function DevicePane(props) {
-	const online = 'ONLINE';
+	const period = 60; // FIXME
 	const fields = props.data.fields;
 	const toDraw = fields.map((f, i) => (
 		f.includes('time') || ['info', 'flash_failures'].includes(f) ||
 		(f === 'temperature' && fields.includes('temperature_ext')) ? null : i
 	)).filter(i => i != null);
 	const time = props.data.columns[fields.indexOf('time')];
+	const uptime = props.data.columns[fields.indexOf('uptime')];
+	const online = Date.now()/1000 - time[time.length-1] < 3 * period;
 	return (
 		<div className="DevicePane">
 			<div className="DeviceStatus">
-				<h3>{props.id}</h3>
-				[ {online ? 'ONLINE' : 'LOST'} ]<br/>
-				IP: {props.data.ip || 'N/A'}<br/>
+				<p>
+					<u><b>{props.id}</b></u><br/>
+				</p>
+				<p style={{ color: online ? 'cyan' : 'red' }}>
+					[{online ? 'ONLINE' : 'LOST'}]
+				</p>
+				<p style={{ fontSize: '12px' }}>
+					{new Date(time[time.length-1]*1000).toISOString().replace(/\..*/,'').replace('T',' ')}<br/>
+					UPT: {intervalToString(uptime[uptime.length-1]*period)}<br/>
+					IP: {props.data.ip || 'N/A'}
+				</p>
 			</div>
-			<div className="StatusPlots">
+			<div className="StatusPlots" style={{ opacity: online ? 1 : .5 }}>
 				{toDraw.map(i => [i, fields[i]]).map(([i, f]) => (
 					<StatusPlot
 						key={f} title={f.split('_')[0]}
