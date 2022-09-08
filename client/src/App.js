@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './App.css';
 import DevicePane from './DevicePane';
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
@@ -14,19 +14,27 @@ export default function App() {
 	);
 };
 
+function useInterval(callback, delay) {
+	const savedCallback = useRef();
+
+	useEffect(() => {
+		savedCallback.current = callback;
+	}, [callback]);
+
+	useEffect(() => {
+		const id = setInterval(() => {
+			savedCallback.current();
+		}, delay);
+		return () => clearInterval(id);
+	}, [delay]);
+}
+
 function StatusInfo(props) {
 	const [ago, setAgo] = useState('just now');
-	useEffect(() => {
-		if (!props.data) return;
-		const timeout = setInterval(() => {
-			const sec = Math.floor((Date.now() - props.dataUpdatedAt) / 1000);
-			setAgo(`${sec} second${sec===1?'':'s'} ago`);
-		}, 1000);
-		return () => {
-			console.log('clear')
-			setInterval(timeout);
-		};
-	}, [props.data, props.dataUpdatedAt]);
+	useInterval(() => {
+		const sec = Math.floor((Date.now() - props.dataUpdatedAt) / 1000);
+		setAgo(sec > 0 ? `${sec} second${sec===1?'':'s'} ago` : 'just now');
+	}, 1000);
 
 	let text = '';
 	if (props.isLoading)
@@ -38,7 +46,7 @@ function StatusInfo(props) {
 	else
 		text = `Updated ${ago}.`;
 
-	return <div className="Info">{text}</div>
+	return <div className="Info">{text}</div>;
 }
 
 function StatusPanes(props) {

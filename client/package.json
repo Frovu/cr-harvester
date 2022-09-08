@@ -54,8 +54,8 @@
         }
       ],
       "semi": [
-        0,
-        "never"
+        1,
+        "always"
       ],
       "prefer-const": 1,
       "react/prefer-es6-class": 0,
