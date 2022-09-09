@@ -11,6 +11,13 @@ const ipCache = {};
 const alertsLog = {};
 const watchdogs = {};
 
+async function getSubscriptions() {
+	const res = {};
+	for (const station in config.stations)
+		res[station] = await db.selectEmails([station]);
+	return res;
+}
+
 async function alertDeviceLost(devId) {
 	try {
 		global.log(`Device is lost: ${devId}`);
@@ -43,5 +50,6 @@ module.exports = {
 	validate: validator.validate,
 	getIp: id => ipCache[id],
 	list: () => config.stations,
+	getSubscriptions,
 	gotData,
 };

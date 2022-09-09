@@ -3,7 +3,7 @@ const db = require('./data');
 const stations = require('./stations');
 const router = express.Router();
 
-router.post('/stations/subscribe', (req, res) => {
+router.post('/subscriptions', (req, res) => {
 	const badRequest = (txt) => res.status(400).json({ error: txt });
 	const body = req.body;
 	if (!body || !body.station || !body.email || !body.options)
@@ -23,7 +23,12 @@ router.post('/stations/subscribe', (req, res) => {
 	}
 });
 
-router.get('/stations', async (req, res) => {
+router.get('/subscriptions', async (req, res) => {
+	const subs = await stations.getSubscriptions();
+	return res.status(200).json(subs);
+});
+
+router.get('/status', async (req, res) => {
 	try {
 		const devData = await db.selectAll(parseInt(req.query.limit));
 		for (const dev in devData)
@@ -35,7 +40,7 @@ router.get('/stations', async (req, res) => {
 	}
 });
 
-router.get('/stations/list', (req, res) => {
+router.get('/stations', (req, res) => {
 	return res.status(200).json(stations.list());
 });
 

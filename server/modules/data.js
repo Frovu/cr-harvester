@@ -71,8 +71,8 @@ ${dev.fields.map(c => c+' REAL').join(',\n')})`;
 initTables();
 
 async function selectEmails(stations) {
-	const query = `SELECT DISTINCT email FROM subscriptions WHERE station IN (${stations.map((_,i)=>'$'+(i+1)).join()})`;
-	const res = await query(query, stations);
+	const text = `SELECT DISTINCT email FROM subscriptions WHERE station IN (${stations.map((_,i)=>'$'+(i+1)).join()})`;
+	const res = await pool.query({ text, values: stations, rowMode: 'array' });
 	return res.rows.flat();
 }
 
