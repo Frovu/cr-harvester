@@ -23,6 +23,7 @@
 }
 
 .MenuButton label {
+	cursor: pointer;
 	padding: 2px 8px 2px 8px;
 	border: 2px var(--color-border) solid;
 }
@@ -35,21 +36,4 @@
 	color: var(--color-text);
 	border: 2px var(--color-text) solid;
 	font-weight: bold;
-}
-
-input, button, select {
-	border: 2px transparent solid;
-	background-color: var(--color-border);
-	text-align: center;
-	font-family: inherit;
-	font-size: inherit;
-	color: inherit;
-}
-
-input:focus {
-	outline: none;
-}
-
-input.Secret {
-	width: 8rem;
 }

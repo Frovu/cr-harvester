@@ -3,6 +3,20 @@
 	border: 2px var(--color-border) solid;
 }
 
-.Subscriptions p {
-	margin-top: 0;
+.Subscriptions h4 {
+	margin: 0.5em;
+}
+
+.EmailList {
+	margin: 0.5em;
+	display: flex;
+	justify-content: center;
+}
+
+.Email {
+	display: inline-block;
+}
+
+.AddEmail button {
+	margin-left: 8px;
 }

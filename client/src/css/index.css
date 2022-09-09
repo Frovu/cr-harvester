@@ -19,3 +19,34 @@ body {
 	font-family: 'Roboto Mono', monospace;
 	font-size: 16px !important;
 }
+
+input, button, select {
+	border: 2px transparent solid;
+	background-color: var(--color-border);
+	text-align: center;
+	font-family: inherit;
+	font-size: inherit;
+	color: inherit;
+}
+
+button {
+	background-color: var(--color-bg);
+	border-color: var(--color-text);
+	border-style: outset;
+}
+
+button:active {
+	border-style: inset;
+}
+
+button:hover {
+	box-shadow: 0 0 12px var(--color-text);
+}
+
+input:focus {
+	outline: none;
+}
+
+input.Secret {
+	width: 8rem;
+}
