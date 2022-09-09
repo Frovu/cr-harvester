@@ -42,7 +42,7 @@ function StatusInfo(props) {
 export default function StatusTab(props) {
 	const query = useQuery('stats', async () => {
 		const para = new URLSearchParams({ limit: props.rowLimit || DEFAULT_LIMIT }).toString();
-		const resp = await fetch(process.env.REACT_APP_API + '/stations?' + para);
+		const resp = await fetch(process.env.REACT_APP_API + '/status?' + para);
 		const data = await resp.json();
 		for (const dev in data) {
 			const len = data[dev].rows.length, colLen = data[dev].fields.length, rows = data[dev].rows;
@@ -55,16 +55,15 @@ export default function StatusTab(props) {
 		console.log('got data', data);
 		return data;
 	});
-	const data = query.data;
 
 	return (
 		<>
 			<StatusInfo { ...query } />
-			{data ? Object.keys(data).map(id => (
+			{query.data ? Object.keys(query.data).map(id => (
 				<StatusPane
 					key={id}
 					id={id}
-					data={data[id]}
+					data={query.data[id]}
 					updatedAt={query.dataUpdatedAt}
 				/>
 			)) : ''}
