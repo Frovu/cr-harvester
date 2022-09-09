@@ -3,19 +3,22 @@ const db = require('./data');
 const stations = require('./stations');
 const router = express.Router();
 
-router.post('/subscriptions', (req, res) => {
+router.post('/subscriptions', async (req, res) => {
 	const badRequest = (txt) => res.status(400).json({ error: txt });
 	const body = req.body;
-	if (!body || !body.station || !body.email || !body.options)
+	if (!body || !body.station || !body.email)
 		return badRequest('Bad request!');
-	if (!stations.get(body.station))
+	if (!stations.list()[body.station])
 		return badRequest('Invalid station name!');
-	if (body.options.length && !stations.validate(body.email))
+	if (!stations.validate(body.email))
 		return badRequest('Invalid email address!');
 	if (!stations.authorize(body.secret))
 		return badRequest('Wrong secret key!');
 	try {
-		stations.subscribe(body.station, body.email, body.options);
+		if (body.action === 'unsub')
+			await db.unsubscribe(body.station, body.email);
+		else
+			await db.subscribe(body.station, body.email);
 		return res.sendStatus(200);
 	} catch(e) {
 		global.log(`Exception in subscribe: ${e}`);

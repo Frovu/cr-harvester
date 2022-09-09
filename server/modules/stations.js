@@ -50,6 +50,7 @@ module.exports = {
 	validate: validator.validate,
 	getIp: id => ipCache[id],
 	list: () => config.stations,
+	authorize: secret => secret === process.env.SECRET_KEY,
 	getSubscriptions,
 	gotData,
 };

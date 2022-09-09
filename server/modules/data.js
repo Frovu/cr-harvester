@@ -76,6 +76,16 @@ async function selectEmails(stations) {
 	return res.rows.flat();
 }
 
+async function subscribe(station, email) {
+	const text = 'INSERT INTO subscriptions(station, email) VALUES ($1, $2) ON CONFLICT (station, email) DO NOTHING';
+	await pool.query(text, [station, email]);
+}
+
+async function unsubscribe(station, email) {
+	const text = 'DELETE FROM subscriptions WHERE station=$1 AND email=$2';
+	await pool.query(text, [station, email]);
+}
+
 async function select(device, where, limit) {
 	const dev = config.devices[device];
 	const fields = (dev.counters || []).concat(dev.fields || []);
@@ -132,6 +142,8 @@ ON CONFLICT (time) DO UPDATE SET (server_time,${Object.keys(row).join()}
 
 module.exports = {
 	pool,
+	subscribe,
+	unsubscribe,
 	selectEmails,
 	selectAll,
 	select,
