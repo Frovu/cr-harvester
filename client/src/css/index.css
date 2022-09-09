@@ -30,6 +30,7 @@ input, button, select {
 }
 
 button {
+	padding: 1px 0.5em 1px 0.5em;
 	background-color: var(--color-bg);
 	border-color: var(--color-text);
 	border-style: outset;

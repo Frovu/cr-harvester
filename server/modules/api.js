@@ -19,6 +19,7 @@ router.post('/subscriptions', async (req, res) => {
 			await db.unsubscribe(body.station, body.email);
 		else
 			await db.subscribe(body.station, body.email);
+		global.log(`Subscriptions: ${body.station} <= ${body.email} (${body.action})`);
 		return res.sendStatus(200);
 	} catch(e) {
 		global.log(`Exception in subscribe: ${e}`);
