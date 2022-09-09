@@ -2,7 +2,7 @@ import React from 'react';
 
 import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
-import './DevicePane.css';
+import './css/StatusTab.css';
 
 function StatusPlot(props) {
 	const max = Math.max.apply(Math, props.data[1]);
@@ -57,7 +57,7 @@ const COLORS = {
 	temperature_ext: 'cyan', // eslint-disable-line
 	temperature: 'cyan',
 	pressure: 'magenta',
-	default: 'white'
+	default: 'rgb(215,90,60)'
 };
 
 export default function DevicePane(props) {
@@ -76,7 +76,7 @@ export default function DevicePane(props) {
 				<p>
 					<u><b>{props.id}</b></u><br/>
 				</p>
-				<p style={{ color: online ? 'cyan' : 'red' }}>
+				<p style={{ color: online ? 'rgb(0,255,0)' : 'red' }}>
 					[{online ? 'ONLINE' : 'LOST'}]
 				</p>
 				<p style={{ fontSize: '12px' }}>

@@ -29,3 +29,9 @@
 	width: 100%;
 	text-align: center;
 }
+
+.Info {
+	position: absolute;
+	bottom: 8px;
+	left: 8px;
+}
