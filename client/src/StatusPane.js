@@ -24,7 +24,6 @@ function StatusPlot(props) {
 				size: 0
 			},
 			{
-				// grid: { stroke: 'rgb(64,64,64)', width: 1 },
 				stroke: 'grey',
 				gap: -7,
 				size: 3 + 7 * max.toFixed().length,
@@ -61,6 +60,8 @@ const COLORS = {
 };
 
 export default function DevicePane(props) {
+	if (!props.data.rows.length)
+		return;
 	const period = 60; // FIXME
 	const fields = props.data.fields;
 	const toDraw = fields.map((f, i) => (

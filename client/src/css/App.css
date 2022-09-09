@@ -12,13 +12,28 @@
 	padding: 4px;
 	width: fit-content;
 	border: 2px var(--color-border) solid;
+	user-select: none;
+}
+
+.MenuButton {
+	margin: 4px 0px 4px 0px;
 }
 
 .MenuButton input {
 	display: none;
 }
 
-.MenuButton {
+.MenuButton label {
 	padding: 2px 8px 2px 8px;
 	border: 2px var(--color-border) solid;
+}
+
+.MenuButton input[type="radio"]:not(:checked) + label:hover {
+	background-color: var(--color-border);
+}
+
+.MenuButton input[type="radio"]:checked + label {
+	color: var(--color-text);
+	border: 2px var(--color-text) solid;
+	font-weight: bold;
 }
