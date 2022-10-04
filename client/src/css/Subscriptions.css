@@ -26,9 +26,6 @@
 	opacity: .8;
 }
 
-.EmailText {
-}
-
 .EmailCross {
 	font-size: 1.2em;
 	margin-left: 4px;
@@ -42,4 +39,8 @@
 
 .AddEmail button {
 	margin-left: 8px;
+}
+
+input.Secret:placeholder-shown {
+	box-shadow: 0 0 16px 2px red;
 }

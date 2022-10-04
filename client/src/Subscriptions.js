@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import './css/Subscriptions.css';
