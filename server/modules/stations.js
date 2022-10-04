@@ -46,11 +46,26 @@ function gotData(devId, ipAddr) {
 	watchdogs[devId] = setTimeout(() => alertDeviceLost(devId));
 }
 
+function list() {
+	const list = {};
+	for (const dev in config.devices) {
+		list[dev] = {
+			description: config.devices[dev].description,
+			counters: config.devices[dev].counters,
+			fields: config.devices[dev].fields
+		};
+	}
+	return {
+		devices: list,
+		stations: config.stations
+	};
+}
+
 module.exports = {
 	validate: validator.validate,
 	getIp: id => ipCache[id],
-	list: () => config.stations,
 	authorize: secret => secret === process.env.SECRET_KEY,
 	getSubscriptions,
 	gotData,
+	list
 };

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
 
 import StatusTab from './StatusTab';
 import Subscriptions from './Subscriptions';
+import Corrections from './Corrections';
 
 import './css/App.css';
 
@@ -26,14 +27,16 @@ function App() {
 	const query = useQuery('stations',
 		() => fetch(process.env.REACT_APP_API + '/stations').then(res => res.json()));
 	if (query.isLoading)
-		return <div className="App">Loading..</div>;
+		return <div className="App">Loading...</div>;
 	if (query.error)
 		return <div className="App" style={{ color: 'red' }}>Failed to load stations config.<br/>{query.error.message}</div>;
 	return (
 		<>
 			<Menu activeTab={activeTab} onChange={e => setActiveTab(e.target.value)}/>
 			<div className="App">
-				{activeTab === 'Status' ? <StatusTab /> : <Subscriptions stations={query.data}/>}
+				{activeTab === 'Status' ? <StatusTab /> :
+					activeTab === 'Corrections' ? <Corrections devices={query.data.devices}/> :
+						<Subscriptions stations={query.data.stations}/>}
 			</div>
 		</>
 	);
