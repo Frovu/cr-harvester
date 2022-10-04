@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient, useQuery, useMutation } from 'react-query';
 
-import './css/Subscriptions.css';
+import './css/Corrections.css';
 
 function Selector({ text, options, selected, callback }) {
 	return (
 		<div className="Selector">
 			<span>{text}</span>
-			<select value={selected} onChange={e => callback(e.target.value)}>
-				{!selected ? <option key='default' disabled selected>-- none --</option> : ''}
+			<select value={selected || 'default'} onChange={e => callback(e.target.value)}>
+				{!selected ? <option key='default' value='default' disabled>-- none --</option> : ''}
 				{options.map(o => <option key={o} value={o}>{o}</option>)}
 			</select>
 		</div>
@@ -20,10 +20,9 @@ function Editor() {
 }
 
 export default function Corrections({ devices }) {
-	const [settings, setSettings] = useState({});
+	const [settings, setSettings] = useState(() =>
+		JSON.parse(window.localStorage.getItem('corrSettings')) || {});
 	const settingsCallback = key => value => setSettings(state => ({ ...state, [key]: value }));
-
-	useEffect(() => setSettings(JSON.parse(window.localStorage.getItem('corrSettings'))), []);
 	useEffect(() => window.localStorage.setItem('corrSettings', JSON.stringify(settings)), [settings]);
 
 	const options = {
@@ -32,6 +31,8 @@ export default function Corrections({ devices }) {
 		field: settings.mode !== 'single' ? null :
 			devices[settings.device]?.counters.concat(devices[settings.device]?.fields)
 	};
+	if (options.field && !options.field.includes(settings.field))
+		settings.field = null;
 	const selectors = Object.keys(options).filter(k => options[k]).map(key =>
 		<Selector
 			key={key}

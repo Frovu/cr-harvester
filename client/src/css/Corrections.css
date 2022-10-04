@@ -1,0 +1,17 @@
+.Corrections {
+	color: white;
+	width: calc(100vw - 6em);
+	height: calc(100vh - 6em);
+	/* padding: 1em; */
+	border: 2px var(--color-border) solid;
+}
+
+.Settings {
+	padding: .75em 1em 0 1em;
+	display: flex;
+	gap: 1em;
+}
+
+.Selector select {
+	margin-left: .5em;
+}
