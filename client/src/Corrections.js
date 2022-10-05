@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import './css/Corrections.css';
+import Editor from './Editor';
 
 const DEFAULT_INTERVAL = 7; // days
 const DEFAULTS = () => ({
@@ -79,10 +79,6 @@ function Selector({ text, options, selected, callback }) {
 	);
 }
 
-function Editor() {
-
-}
-
 export default function Corrections({ devices }) {
 	const dateDefaults = DEFAULTS();
 	const [dates, setDates] = useState([dateDefaults.start, dateDefaults.end]);
@@ -115,10 +111,7 @@ export default function Corrections({ devices }) {
 				{selectors}
 				<IntervalInput callback={setDates} defaults={dateDefaults}/>
 			</div>
-			<div>
-				{dates && dates[0].toISOString().replace(/\..*/, '')}<br/>
-				{dates && dates[1].toISOString().replace(/\..*/, '')}
-			</div>
+			<Editor settings={settings} interval={dates}/>
 		</div>
 	);
 }

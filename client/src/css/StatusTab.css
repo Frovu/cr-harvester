@@ -22,6 +22,7 @@
 }
 
 .StatusPlotTitle {
+	color: var(--color-text-dark);
 	user-select: none;
 	z-index: 2;
 	position: absolute;

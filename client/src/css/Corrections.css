@@ -1,5 +1,6 @@
 .Corrections {
-	color: white;
+	position: relative;
+	color: var(--color-text);
 	width: calc(100vw - 32px);
 	height: calc(100vh - 32px - 2em);
 	/* padding: 1em; */
@@ -16,4 +17,13 @@
 .Selector select {
 	max-width: 8.9em;
 	margin-left: .5em;
+}
+
+.Footer {
+	color: var(--color-text-dark);
+	font-size: 14px;
+	display: flex;
+	position: absolute;
+	bottom: 0;
+	margin: 4px;
 }
