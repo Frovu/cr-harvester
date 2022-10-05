@@ -15,54 +15,51 @@ const dateValue = date => date.toISOString().slice(0, 10);
 function IntervalInput({ callback, defaults }) { // returns seconds from epoch
 	const modes = ['recent', 'dates', 'interval'];
 	const [mode, setMode] = useState(modes[0]);
-	const state = {
-		start: useState(defaults.start),
-		end: useState(defaults.end),
-		days: useState(defaults.days)
+	const [state, setState] = useState(defaults);
+	const submit = m => {
+		state.start = m === 'dates'
+			? state.start
+			: new Date(state.end - 86400000 * state.days);
+		callback([state.start, state.end]);
+		setState({ ...state });
 	};
-	const submit = () => {
-		const end = mode !== 'recent'
-			? state.end[0]
-			: new Date(Math.ceil(Date.now() / 86400000) * 86400000);
-		const start = mode === 'dates'
-			? state.start[0]
-			: new Date(end - 86400000 * state.days[0]);
-		state.start[1](start);
-		state.end[1](end);
-		callback([start, end]);
+	const changeMode = newMode => {
+		setMode(newMode);
+		if (newMode === 'recent')
+			state.end = new Date(Math.ceil(Date.now() / 86400000) * 86400000);
+		submit(newMode);
 	};
 	const eventHandler = (what) => (e) => {
 		if (e.key === 'Enter')
-			return submit();
+			return submit(mode);
 		const value = e.target[what === 'days' ? 'valueAsNumber' : 'valueAsDate'];
 		if (value && !isNaN(value)) {
-			state[what][1](value);
-			state[what][0] = value;
-			submit();
+			state[what] = value;
+			submit(mode);
 		}
 	};
 	return (
 		<>
-			<Selector text="Time:" selected={mode} options={modes} callback={setMode}/>
+			<Selector text="Time:" selected={mode} options={modes} callback={changeMode}/>
 			<div>
 				{ mode === 'dates' &&
 					<>
-						<input type="date" defaultValue={dateValue(state.start[0])} onChange={eventHandler('start')}/>
+						<input type="date" defaultValue={dateValue(state.start)} onChange={eventHandler('start')}/>
 						<span> to </span>
-						<input type="date" defaultValue={dateValue(state.end[0])} onChange={eventHandler('end')}/>
+						<input type="date" defaultValue={dateValue(state.end)} onChange={eventHandler('end')}/>
 					</> }
 				{ mode === 'interval' &&
 					<>
 						<input type="number" style={{ width: '6ch' }} min="1" max="999"
-							defaultValue={state.days[0]} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
+							defaultValue={state.days} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
 						<span> days before </span>
-						<input type="date" defaultValue={dateValue(state.end[0])} onChange={eventHandler('end')}/>
+						<input type="date" defaultValue={dateValue(state.end)} onChange={eventHandler('end')}/>
 					</> }
 				{ mode === 'recent' &&
 					<>
 						<span>last </span>
 						<input type="number" style={{ width: '6ch' }} min="1" max="999"
-							defaultValue={state.days[0]} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
+							defaultValue={state.days} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
 						<span> days</span>
 					</> }
 			</div>
