@@ -3,20 +3,68 @@ import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import './css/Corrections.css';
 
-function IntervalInput({ callback }) {
+const DEFAULT_INTERVAL = 7; // days
+const DEFAULTS = () => ({
+	start: new Date(Math.ceil(Date.now() / 86400000 - DEFAULT_INTERVAL) * 86400000),
+	end: new Date(Math.ceil(Date.now() / 86400000) * 86400000),
+	days: DEFAULT_INTERVAL
+});
+
+const dateValue = date => date.toISOString().slice(0, 10);
+
+function IntervalInput({ callback, defaults }) { // returns seconds from epoch
 	const modes = ['recent', 'dates', 'interval'];
-	const [mode, setMode] = useState();
+	const [mode, setMode] = useState(modes[0]);
+	const state = {
+		start: useState(defaults.start),
+		end: useState(defaults.end),
+		days: useState(defaults.days)
+	};
+	const submit = () => {
+		const end = mode !== 'recent'
+			? state.end[0]
+			: new Date(Math.ceil(Date.now() / 86400000) * 86400000);
+		const start = mode === 'dates'
+			? state.start[0]
+			: new Date(end - 86400000 * state.days[0]);
+		state.start[1](start);
+		state.end[1](end);
+		callback([start, end]);
+	};
+	const eventHandler = (what) => (e) => {
+		if (e.key === 'Enter')
+			return submit();
+		const value = e.target[what === 'days' ? 'valueAsNumber' : 'valueAsDate'];
+		if (value && !isNaN(value)) {
+			state[what][1](value);
+			state[what][0] = value;
+			submit();
+		}
+	};
 	return (
 		<>
 			<Selector text="Time:" selected={mode} options={modes} callback={setMode}/>
 			<div>
 				{ mode === 'dates' &&
-					<><input type="date"/><span> to </span><input type="date"/></> }
+					<>
+						<input type="date" defaultValue={dateValue(state.start[0])} onChange={eventHandler('start')}/>
+						<span> to </span>
+						<input type="date" defaultValue={dateValue(state.end[0])} onChange={eventHandler('end')}/>
+					</> }
 				{ mode === 'interval' &&
-					<><input type="text" style={{ width: '3ch' }} pattern="\d{1,3}" placeholder="n"/>
-						<span> days before </span><input type="date"/></> }
+					<>
+						<input type="number" style={{ width: '6ch' }} min="1" max="999"
+							defaultValue={state.days[0]} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
+						<span> days before </span>
+						<input type="date" defaultValue={dateValue(state.end[0])} onChange={eventHandler('end')}/>
+					</> }
 				{ mode === 'recent' &&
-					<>last <input type="text" style={{ width: '3ch' }} pattern="\d{1,3}" placeholder="n"/> days</> }
+					<>
+						<span>last </span>
+						<input type="number" style={{ width: '6ch' }} min="1" max="999"
+							defaultValue={state.days[0]} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
+						<span> days</span>
+					</> }
 			</div>
 		</>
 	);
@@ -39,6 +87,8 @@ function Editor() {
 }
 
 export default function Corrections({ devices }) {
+	const dateDefaults = DEFAULTS();
+	const [dates, setDates] = useState([dateDefaults.start, dateDefaults.end]);
 	const [settings, setSettings] = useState(() =>
 		JSON.parse(window.localStorage.getItem('corrSettings')) || {});
 	const settingsCallback = key => value => setSettings(state => ({ ...state, [key]: value }));
@@ -66,7 +116,11 @@ export default function Corrections({ devices }) {
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
-				<IntervalInput/>
+				<IntervalInput callback={setDates} defaults={dateDefaults}/>
+			</div>
+			<div>
+				{dates && dates[0].toISOString().replace(/\..*/, '')}<br/>
+				{dates && dates[1].toISOString().replace(/\..*/, '')}
 			</div>
 		</div>
 	);

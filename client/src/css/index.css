@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,400;0,700;1,400&display=swap');
-body {
+:root {
 	--color-bg: black;
 	--color-text: grey;
 	--color-border: rgb(32,32,32);
@@ -13,6 +13,7 @@ body {
 
 	background-color: var(--color-bg);
 	color: var(--color-text);
+	color-scheme: dark;
 }
 
 /* ::selection, ::-moz-selection {
