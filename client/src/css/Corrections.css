@@ -1,17 +1,19 @@
 .Corrections {
 	color: white;
-	width: calc(100vw - 6em);
-	height: calc(100vh - 6em);
+	width: calc(100vw - 32px);
+	height: calc(100vh - 32px - 2em);
 	/* padding: 1em; */
 	border: 2px var(--color-border) solid;
 }
 
 .Settings {
-	padding: .75em 1em 0 1em;
+	padding: .5em 1em 0 1em;
 	display: flex;
+	flex-wrap: wrap;
 	gap: 1em;
 }
 
 .Selector select {
+	max-width: 8.9em;
 	margin-left: .5em;
 }

@@ -3,6 +3,25 @@ import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import './css/Corrections.css';
 
+function IntervalInput({ callback }) {
+	const modes = ['recent', 'dates', 'interval'];
+	const [mode, setMode] = useState();
+	return (
+		<>
+			<Selector text="Time:" selected={mode} options={modes} callback={setMode}/>
+			<div>
+				{ mode === 'dates' &&
+					<><input type="date"/><span> to </span><input type="date"/></> }
+				{ mode === 'interval' &&
+					<><input type="text" style={{ width: '3ch' }} pattern="\d{1,3}" placeholder="n"/>
+						<span> days before </span><input type="date"/></> }
+				{ mode === 'recent' &&
+					<>last <input type="text" style={{ width: '3ch' }} pattern="\d{1,3}" placeholder="n"/> days</> }
+			</div>
+		</>
+	);
+}
+
 function Selector({ text, options, selected, callback }) {
 	return (
 		<div className="Selector">
@@ -47,6 +66,7 @@ export default function Corrections({ devices }) {
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
+				<IntervalInput/>
 			</div>
 		</div>
 	);

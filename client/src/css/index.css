@@ -15,6 +15,11 @@ body {
 	color: var(--color-text);
 }
 
+/* ::selection, ::-moz-selection {
+	color: red;
+	background: yellow;
+} */
+
 .u-series, .u-value, .u-title {
 	font-family: 'Roboto Mono', monospace;
 	font-size: 16px !important;
@@ -27,6 +32,15 @@ input, button, select {
 	font-family: inherit;
 	font-size: inherit;
 	color: inherit;
+	outline: none;
+}
+
+input:focus-visible, button:focus-visible, select:focus-visible {
+	border: 2px var(--color-text) solid;
+}
+
+input:invalid {
+	border: 2px red solid;
 }
 
 button {
