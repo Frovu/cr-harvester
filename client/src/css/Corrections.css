@@ -1,9 +1,9 @@
 .Corrections {
-	position: relative;
+	display: flex;
+	flex-direction: column;
 	color: var(--color-text);
 	width: calc(100vw - 32px);
 	height: calc(100vh - 32px - 2em);
-	/* padding: 1em; */
 	border: 2px var(--color-border) solid;
 }
 
@@ -19,13 +19,19 @@
 	margin-left: .5em;
 }
 
+.Graph {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-grow: 1;
+}
+
 .Footer {
 	color: var(--color-text-dark);
 	font-size: 14px;
 	display: flex;
-	position: absolute;
 	bottom: 0;
-	margin: 4px;
+	padding: 4px;
 	gap: 1em;
-	align-items: flex-end; 
+	align-items: flex-end;
 }
