@@ -8,7 +8,7 @@ import './css/Corrections.css';
 const dateStr = date => date?.toISOString().replace(/T.*/, '');
 const epoch = date => Math.floor(date.getTime() / 1000);
 
-function Graph({ data,  }) {
+function Graph({ data }) {
 	const options = {
 		width: 128,
 		height: 128,
@@ -35,13 +35,18 @@ function Graph({ data,  }) {
 }
 
 export default function Editor({ device, fields, interval }) {
-	const query = useQuery('editor', async () => {
+	const client = useQueryClient();
+	const query = useQuery(['editor', device, interval], async () => {
+		console.log(interval)
 		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
-			fields: fields,
 			from: epoch(interval[0]),
 			to: epoch(interval[1]),
 			dev: device
 		}).toString());
+		if (resp.status === 404)
+			throw new Error('DEVICE NOT FOUND');
+		if (resp.status === 400)
+			throw new Error('BAD REQUEST');
 		const data = await resp.json();
 		const len = data.rows.length, colLen = data.fields.length, rows = data.rows;
 		const cols = Array(colLen).fill().map(_ => Array(len));
@@ -54,7 +59,8 @@ export default function Editor({ device, fields, interval }) {
 
 	return (<>
 		<div className="Graph">
-			{query.error ? <>ERROR<br/>{query.error.message}</> : query.isLoading && 'LOADING..'}
+			{query.error ? <>ERROR<br/>{query.error.message}</> : query.isLoading && 'LOADING...'}
+			{query.data && <Graph data={query.data}/>}
 		</div>
 		<div className="Footer">
 			<div style={{ textAlign: 'right' }}>

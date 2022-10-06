@@ -48,6 +48,23 @@ router.get('/stations', (req, res) => {
 	return res.status(200).json(stations.list());
 });
 
+router.get('/data', async (req, res) => {
+	try {
+		const dev = req.query.dev;
+		const from = new Date(parseInt(req.query.from) * 1000);
+		const to   = new Date(parseInt(req.query.to) * 1000);
+
+		if (!dev || !stations.list().devices[dev])
+			return res.sendStatus(404);
+		if (isNaN(from) || isNaN(to) || to <= from)
+			return res.sendStatus(400);
+		return res.status(200).json(await db.selectInterval(dev, from, to));
+	} catch(e) {
+		global.log(`Exception in get data: ${e.stack}`);
+		return res.sendStatus(500);
+	}
+});
+
 router.post('/data', async (req, res) => {
 	const from = req.headers['x-forwarded-for'];
 	try {

@@ -86,12 +86,12 @@ async function unsubscribe(station, email) {
 	await pool.query(text, [station, email]);
 }
 
-async function select(device, where, limit) {
+async function select(device, where, limit, serverTime=false) {
 	const dev = config.devices[device];
 	const fields = (dev.counters || []).concat(dev.fields || []);
 	const sel = fields.map(f => `COALESCE(c.${f}, r.${f}) as ${f}`).join(', ');
 	const text = `SELECT * FROM (SELECT
-		EXTRACT(EPOCH FROM r.server_time)::integer as server_time, EXTRACT(EPOCH FROM r.time)::integer as time,
+		${serverTime ? 'EXTRACT(EPOCH FROM r.server_time)::integer as server_time, ':''}EXTRACT(EPOCH FROM r.time)::integer as time,
 		${sel}, uptime, info FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
 		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) rev ORDER BY time`;
 	return await pool.query({ text, rowMode: 'array' });
@@ -102,10 +102,16 @@ async function selectAll(limit) {
 		limit = 60;
 	const result = {};
 	for (const dev in config.devices) {
-		const res = await select(dev, null, limit);
+		const res = await select(dev, null, limit, true);
 		result[dev] = { rows: res.rows, fields: res.fields.map(f => f.name) };
 	}
 	return result;
+}
+
+async function selectInterval(device, from, to) {
+	const where = `r.time >= to_timestamp(${(from/1000).toFixed()}) AND r.time <= to_timestamp(${(to/1000).toFixed()})`;
+	const res = await select(device, where);
+	return { rows: res.rows, fields: res.fields.map(f => f.name) };
 }
 
 async function insert(body) {
@@ -146,6 +152,7 @@ module.exports = {
 	unsubscribe,
 	selectEmails,
 	selectAll,
+	selectInterval,
 	select,
 	insert
 };
