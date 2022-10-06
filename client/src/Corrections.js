@@ -93,8 +93,7 @@ export default function Corrections({ devices }) {
 		field: settings.mode !== 'single' ? null :
 			devices[settings.device]?.counters.concat(devices[settings.device]?.fields)
 	};
-	if (options.field && !options.field.includes(settings.field))
-		settings.field = null;
+	
 	const selectors = Object.keys(options).filter(k => options[k]).map(key =>
 		<Selector
 			key={key}
@@ -105,13 +104,20 @@ export default function Corrections({ devices }) {
 		/>
 	);
 
+	const fields = settings.mode === 'single'
+		? (settings.field && [settings.field])
+		: devices[settings.device]?.counters
+			.concat(settings.mode === 'all' ? devices[settings.device]?.fields : []);
+
 	return (
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
 				<IntervalInput callback={setDates} defaults={dateDefaults}/>
 			</div>
-			<Editor settings={settings} interval={dates}/>
+			{fields && fields.length
+				? <Editor fields={fields} interval={dates}/>
+				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>SELECT CHANNEL</div>}
 		</div>
 	);
 }
