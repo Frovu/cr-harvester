@@ -8,22 +8,33 @@ import './css/Corrections.css';
 const dateStr = date => date?.toISOString().replace(/T.*/, '');
 const epoch = date => Math.floor(date.getTime() / 1000);
 
-const COLORS = {
-	voltage: 'yellow',
-	temperature_ext: 'cyan', // eslint-disable-line
-	temperature: 'cyan',
-	pressure: 'magenta',
-	default: 'rgb(0,180,130)'
-};
-
-const PRECISION = {
-	voltage: 2,
-	temperature_ext: 1, // eslint-disable-line
-	temperature: 1,
-	pressure: 1
+const COLOR = 'rgb(0,180,130)';
+const SERIES = {
+	voltage: {
+		color: 'yellow',
+		alias: 'v',
+		precision: 2
+	},
+	temperature_ext: { // eslint-disable-line
+		color: 'cyan',
+		alias: 't_ext',
+		precision: 1
+	},
+	temperature: {
+		color: 'cyan',
+		alias: 'temp',
+		precision: 1
+	},
+	pressure: {
+		color: 'magenta',
+		alias: 'pres',
+		precision: 1
+	}
 };
 
 function Graph({ data, size, fields }) {
+	const [shown, setShown] = useState(fields.length <= 1 ? fields
+		: fields.filter(f => !Object.keys(SERIES).includes(f)));
 	const plotData = ['time'].concat(fields).map(f => data.columns[data.fields.indexOf(f)]);
 	const css = window.getComputedStyle(document.body);
 	const style = {
@@ -32,6 +43,8 @@ function Graph({ data, size, fields }) {
 		stroke: css.getPropertyValue('--color-text-dark'),
 		grid: css.getPropertyValue('--color-border'),
 	};
+	const maxLen = fields.map((f, i) =>
+		Math.max.apply(Math, plotData[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
 	const options = {
 		...size,
 		padding: [2, 12, 0, 2],
@@ -40,15 +53,9 @@ function Graph({ data, size, fields }) {
 			points: { size: 6, fill: (self, i) => self.series[i]._stroke }
 		},
 		hooks: {
-			init: [
-				u => {
-					[...u.root.querySelectorAll('.u-legend .u-series')].forEach((el, i) => {
-						if (u.series[i]._hide) {
-							el.style.display = 'none';
-						}
-					});
-				}
-			],
+			setSeries: [(u, i, opts) => {
+				setShown(opts.show ? shown.concat(fields[i-1]) : shown.filter(f => f !== fields[i-1]));
+			}],
 			ready: [u => {
 				let clickX, clickY;
 				u.over.addEventListener('mousedown', e => {
@@ -66,20 +73,22 @@ function Graph({ data, size, fields }) {
 		},
 		series: [
 			{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke },
-		].concat(fields.map(f => ({
-			label: f,
-			show: fields.length <= 1 || !Object.keys(PRECISION).includes(f),
-			scale: Object.keys(PRECISION).includes(f) ? f : 'count',
-			stroke: COLORS[f] ?? COLORS.default,
+		].concat(fields.map((f, i) => ({
+			label: (fields.length > 6 ? SERIES[f]?.alias : f) || f,
+			show: shown.includes(f),
+			scale: Object.keys(SERIES).includes(f) ? f : 'count',
+			stroke: SERIES[f]?.color ?? COLOR,
 			grid: { stroke: style.grid, width: 1 },
-			points: { fill: style.bg, stroke: COLORS[f] ?? COLORS.default },
-			value: (u, v) => v === null ? '-' : v.toFixed(PRECISION[f] || 0),
+			points: { fill: style.bg, stroke: SERIES[f]?.color ?? COLOR },
+			value: (u, v) => v === null ? '-'
+				: v.toFixed(SERIES[f]?.precision ?? 0)
+					[SERIES[f]?.precision ? 'padEnd' : 'padStart'](maxLen[i], '0'),
 		}))),
 		axes: ['time'].concat(fields).map((f, i) => ({
 			...(f !== 'time' && {
-				values: (u, vals) => vals.map(v => v.toFixed(PRECISION[f] || 0)),
-				size: 8 + 9 * Math.max.apply(Math,plotData[i]).toFixed(PRECISION[f] || 0).length,
-				scale: Object.keys(PRECISION).includes(f) ? f : 'count',
+				values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
+				size: 8 + 9 * maxLen[i-1],
+				scale: Object.keys(SERIES).includes(f) ? f : 'count',
 			}),
 			show: i <= 1,
 			font: style.font(14),

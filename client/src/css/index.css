@@ -25,6 +25,9 @@
 .u-series, .u-value, .u-title {
 	font-family: 'Roboto Mono', monospace;
 }
+.u-series {
+	margin-right: 8px !important;
+}
 .uplot {
 	/* position: relative; */
 	background-color: var(--color-bg);
