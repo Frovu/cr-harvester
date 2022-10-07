@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import UPlotReact from 'uplot-react';
@@ -8,17 +8,13 @@ import './css/Corrections.css';
 const dateStr = date => date?.toISOString().replace(/T.*/, '');
 const epoch = date => Math.floor(date.getTime() / 1000);
 
-function Graph({ data }) {
+function Graph({ data, size }) {
 	const options = {
-		width: 128,
-		height: 128,
-		legend: { show: false },
-		cursor: { show: false },
-		padding: [12, 0, 0, 0],
+		...size,
+		padding: [8, 4, 0, 4],
 		series: [
 			{ },
 			{
-				points: { show: false },
 				stroke: 'red'
 			}
 		],
@@ -31,13 +27,24 @@ function Graph({ data }) {
 			}
 		],
 	};
-	return <UPlotReact options={options} data={data.columns}/>;
+	return <div style={{ position: 'absolute' }}><UPlotReact options={options} data={data.columns}/></div>;
 }
 
 export default function Editor({ device, fields, interval }) {
-	const client = useQueryClient();
+	const graphRef = useRef();
+	const [graphSize, setGraphSize] = useState({});
+	useLayoutEffect(() => {
+		if (!graphRef.current) return;
+		const updateSize = () => setGraphSize({
+			width: graphRef.current.offsetWidth,
+			height: graphRef.current.offsetHeight - 32
+		});
+		updateSize();
+		window.addEventListener('resize', updateSize);
+		return () => window.removeEventListener('resize', updateSize);
+	}, []);
+
 	const query = useQuery(['editor', device, interval], async () => {
-		console.log(interval)
 		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
 			to: epoch(interval[1]),
@@ -58,9 +65,9 @@ export default function Editor({ device, fields, interval }) {
 	});
 
 	return (<>
-		<div className="Graph">
+		<div className="Graph" ref={graphRef}>
 			{query.error ? <>ERROR<br/>{query.error.message}</> : query.isLoading && 'LOADING...'}
-			{query.data && <Graph data={query.data}/>}
+			{query.data && (query.data.rows.length ? <Graph data={query.data} size={graphSize}/> : 'NO DATA')}
 		</div>
 		<div className="Footer">
 			<div style={{ textAlign: 'right' }}>

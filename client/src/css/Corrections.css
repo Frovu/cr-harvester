@@ -20,6 +20,7 @@
 }
 
 .Graph {
+	position: relative;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -34,4 +35,8 @@
 	padding: 4px;
 	gap: 1em;
 	align-items: flex-end;
+}
+
+.u-s {
+	font-size: 14px;
 }
