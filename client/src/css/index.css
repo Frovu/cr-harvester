@@ -33,8 +33,8 @@
 	background-color: var(--color-bg);
 }
 .u-select {
-	background-color: var(--color-border) !important;
-	opacity: .5;
+	background-color: var(--color-text) !important;
+	opacity: .25;
 }
 .u-legend {
 	height: 32px;

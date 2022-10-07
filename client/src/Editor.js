@@ -32,13 +32,33 @@ const SERIES = {
 	}
 };
 
+const editorSelection = {};
+
 function editorKeydown(u, e) {
 	if (!u) return;
 	const moveCur = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
 	if (moveCur) {
 		const min = u.valToIdx(u.scales.x.min), max = u.valToIdx(u.scales.x.max);
-		const move = moveCur * (e.ctrlKey ? (max-min) / 100 : 1) * (e.altKey ? (max-min) / 10 : 1);
-		const idx = Math.min(Math.max((u.cursor.idx || min) + ~~move, min), max);
+		const move = Math.floor(moveCur * (e.ctrlKey ? (max-min) / 100 : 1) * (e.altKey ? (max-min) / 10 : 1));
+		const idx = Math.min(Math.max((u.cursor.idx || min) + move, min), max);
+		if (e.shiftKey) {
+			if (u.cursor.idx === editorSelection.min && u.cursor.idx !== editorSelection.max)
+				editorSelection.min += move;
+			else if (u.cursor.idx === editorSelection.max && u.cursor.idx !== editorSelection.min)
+				editorSelection.max += move;
+			else {
+				editorSelection.min = Math.min(u.cursor.idx, u.cursor.idx + move);
+				editorSelection.max = Math.max(u.cursor.idx, u.cursor.idx + move);
+			}
+			console.log(editorSelection);
+			const left = u.valToPos(u.data[0][editorSelection.min], 'x');
+			u.setSelect({
+				width: u.valToPos(u.data[0][editorSelection.max], 'x') - left,
+				height: u.over.offsetHeight, top: 0, left
+			});
+		} else {
+			u.setSelect({ width: 0, height: 0 });
+		}
 		u.setCursor({ left: u.valToPos(u.data[0][idx], 'x'), top: u.cursor.top || 0 });
 	} else if (e.key === 'Home') {
 		u.setCursor({ left: u.valToPos(u.scales.x.min, 'x'), top: u.cursor.top || 0 });
