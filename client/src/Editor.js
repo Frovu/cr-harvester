@@ -8,26 +8,87 @@ import './css/Corrections.css';
 const dateStr = date => date?.toISOString().replace(/T.*/, '');
 const epoch = date => Math.floor(date.getTime() / 1000);
 
-function Graph({ data, size }) {
+const COLORS = {
+	voltage: 'yellow',
+	temperature_ext: 'cyan', // eslint-disable-line
+	temperature: 'cyan',
+	pressure: 'magenta',
+	default: 'rgb(0,180,130)'
+};
+
+const PRECISION = {
+	voltage: 2,
+	temperature_ext: 1, // eslint-disable-line
+	temperature: 1,
+	pressure: 1
+};
+
+function Graph({ data, size, fields }) {
+	const plotData = ['time'].concat(fields).map(f => data.columns[data.fields.indexOf(f)]);
+	const css = window.getComputedStyle(document.body);
+	const style = {
+		bg: css.getPropertyValue('--color-bg'),
+		font: (px) => css.font.replace('16px', px+'px'),
+		stroke: css.getPropertyValue('--color-text-dark'),
+		grid: css.getPropertyValue('--color-border'),
+	};
 	const options = {
 		...size,
-		padding: [8, 4, 0, 4],
+		padding: [2, 12, 0, 2],
+		cursor: {
+			drag: { dist: 12 },
+			points: { size: 6, fill: (self, i) => self.series[i]._stroke }
+		},
+		hooks: {
+			init: [
+				u => {
+					[...u.root.querySelectorAll('.u-legend .u-series')].forEach((el, i) => {
+						if (u.series[i]._hide) {
+							el.style.display = 'none';
+						}
+					});
+				}
+			],
+			ready: [u => {
+				let clickX, clickY;
+				u.over.addEventListener('mousedown', e => {
+					clickX = e.clientX;
+					clickY = e.clientY;
+				});
+				u.over.addEventListener('mouseup', e => {
+					if (e.clientX === clickX && e.clientY === clickY) {
+						const dataIdx = u.cursor.idx;
+						if (dataIdx != null)
+							console.log(123)
+					}
+				});
+			}]
+		},
 		series: [
-			{ },
-			{
-				stroke: 'red'
-			}
-		],
-		axes: [
-			{
-				size: 0
-			},
-			{
-				stroke: 'grey',
-			}
-		],
+			{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke },
+		].concat(fields.map(f => ({
+			label: f,
+			show: fields.length <= 1 || !Object.keys(PRECISION).includes(f),
+			scale: Object.keys(PRECISION).includes(f) ? f : 'count',
+			stroke: COLORS[f] ?? COLORS.default,
+			grid: { stroke: style.grid, width: 1 },
+			points: { fill: style.bg, stroke: COLORS[f] ?? COLORS.default },
+			value: (u, v) => v === null ? '-' : v.toFixed(PRECISION[f] || 0),
+		}))),
+		axes: ['time'].concat(fields).map((f, i) => ({
+			...(f !== 'time' && {
+				values: (u, vals) => vals.map(v => v.toFixed(PRECISION[f] || 0)),
+				size: 8 + 9 * Math.max.apply(Math,plotData[i]).toFixed(PRECISION[f] || 0).length,
+				scale: Object.keys(PRECISION).includes(f) ? f : 'count',
+			}),
+			show: i <= 1,
+			font: style.font(14),
+			ticks: { stroke: style.grid, width: 1, size: 2 },
+			grid: { stroke: style.grid, width: 1 },
+			stroke: style.stroke,
+		})),
 	};
-	return <div style={{ position: 'absolute' }}><UPlotReact options={options} data={data.columns}/></div>;
+	return <div style={{ position: 'absolute' }}><UPlotReact options={options} data={plotData}/></div>;
 }
 
 export default function Editor({ device, fields, interval }) {
@@ -67,7 +128,7 @@ export default function Editor({ device, fields, interval }) {
 	return (<>
 		<div className="Graph" ref={graphRef}>
 			{query.error ? <>ERROR<br/>{query.error.message}</> : query.isLoading && 'LOADING...'}
-			{query.data && (query.data.rows.length ? <Graph data={query.data} size={graphSize}/> : 'NO DATA')}
+			{query.data && (query.data.rows.length ? <Graph data={query.data} size={graphSize} fields={fields}/> : 'NO DATA')}
 		</div>
 		<div className="Footer">
 			<div style={{ textAlign: 'right' }}>

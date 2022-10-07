@@ -25,6 +25,17 @@
 .u-series, .u-value, .u-title {
 	font-family: 'Roboto Mono', monospace;
 }
+.uplot {
+	/* position: relative; */
+	background-color: var(--color-bg);
+}
+.u-select {
+	background-color: var(--color-border) !important;
+	opacity: .5;
+}
+.u-legend {
+	height: 32px;
+}
 
 input, button, select {
 	border: 2px transparent solid;

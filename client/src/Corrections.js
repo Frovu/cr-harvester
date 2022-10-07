@@ -93,6 +93,8 @@ export default function Corrections({ devices }) {
 		field: settings.mode !== 'single' ? null :
 			devices[settings.device]?.counters.concat(devices[settings.device]?.fields)
 	};
+	if (options.field && !options.field.includes(settings.field))
+		settings.field = null;
 
 	const selectors = Object.keys(options).filter(k => options[k]).map(key =>
 		<Selector
