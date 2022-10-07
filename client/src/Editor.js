@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
 import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import UPlotReact from 'uplot-react';
@@ -32,72 +32,111 @@ const SERIES = {
 	}
 };
 
+function editorKeydown(u, e) {
+	if (!u) return;
+	const moveCur = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+	if (moveCur) {
+		const min = u.valToIdx(u.scales.x.min), max = u.valToIdx(u.scales.x.max);
+		const idx = Math.min(Math.max((u.cursor.idx || min) + moveCur, min), max);
+		u.setCursor({ left: u.valToPos(u.data[0][idx], 'x'), top: u.cursor.top || 2 });
+	} else if (e.key === 'Home') {
+		u.setCursor({ left: u.valToPos(u.scales.x.min, 'x'), top: u.cursor.top || 2 });
+	} else if (e.key === 'End') {
+		u.setCursor({ left: u.valToPos(u.scales.x.max, 'x'), top: u.cursor.top || 2 });
+	} else {
+		console.log(e.key);
+	}
+}
+
 function Graph({ data, size, fields }) {
+	const uRef = useRef();
+	useEffect(() => {
+		const handler = (e) => editorKeydown(uRef.current, e);
+		window.addEventListener('keydown', handler);
+		return () => window.removeEventListener('keydown', handler);
+	}, []);
+	const [zoom, setZoom] = useState({});
 	const [shown, setShown] = useState(fields.length <= 1 ? fields
 		: fields.filter(f => !Object.keys(SERIES).includes(f)));
 	const plotData = ['time'].concat(fields).map(f => data.columns[data.fields.indexOf(f)]);
-	const css = window.getComputedStyle(document.body);
-	const style = {
-		bg: css.getPropertyValue('--color-bg'),
-		font: (px) => css.font.replace('16px', px+'px'),
-		stroke: css.getPropertyValue('--color-text-dark'),
-		grid: css.getPropertyValue('--color-border'),
-	};
-	const maxLen = fields.map((f, i) =>
-		Math.max.apply(Math, plotData[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
-	const options = {
-		...size,
-		padding: [8, 12, 0, 2],
-		cursor: {
-			drag: { dist: 12 },
-			points: { size: 6, fill: (self, i) => self.series[i]._stroke }
-		},
-		hooks: {
-			setSeries: [(u, i, opts) => {
-				setShown(opts.show ? shown.concat(fields[i-1]) : shown.filter(f => f !== fields[i-1]));
-			}],
-			ready: [u => {
-				let clickX, clickY;
-				u.over.addEventListener('mousedown', e => {
-					clickX = e.clientX;
-					clickY = e.clientY;
-				});
-				u.over.addEventListener('mouseup', e => {
-					if (e.clientX === clickX && e.clientY === clickY) {
-						const dataIdx = u.cursor.idx;
-						if (dataIdx != null)
-							console.log(123)
+	const memoOptions = useMemo(() => {
+		const css = window.getComputedStyle(document.body);
+		const style = {
+			bg: css.getPropertyValue('--color-bg'),
+			font: (px) => css.font.replace('16px', px+'px'),
+			stroke: css.getPropertyValue('--color-text-dark'),
+			grid: css.getPropertyValue('--color-border'),
+		};
+		const maxLen = fields.map((f, i) =>
+			Math.max.apply(Math, plotData[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
+
+		return {
+			...size,
+			padding: [8, 12, 0, 2],
+			cursor: {
+				drag: { dist: 12 },
+				points: { size: 6, fill: (self, i) => self.series[i]._stroke }
+			},
+			hooks: {
+				setScale: [(u, key) => {
+					if (key === 'x') {
+						const scale = u.scales[key];
+						if (zoom.min !== scale.min || zoom.max !== scale.max)
+							setZoom({ min: scale.min, max: scale.max });
 					}
-				});
-			}]
-		},
-		series: [
-			{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke },
-		].concat(fields.map((f, i) => ({
-			label: (fields.length > 6 ? SERIES[f]?.alias : f) || f,
-			show: shown.includes(f),
-			scale: Object.keys(SERIES).includes(f) ? f : 'count',
-			stroke: SERIES[f]?.color ?? COLOR,
-			grid: { stroke: style.grid, width: 1 },
-			points: { fill: style.bg, stroke: SERIES[f]?.color ?? COLOR },
-			value: (u, v) => v === null ? '-'
-				: v.toFixed(SERIES[f]?.precision ?? 0)
-					[SERIES[f]?.precision ? 'padEnd' : 'padStart'](maxLen[i], '0'),
-		}))),
-		axes: ['time'].concat(fields).map((f, i) => ({
-			...(f !== 'time' && {
-				values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
-				size: 8 + 9 * maxLen[i-1],
+				}],
+				setSeries: [(u, i, opts) => {
+					setShown(opts.show ? shown.concat(fields[i-1]) : shown.filter(f => f !== fields[i-1]));
+				}],
+				ready: [u => {
+					console.log('PLOT RENDER');
+					uRef.current = u;
+					let clickX, clickY;
+					u.over.addEventListener('mousedown', e => {
+						clickX = e.clientX;
+						clickY = e.clientY;
+					});
+					u.over.addEventListener('mouseup', e => {
+						if (e.clientX === clickX && e.clientY === clickY) {
+							const dataIdx = u.cursor.idx;
+							if (dataIdx != null)
+								console.log(123);
+						}
+					});
+				}],
+				destroy: [u => {
+					// window.removeEventListener('keydown', keydownHandler(u));
+				}]
+			},
+			scales: { x: { ...zoom } },
+			series: [
+				{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke },
+			].concat(fields.map((f, i) => ({
+				label: (fields.length > 6 ? SERIES[f]?.alias : f) || f,
+				show: shown.includes(f),
 				scale: Object.keys(SERIES).includes(f) ? f : 'count',
-			}),
-			show: i <= 1,
-			font: style.font(14),
-			ticks: { stroke: style.grid, width: 1, size: 2 },
-			grid: { stroke: style.grid, width: 1 },
-			stroke: style.stroke,
-		})),
-	};
-	return <div style={{ position: 'absolute' }}><UPlotReact options={options} data={plotData}/></div>;
+				stroke: SERIES[f]?.color ?? COLOR,
+				grid: { stroke: style.grid, width: 1 },
+				points: { fill: style.bg, stroke: SERIES[f]?.color ?? COLOR },
+				value: (u, v) => v === null ? '-'
+					: v.toFixed(SERIES[f]?.precision ?? 0).padEnd(SERIES[f]?.precision ? maxLen[i] : 0, 0)
+				// [SERIES[f]?.precision ? 'padEnd' : 'padStart']?.(maxLen[i], '0'),
+			}))),
+			axes: ['time'].concat(fields).map((f, i) => ({
+				...(f !== 'time' && {
+					values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
+					size: 8 + 9 * maxLen[i-1],
+					scale: Object.keys(SERIES).includes(f) ? f : 'count',
+				}),
+				show: i <= 1,
+				font: style.font(14),
+				ticks: { stroke: style.grid, width: 1, size: 2 },
+				grid: { stroke: style.grid, width: 1 },
+				stroke: style.stroke,
+			})),
+		};
+	}, [data, size, fields]); // eslint-disable-line
+	return <div style={{ position: 'absolute' }}><UPlotReact options={memoOptions} data={plotData} onCreate={u=>{uRef.current=u;}}/></div>;
 }
 
 export default function Editor({ device, fields, interval }) {
@@ -133,6 +172,10 @@ export default function Editor({ device, fields, interval }) {
 		data.columns = cols;
 		return data;
 	});
+
+	useEffect(() => {
+
+	}, []);
 
 	return (<>
 		<div className="Graph" ref={graphRef}>
