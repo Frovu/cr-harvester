@@ -81,9 +81,11 @@ function Selector({ text, options, selected, callback }) {
 
 export default function Corrections({ devices }) {
 	const dateDefaults = DEFAULTS();
-	const [dates, setDates] = useState([dateDefaults.start, dateDefaults.end]);
-	const [settings, setSettings] = useState(() =>
-		JSON.parse(window.localStorage.getItem('corrSettings')) || {});
+	const [settings, setSettings] = useState(() => {
+		const state = Object.assign({}, JSON.parse(window.localStorage.getItem('corrSettings')));
+		state.dates = state.dates ? state.dates.map(d => new Date(d)) : [dateDefaults.start, dateDefaults.end];
+		return state;
+	});
 	const settingsCallback = key => value => setSettings(state => ({ ...state, [key]: value }));
 	useEffect(() => window.localStorage.setItem('corrSettings', JSON.stringify(settings)), [settings]);
 
@@ -115,10 +117,10 @@ export default function Corrections({ devices }) {
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
-				<IntervalInput callback={setDates} defaults={dateDefaults}/>
+				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates ?? dateDefaults}/>
 			</div>
 			{fields && fields.length
-				? <Editor device={settings.device} fields={fields} interval={dates}/>
+				? <Editor device={settings.device} fields={fields} interval={settings.dates ?? dateDefaults}/>
 				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>SELECT CHANNEL</div>}
 		</div>
 	);

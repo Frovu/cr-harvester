@@ -6,7 +6,7 @@ import 'uplot/dist/uPlot.min.css';
 import './css/Corrections.css';
 
 const dateStr = date => date?.toISOString().replace(/T.*/, '');
-const epoch = date => Math.floor(date.getTime() / 1000);
+const epoch = date => date && Math.floor(date.getTime() / 1000);
 
 const COLOR = 'rgb(0,180,130)';
 const SERIES = {
@@ -47,7 +47,7 @@ function Graph({ data, size, fields }) {
 		Math.max.apply(Math, plotData[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
 	const options = {
 		...size,
-		padding: [2, 12, 0, 2],
+		padding: [8, 12, 0, 2],
 		cursor: {
 			drag: { dist: 12 },
 			points: { size: 6, fill: (self, i) => self.series[i]._stroke }
@@ -144,7 +144,6 @@ export default function Editor({ device, fields, interval }) {
 				<span>{dateStr(interval[0])}</span><br/>
 				<span>to {dateStr(interval[1])}</span>
 			</div>
-			<div>{fields.join()}</div>
 		</div>
 	</>);
 }
