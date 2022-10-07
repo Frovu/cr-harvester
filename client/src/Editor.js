@@ -5,8 +5,6 @@ import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
 import './css/Corrections.css';
 
-const dateStr = date => date?.toISOString().replace(/T.*/, '');
-
 const COLOR = 'rgb(0,180,130)';
 const SERIES = {
 	voltage: {
@@ -146,28 +144,33 @@ export default function Editor({ data, fields }) {
 		const handler = (e) => {
 			const moveCur = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
 			if (moveCur) {
+				console.log('OK');
+				const min = u.valToIdx(u.scales.x.min), max = u.valToIdx(u.scales.x.max);
+				const cur = u.cursor.idx || (moveCur < 0 ? max : min);
+				const move = Math.floor(moveCur * (e.ctrlKey ? (max-min) / 100 : 1) * (e.altKey ? (max-min) / 10 : 1));
+				const idx = Math.min(Math.max(cur + move, min), max);
 				setSelection(sel => {
-					const min = u.valToIdx(u.scales.x.min), max = u.valToIdx(u.scales.x.max), cur = u.cursor.idx;
-					const move = Math.floor(moveCur * (e.ctrlKey ? (max-min) / 100 : 1) * (e.altKey ? (max-min) / 10 : 1));
-					const idx = Math.min(Math.max((cur || min) + move, min), max);
-					u.setCursor({ left: u.valToPos(u.data[0][idx], 'x'), top: u.cursor.top || 0 });
+					console.log('stupid');
 					if (!e.shiftKey) return null;
-					if (!sel || (cur !== sel.min && cur !== sel.max)) {
+					if (!sel || !(cur !== sel.min ^ cur !== sel.max)) {
 						return {
 							min: Math.min(cur, cur + move),
 							max: Math.max(cur, cur + move)
 						};
 					} else {
-						sel[cur === sel.min ? 'min' : 'max'] += move;
-						return({ ...sel });
+						const newSel = { ...sel };
+						newSel[cur === sel.min ? 'min' : 'max'] += move;
+						return(newSel);
 					}
 				});
+				u.setCursor({ left: u.valToPos(u.data[0][idx], 'x'), top: u.cursor.top || 0 });
 			} else if (e.key === 'Home') {
 				u.setCursor({ left: u.valToPos(u.scales.x.min, 'x'), top: u.cursor.top || 0 });
 			} else if (e.key === 'End') {
 				u.setCursor({ left: u.valToPos(u.scales.x.max, 'x'), top: u.cursor.top || 0 });
 			} else if (e.key === 'Escape') {
 				u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] }, true);
+				setSelection(null);
 			} else {
 				console.log(e.key);
 			}
@@ -180,9 +183,16 @@ export default function Editor({ data, fields }) {
 		<EditorGraph {...{ size: graphSize, data, fields, setU }}/>
 	), [graphSize, data, fields]);
 
+	const interv = [0, data.rows.length - 1].map(i => new Date(data.rows[i][0]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
 		<div className="Graph" ref={graphRef}>
 			{graph}
+		</div>
+		<div className="Footer">
+			<div style={{ textAlign: 'right' }}>
+				{interv[0]}<br/>to {interv[1]}
+			</div>
+			{selection && <>Selection ({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
 		</div>
 	</>);
 }
