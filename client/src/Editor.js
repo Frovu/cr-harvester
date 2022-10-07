@@ -37,12 +37,15 @@ function editorKeydown(u, e) {
 	const moveCur = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
 	if (moveCur) {
 		const min = u.valToIdx(u.scales.x.min), max = u.valToIdx(u.scales.x.max);
-		const idx = Math.min(Math.max((u.cursor.idx || min) + moveCur, min), max);
-		u.setCursor({ left: u.valToPos(u.data[0][idx], 'x'), top: u.cursor.top || 2 });
+		const move = moveCur * (e.ctrlKey ? (max-min) / 100 : 1) * (e.altKey ? (max-min) / 10 : 1);
+		const idx = Math.min(Math.max((u.cursor.idx || min) + ~~move, min), max);
+		u.setCursor({ left: u.valToPos(u.data[0][idx], 'x'), top: u.cursor.top || 0 });
 	} else if (e.key === 'Home') {
-		u.setCursor({ left: u.valToPos(u.scales.x.min, 'x'), top: u.cursor.top || 2 });
+		u.setCursor({ left: u.valToPos(u.scales.x.min, 'x'), top: u.cursor.top || 0 });
 	} else if (e.key === 'End') {
-		u.setCursor({ left: u.valToPos(u.scales.x.max, 'x'), top: u.cursor.top || 2 });
+		u.setCursor({ left: u.valToPos(u.scales.x.max, 'x'), top: u.cursor.top || 0 });
+	} else if (e.key === 'Escape') {
+		u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] }, true);
 	} else {
 		console.log(e.key);
 	}
