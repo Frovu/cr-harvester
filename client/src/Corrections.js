@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from 'react-query';
 
 import './css/Corrections.css';
 import Editor from './Editor';
@@ -79,6 +80,36 @@ function Selector({ text, options, selected, callback }) {
 	);
 }
 
+const epoch = date => date && Math.floor(date.getTime() / 1000);
+
+function EditorWrapper({ device, fields, interval }) {
+	const query = useQuery(['editor', device, interval], async () => {
+		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
+			from: epoch(interval[0]),
+			to: epoch(interval[1]),
+			dev: device
+		}).toString());
+		if (resp.status === 404)
+			throw new Error('DEVICE NOT FOUND');
+		if (resp.status === 400)
+			throw new Error('BAD REQUEST');
+		const data = await resp.json();
+		const len = data.rows.length, colLen = data.fields.length, rows = data.rows;
+		const cols = Array(colLen).fill().map(_ => Array(len));
+		for (let i = 0; i < len; ++i)
+			for (let j = 0; j < colLen; ++j)
+				cols[j][i] = rows[i][j];
+		data.columns = cols;
+		return data;
+	});
+
+	if (query.isLoading)
+		return <div className="Graph">LOADING...</div>;
+	if (query.error)
+		return <div className="Graph">ERROR<br/>{query.error.message}</div>;
+	return <Editor data={query.data} fields={fields}/>;
+}
+
 export default function Corrections({ devices }) {
 	const dateDefaults = DEFAULTS();
 	const [settings, setSettings] = useState(() => {
@@ -120,7 +151,7 @@ export default function Corrections({ devices }) {
 				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates ?? dateDefaults}/>
 			</div>
 			{fields && fields.length
-				? <Editor device={settings.device} fields={fields} interval={settings.dates ?? dateDefaults}/>
+				? <EditorWrapper device={settings.device} fields={fields} interval={settings.dates ?? dateDefaults}/>
 				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>SELECT CHANNEL</div>}
 		</div>
 	);
