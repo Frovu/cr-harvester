@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
-import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
@@ -33,7 +32,6 @@ function EditorGraph({ size, data, fields, setU }) {
 	const [zoom, setZoom] = useState({});
 	const [shown, setShown] = useState(fields.length <= 1 ? fields
 		: fields.filter(f => !Object.keys(SERIES).includes(f)));
-	const plotData = ['time'].concat(fields).map(f => data.columns[data.fields.indexOf(f)]);
 	const css = window.getComputedStyle(document.body);
 	const style = {
 		bg: css.getPropertyValue('--color-bg'),
@@ -42,7 +40,7 @@ function EditorGraph({ size, data, fields, setU }) {
 		grid: css.getPropertyValue('--color-border'),
 	};
 	const maxLen = fields.map((f, i) =>
-		Math.max.apply(Math, plotData[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
+		Math.max.apply(Math, data[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
 
 	const options = {
 		...size,
@@ -108,10 +106,14 @@ function EditorGraph({ size, data, fields, setU }) {
 			stroke: style.stroke,
 		})),
 	};
-	return <div style={{ position: 'absolute' }}><UPlotReact {...{ options, data: plotData, onCreate: setU }}/></div>;
+	return <div style={{ position: 'absolute' }}><UPlotReact {...{ options, data, onCreate: setU }}/></div>;
 }
 
-export default function Editor({ data, fields }) {
+export default function Editor({ data: rawData, fields }) {
+	const data = useMemo(() => (
+		['time'].concat(fields).map(f => rawData.columns[rawData.fields.indexOf(f)])
+	), [rawData, fields]);
+
 	const graphRef = useRef();
 	const [graphSize, setGraphSize] = useState({});
 	useLayoutEffect(() => {
@@ -144,13 +146,11 @@ export default function Editor({ data, fields }) {
 		const handler = (e) => {
 			const moveCur = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
 			if (moveCur) {
-				console.log('OK');
 				const min = u.valToIdx(u.scales.x.min), max = u.valToIdx(u.scales.x.max);
 				const cur = u.cursor.idx || (moveCur < 0 ? max : min);
 				const move = Math.floor(moveCur * (e.ctrlKey ? (max-min) / 100 : 1) * (e.altKey ? (max-min) / 10 : 1));
 				const idx = Math.min(Math.max(cur + move, min), max);
 				setSelection(sel => {
-					console.log('stupid');
 					if (!e.shiftKey) return null;
 					if (!sel || !(cur !== sel.min ^ cur !== sel.max)) {
 						return {
@@ -183,16 +183,23 @@ export default function Editor({ data, fields }) {
 		<EditorGraph {...{ size: graphSize, data, fields, setU }}/>
 	), [graphSize, data, fields]);
 
-	const interv = [0, data.rows.length - 1].map(i => new Date(data.rows[i][0]*1000)?.toISOString().replace(/T.*/, ''));
+	const interv = [0, data[0].length - 1].map(i => new Date(data[0][i]*1000)?.toISOString().replace(/T.*/, ''));
+	console.log(u.scales.x.min !== data[0][0] || u.scales.x.max !== data[0][data[0].length - 1])
 	return (<>
 		<div className="Graph" ref={graphRef}>
 			{graph}
 		</div>
 		<div className="Footer">
-			<div style={{ textAlign: 'right' }}>
+			<div style={{ textAlign: 'right', position: 'relative' }}>
 				{interv[0]}<br/>to {interv[1]}
+				{u && (u.scales.x.min !== data[0][0] || u.scales.x.max !== data[0][data[0].length - 1])
+					&& <div style={{
+						backgroundColor: 'rgba(0,0,0,.7)', fontSize: '16px', gap: '1em',
+						position: 'absolute', top: 0, width: '100%', height: '100%',
+						display: 'flex', alignItems: 'center', justifyContent: 'center'
+					}}>(in zoom)</div>}
 			</div>
-			{selection && <>Selection ({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
+			{selection && <>({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
 		</div>
 	</>);
 }
