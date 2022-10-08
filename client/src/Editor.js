@@ -92,7 +92,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 				}
 			}],
 			setSeries: [(u, i, opts) => {
-				setShown(opts.show ? shown.concat(fields[i-1]) : shown.filter(f => f !== fields[i-1]));
+				setShown(st => opts.show ? st.concat(fields[i-2]) : st.filter(f => f !== fields[i-2]));
 			}],
 			init: [u => {
 				console.log('PLOT RENDER');
