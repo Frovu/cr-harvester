@@ -37,3 +37,25 @@
 	gap: 1em;
 	align-items: flex-end;
 }
+
+.Keybinds {
+	padding: 4px;
+	display: flex;
+	gap: .5em;
+}
+
+.Keybind {
+	color: var(--color-text);
+	border: 2px var(--color-border) solid;
+	/* background-color: var(--color-border); */
+	padding: 0 6px 0 0;
+}
+
+.Key {
+	display: inline-block;
+	background-color: var(--color-text);
+	color: var(--color-bg);
+	font-weight: bold;
+	padding: 1px 6px 1px 6px;
+	margin-right: 6px;
+}

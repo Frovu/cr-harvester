@@ -121,13 +121,13 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 				: v.toFixed(SERIES[f]?.precision ?? 0).padEnd(SERIES[f]?.precision ? maxLen[i] : 0, 0)
 			// [SERIES[f]?.precision ? 'padEnd' : 'padStart']?.(maxLen[i], '0'),
 		}))),
-		axes: ['time', 'corr'].concat(fields).map((f, i) => ( f === 'corr' ? { show: false } : {
+		axes: ['time', 'corr', 'count'].concat(Object.keys(SERIES)).map((f, i) => ( f === 'corr' ? { show: false, scale: '_corr' } : {
 			...(f !== 'time' && {
 				values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
 				size: 8 + 9 * maxLen[i-1],
 				scale: Object.keys(SERIES).includes(f) ? f : 'count',
 			}),
-			show: i <= 2,
+			show: ['time', 'count'].includes(f),
 			font: style.font(14),
 			ticks: { stroke: style.grid, width: 1, size: 2 },
 			grid: { stroke: style.grid, width: 1 },
@@ -149,12 +149,11 @@ function correctSpikes(rows, columns, interpolate=false, threshold=.3) {
 			if (vLeft > threshold && vRight > threshold) {
 				result.set(cur[0], interpolate
 					? columns.map(c => null)
-					: columns.map(c => (prev[c] + next[c]) / 2));
+					: columns.map(c => prev[c] == null || next[c] == null ? null : (prev[c] + next[c]) / 2));
 				break;
 			}
 		}
 	}
-	console.log(result);
 	return result;
 }
 
@@ -206,6 +205,8 @@ export default function Editor({ data, fields, targetFields }) {
 			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
 			const corr = correctSpikes(data.rows.slice(...target), columns);
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
+		} else if (e.key === 'u') {
+			setCorrections(null);
 		} else {
 			console.log(e.key);
 		}
@@ -284,7 +285,32 @@ export default function Editor({ data, fields, targetFields }) {
 						display: 'flex', alignItems: 'center', justifyContent: 'center'
 					}}>(in zoom)</div>}
 			</div>
-			{selection && <>({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
+			<div style={{ textAlign: 'left', height: '100%' }} >
+				{corrections && <span style={{ color: 'red' }}>[{corrections.size}]</span>}
+				<br/>
+				{selection && <>({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
+			</div>
+			<div style={{ flex: 1 }}></div>
+			<Keybinds/>
 		</div>
 	</>);
+}
+
+function Keybinds() {
+	const keys = {
+		'←/→': 'Move cursor',
+		'Ctrl/Alt+←/→': 'Move faster',
+		'Shift+←/→': 'Select',
+		E: 'Action',
+		J: 'Despike',
+		U: 'Discard',
+		C: 'Commit',
+	};
+	return (
+		<div className="Keybinds">
+			{Object.keys(keys).map(k => (
+				<div className="Keybind"><div className="Key">{k}</div>{keys[k]}</div>
+			))}
+		</div>
+	);
 }
