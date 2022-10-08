@@ -38,7 +38,6 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 	};
 	const maxLen = fields.map((f, i) =>
 		Math.max.apply(Math, data[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
-
 	let mouseSelection = false;
 	const options = {
 		...size,
@@ -88,8 +87,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 			setScale: [(u, key) => {
 				if (key === 'x') {
 					const scale = u.scales[key];
-					if (zoom.min !== scale.min || zoom.max !== scale.max)
-						setZoom({ min: scale.min, max: scale.max });
+					setZoom({ min: scale.min, max: scale.max });
 					setSelection(null);
 				}
 			}],
@@ -105,10 +103,13 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 				});
 			}],
 		},
-		scales: { x: { ...zoom } },
+		scales: { x: { ...zoom }, _corr: { range: [1, 2] } },
 		series: [
 			{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke },
-			{ label: '_corr', _hide: true }
+			{
+				label: '_corr', _hide: true, scale: '_corr',
+				points: { show: true, fill: style.bg, stroke: 'red' }
+			}
 		].concat(fields.map((f, i) => ({
 			label: (fields.length > 6 ? SERIES[f]?.alias : f) || f,
 			show: shown.includes(f),
@@ -120,7 +121,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 				: v.toFixed(SERIES[f]?.precision ?? 0).padEnd(SERIES[f]?.precision ? maxLen[i] : 0, 0)
 			// [SERIES[f]?.precision ? 'padEnd' : 'padStart']?.(maxLen[i], '0'),
 		}))),
-		axes: ['time', 'time'].concat(fields).map((f, i) => ({
+		axes: ['time', 'corr'].concat(fields).map((f, i) => ( f === 'corr' ? { show: false } : {
 			...(f !== 'time' && {
 				values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
 				size: 8 + 9 * maxLen[i-1],
@@ -136,7 +137,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 	return <div style={{ position: 'absolute' }}><UPlotReact {...{ options, data, onCreate: setU }}/></div>;
 }
 
-function correctSpikes(rows, columns, interpolate=false, threshold=.5) {
+function correctSpikes(rows, columns, interpolate=false, threshold=.3) {
 	const result = new Map();
 	const len = rows.length;
 	for (let i = 2, prev, cur = rows[0], next = rows[1]; i < len; ++i) {
@@ -172,13 +173,16 @@ export default function Editor({ data, fields, targetFields }) {
 			if (corr) {
 				for (let t = 0; t < targetIdx.length; ++t)
 					columns[targetIdx[t]][i] = corr[t];
+				columns[1][i] = 1;
 			}
 		}
 		return columns;
 	}, [data, corrections, fields, targetFields]);
-	// useEffect(() => {
-	// 	if (u) u.setData(plotData);
-	// }, [u, plotData]);
+	useEffect(() => {
+		if (!u) return;
+		u.setData(plotData, false);
+		u.redraw();
+	}, [u, plotData]);
 
 	const [selection, setSelection] = useState(null);
 	useEffect(() => {
@@ -200,7 +204,8 @@ export default function Editor({ data, fields, targetFields }) {
 				? [selection.min, selection.max]
 				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
 			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
-			correctSpikes(data.rows.slice(...target), columns);
+			const corr = correctSpikes(data.rows.slice(...target), columns);
+			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
 		} else {
 			console.log(e.key);
 		}
@@ -272,7 +277,7 @@ export default function Editor({ data, fields, targetFields }) {
 		<div className="Footer">
 			<div style={{ textAlign: 'right', position: 'relative' }}>
 				{interv[0]}<br/>to {interv[1]}
-				{u && (u.scales.x.min !== plotData[0][0] || u.scales.x.max !== plotData[0][plotData[0].length - 1])
+				{u && (zoom.min !== plotData[0][0] || zoom.max !== plotData[0][plotData[0].length - 1])
 					&& <div style={{
 						backgroundColor: 'rgba(0,0,0,.7)', fontSize: '16px', gap: '1em',
 						position: 'absolute', top: 0, width: '100%', height: '100%',
