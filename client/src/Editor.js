@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
 
 import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
@@ -28,10 +28,7 @@ const SERIES = {
 	}
 };
 
-function EditorGraph({ size, data, fields, setU, setSelection }) {
-	const [zoom, setZoom] = useState({});
-	const [shown, setShown] = useState(fields.length <= 1 ? fields
-		: fields.filter(f => !Object.keys(SERIES).includes(f)));
+function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, shown, setShown }) {
 	const css = window.getComputedStyle(document.body);
 	const style = {
 		bg: css.getPropertyValue('--color-bg'),
@@ -197,8 +194,6 @@ export default function Editor({ data, fields, targetFields }) {
 		}
 	}, [u, selection]);
 
-	useEffect(() => { console.log('U CHANGED')}, [u])
-
 	const handleCorrection = useMemo(() => (e) => {
 		if (e.key === 'j') {
 			const target = selection
@@ -253,6 +248,9 @@ export default function Editor({ data, fields, targetFields }) {
 
 	const graphRef = useRef();
 	const [graphSize, setGraphSize] = useState({});
+	const [zoom, setZoom] = useState({});
+	const [shown, setShown] = useState(() => fields.length <= 1 ? fields
+		: fields.filter(f => !Object.keys(SERIES).includes(f)));
 	useLayoutEffect(() => {
 		if (!graphRef.current) return;
 		const updateSize = () => setGraphSize({
@@ -264,7 +262,7 @@ export default function Editor({ data, fields, targetFields }) {
 		return () => window.removeEventListener('resize', updateSize);
 	}, []);
 	const graph = useMemo(() => (
-		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, setSelection }}/>
+		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, setSelection, zoom, setZoom, shown, setShown }}/>
 	), [graphSize, fields]); // eslint-disable-line
 	const interv = [0, plotData[0].length - 1].map(i => new Date(plotData[0][i]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
