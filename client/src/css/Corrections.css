@@ -32,15 +32,20 @@
 	color: var(--color-text-dark);
 	font-size: 14px;
 	display: flex;
-	bottom: 0;
 	padding: 4px;
 	gap: 1em;
 	align-items: flex-end;
 }
 
 .Keybinds {
+	align-self: flex-start;
 	padding: 4px;
 	display: flex;
+	flex-wrap: wrap;
+	flex-shrink: 2;
+	justify-content: right;
+	align-items: flex-end;
+	align-self: flex-end;
 	gap: .5em;
 }
 

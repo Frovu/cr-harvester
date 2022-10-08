@@ -276,8 +276,8 @@ export default function Editor({ data, fields, targetFields }) {
 			{graph}
 		</div>
 		<div className="Footer">
-			<div style={{ textAlign: 'right', position: 'relative' }}>
-				{interv[0]}<br/>to {interv[1]}
+			<div style={{ flexShrink: 0, textAlign: 'right', position: 'relative' }}>
+				<p style={{ margin: 0 }}>{interv[0]}</p>to {interv[1]}
 				{u && (zoom.min !== plotData[0][0] || zoom.max !== plotData[0][plotData[0].length - 1])
 					&& <div style={{
 						backgroundColor: 'rgba(0,0,0,.7)', fontSize: '16px', gap: '1em',
@@ -285,8 +285,8 @@ export default function Editor({ data, fields, targetFields }) {
 						display: 'flex', alignItems: 'center', justifyContent: 'center'
 					}}>(in zoom)</div>}
 			</div>
-			<div style={{ textAlign: 'left', height: '100%' }} >
-				{corrections && <span style={{ color: 'red' }}>[{corrections.size}]</span>}
+			<div style={{ flexShrink: 0, textAlign: 'left' }} >
+				{corrections?.size && <span style={{ color: 'red' }}>[{corrections.size}]</span>}
 				<br/>
 				{selection && <>({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
 			</div>
