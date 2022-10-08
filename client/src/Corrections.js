@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useQuery } from 'react-query';
 
 import './css/Corrections.css';
@@ -82,7 +82,7 @@ function Selector({ text, options, selected, callback }) {
 
 const epoch = date => date && Math.floor(date.getTime() / 1000);
 
-function EditorWrapper({ device, fields, interval }) {
+function EditorWrapper({ device, fields, targetFields, interval }) {
 	const query = useQuery(['editor', device, interval], async () => {
 		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
@@ -94,12 +94,6 @@ function EditorWrapper({ device, fields, interval }) {
 		if (resp.status === 400)
 			throw new Error('BAD REQUEST');
 		const data = await resp.json();
-		const len = data.rows.length, colLen = data.fields.length, rows = data.rows;
-		const cols = Array(colLen).fill().map(_ => Array(len));
-		for (let i = 0; i < len; ++i)
-			for (let j = 0; j < colLen; ++j)
-				cols[j][i] = rows[i][j];
-		data.columns = cols;
 		return data;
 	});
 
@@ -107,7 +101,7 @@ function EditorWrapper({ device, fields, interval }) {
 		return <div className="Graph">LOADING...</div>;
 	if (query.error)
 		return <div className="Graph">ERROR<br/>{query.error.message}</div>;
-	return <Editor data={query.data} fields={fields}/>;
+	return <Editor data={query.data} fields={fields} targetFields={targetFields}/>;
 }
 
 export default function Corrections({ devices }) {
@@ -138,11 +132,13 @@ export default function Corrections({ devices }) {
 			callback={settingsCallback(key)}
 		/>
 	);
-
-	const fields = settings.mode === 'single'
-		? (settings.field && [settings.field])
-		: devices[settings.device]?.counters
-			.concat(settings.mode === 'all' ? devices[settings.device]?.fields : []);
+	const fields = useMemo(() => ({
+		fields: devices[settings.device]?.counters.concat(devices[settings.device]?.fields),
+		targetFields: settings.mode === 'single'
+			? (settings.field && [settings.field])
+			: devices[settings.device]?.counters
+				.concat(settings.mode === 'all' ? devices[settings.device]?.fields : [])
+	}), [settings, devices]);
 
 	return (
 		<div className="Corrections">
@@ -150,8 +146,8 @@ export default function Corrections({ devices }) {
 				{selectors}
 				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates ?? dateDefaults}/>
 			</div>
-			{fields && fields.length
-				? <EditorWrapper device={settings.device} fields={fields} interval={settings.dates ?? dateDefaults}/>
+			{fields && fields.targetFields.length
+				? <EditorWrapper device={settings.device} {...fields} interval={settings.dates ?? dateDefaults}/>
 				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>SELECT CHANNEL</div>}
 		</div>
 	);

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react';
 
 import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
@@ -99,16 +99,19 @@ function EditorGraph({ size, data, fields, setU, setSelection }) {
 			setSeries: [(u, i, opts) => {
 				setShown(opts.show ? shown.concat(fields[i-1]) : shown.filter(f => f !== fields[i-1]));
 			}],
-			ready: [u => {
+			init: [u => {
 				console.log('PLOT RENDER');
+				[...u.root.querySelectorAll('.u-legend .u-series')].forEach((el, i) => {
+					if (u.series[i]._hide) {
+						el.style.display = 'none';
+					}
+				});
 			}],
-			destroy: [u => {
-				// window.removeEventListener('keydown', keydownHandler(u));
-			}]
 		},
 		scales: { x: { ...zoom } },
 		series: [
 			{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke },
+			{ label: '_corr', _hide: true }
 		].concat(fields.map((f, i) => ({
 			label: (fields.length > 6 ? SERIES[f]?.alias : f) || f,
 			show: shown.includes(f),
@@ -120,13 +123,13 @@ function EditorGraph({ size, data, fields, setU, setSelection }) {
 				: v.toFixed(SERIES[f]?.precision ?? 0).padEnd(SERIES[f]?.precision ? maxLen[i] : 0, 0)
 			// [SERIES[f]?.precision ? 'padEnd' : 'padStart']?.(maxLen[i], '0'),
 		}))),
-		axes: ['time'].concat(fields).map((f, i) => ({
+		axes: ['time', 'time'].concat(fields).map((f, i) => ({
 			...(f !== 'time' && {
 				values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
 				size: 8 + 9 * maxLen[i-1],
 				scale: Object.keys(SERIES).includes(f) ? f : 'count',
 			}),
-			show: i <= 1,
+			show: i <= 2,
 			font: style.font(14),
 			ticks: { stroke: style.grid, width: 1, size: 2 },
 			grid: { stroke: style.grid, width: 1 },
@@ -136,25 +139,50 @@ function EditorGraph({ size, data, fields, setU, setSelection }) {
 	return <div style={{ position: 'absolute' }}><UPlotReact {...{ options, data, onCreate: setU }}/></div>;
 }
 
-export default function Editor({ data: rawData, fields }) {
-	const data = useMemo(() => (
-		['time'].concat(fields).map(f => rawData.columns[rawData.fields.indexOf(f)])
-	), [rawData, fields]);
+function correctSpikes(rows, columns, interpolate=false, threshold=.5) {
+	const result = new Map();
+	const len = rows.length;
+	for (let i = 2, prev, cur = rows[0], next = rows[1]; i < len; ++i) {
+		prev = cur; cur = next; next = rows[i];
+		for (let j = 0; j < columns.length; ++j) {
+			const col = columns[j];
+			const vLeft = Math.abs(prev[col] / cur[col] - 1);
+			const vRight = Math.abs(next[col] / cur[col] - 1);
+			if (vLeft > threshold && vRight > threshold) {
+				result.set(cur[0], interpolate
+					? columns.map(c => null)
+					: columns.map(c => (prev[c] + next[c]) / 2));
+				break;
+			}
+		}
+	}
+	console.log(result);
+	return result;
+}
 
-	const graphRef = useRef();
-	const [graphSize, setGraphSize] = useState({});
-	useLayoutEffect(() => {
-		if (!graphRef.current) return;
-		const updateSize = () => setGraphSize({
-			width: graphRef.current.offsetWidth,
-			height: graphRef.current.offsetHeight - 32
-		});
-		updateSize();
-		window.addEventListener('resize', updateSize);
-		return () => window.removeEventListener('resize', updateSize);
-	}, []);
-
+export default function Editor({ data, fields, targetFields }) {
 	const [u, setU] = useState();
+	const [corrections, setCorrections] = useState(null);
+
+	const plotData = useMemo(() => {
+		const idx = ['time', '_corr'].concat(fields).map(f => data.fields.indexOf(f));
+		const targetIdx = targetFields.map(f => fields.indexOf(f) + 2); // 2 for time and corr
+		const columns = Array(fields.length + 2).fill().map(_ => Array(data.rows.length));
+		for (let i = 0; i < data.rows.length; ++i) {
+			for (let j = 0; j < idx.length; ++j)
+				columns[j][i] = data.rows[i][idx[j]] || null;
+			const corr = corrections?.get(columns[0][i]);
+			if (corr) {
+				for (let t = 0; t < targetIdx.length; ++t)
+					columns[targetIdx[t]][i] = corr[t];
+			}
+		}
+		return columns;
+	}, [data, corrections, fields, targetFields]);
+	// useEffect(() => {
+	// 	if (u) u.setData(plotData);
+	// }, [u, plotData]);
+
 	const [selection, setSelection] = useState(null);
 	useEffect(() => {
 		if (!u) return;
@@ -168,6 +196,23 @@ export default function Editor({ data: rawData, fields }) {
 			u.setSelect({ width: 0, height: 0 }, false);
 		}
 	}, [u, selection]);
+
+	useEffect(() => { console.log('U CHANGED')}, [u])
+
+	const handleCorrection = useMemo(() => (e) => {
+		if (e.key === 'j') {
+			const target = selection
+				? [selection.min, selection.max]
+				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
+			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
+			correctSpikes(data.rows.slice(...target), columns);
+		} else {
+			console.log(e.key);
+		}
+
+	}, [u, data, selection, targetFields]);
+	const handleRef = useRef(handleCorrection);
+	useEffect(() => { handleRef.current = handleCorrection; }, [handleCorrection]);
 	useEffect(() => {
 		if (!u) return;
 		const handler = (e) => {
@@ -199,18 +244,29 @@ export default function Editor({ data: rawData, fields }) {
 				u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] }, true);
 				setSelection(null);
 			} else {
-				console.log(e.key);
+				handleRef.current(e);
 			}
 		};
 		window.addEventListener('keydown', handler);
 		return () => window.removeEventListener('keydown', handler);
 	}, [u]);
 
+	const graphRef = useRef();
+	const [graphSize, setGraphSize] = useState({});
+	useLayoutEffect(() => {
+		if (!graphRef.current) return;
+		const updateSize = () => setGraphSize({
+			width: graphRef.current.offsetWidth,
+			height: graphRef.current.offsetHeight - 32
+		});
+		updateSize();
+		window.addEventListener('resize', updateSize);
+		return () => window.removeEventListener('resize', updateSize);
+	}, []);
 	const graph = useMemo(() => (
-		<EditorGraph {...{ size: graphSize, data, fields, setU, setSelection }}/>
-	), [graphSize, data, fields]);
-
-	const interv = [0, data[0].length - 1].map(i => new Date(data[0][i]*1000)?.toISOString().replace(/T.*/, ''));
+		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, setSelection }}/>
+	), [graphSize, fields]); // eslint-disable-line
+	const interv = [0, plotData[0].length - 1].map(i => new Date(plotData[0][i]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
 		<div className="Graph" ref={graphRef}>
 			{graph}
@@ -218,7 +274,7 @@ export default function Editor({ data: rawData, fields }) {
 		<div className="Footer">
 			<div style={{ textAlign: 'right', position: 'relative' }}>
 				{interv[0]}<br/>to {interv[1]}
-				{u && (u.scales.x.min !== data[0][0] || u.scales.x.max !== data[0][data[0].length - 1])
+				{u && (u.scales.x.min !== plotData[0][0] || u.scales.x.max !== plotData[0][plotData[0].length - 1])
 					&& <div style={{
 						backgroundColor: 'rgba(0,0,0,.7)', fontSize: '16px', gap: '1em',
 						position: 'absolute', top: 0, width: '100%', height: '100%',
