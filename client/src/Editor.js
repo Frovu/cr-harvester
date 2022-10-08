@@ -147,7 +147,7 @@ function correctSpikes(rows, columns, interpolate=false, threshold=.3) {
 			const vLeft = Math.abs(prev[col] / cur[col] - 1);
 			const vRight = Math.abs(next[col] / cur[col] - 1);
 			if (vLeft > threshold && vRight > threshold) {
-				result.set(cur[0], interpolate
+				result.set(cur[0], !interpolate
 					? columns.map(c => null)
 					: columns.map(c => prev[c] == null || next[c] == null ? null : (prev[c] + next[c]) / 2));
 				break;
@@ -157,7 +157,7 @@ function correctSpikes(rows, columns, interpolate=false, threshold=.3) {
 	return result;
 }
 
-export default function Editor({ data, fields, targetFields }) {
+export default function Editor({ data, fields, targetFields, action }) {
 	const [u, setU] = useState();
 	const [corrections, setCorrections] = useState(null);
 
@@ -180,7 +180,7 @@ export default function Editor({ data, fields, targetFields }) {
 	useEffect(() => {
 		if (!u) return;
 		u.setData(plotData, false);
-		u.redraw();
+		u.redraw(false, false);
 	}, [u, plotData]);
 
 	const [selection, setSelection] = useState(null);
@@ -196,14 +196,14 @@ export default function Editor({ data, fields, targetFields }) {
 			u.setSelect({ width: 0, height: 0 }, false);
 		}
 	}, [u, selection]);
-
+	console.log(action === 'interpolate');
 	const handleCorrection = useMemo(() => (e) => {
 		if (e.key === 'j') {
 			const target = selection
 				? [selection.min, selection.max]
 				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
 			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
-			const corr = correctSpikes(data.rows.slice(...target), columns);
+			const corr = correctSpikes(data.rows.slice(...target), columns, action === 'interpolate');
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
 		} else if (e.key === 'u') {
 			setCorrections(null);
@@ -211,7 +211,7 @@ export default function Editor({ data, fields, targetFields }) {
 			console.log(e.key);
 		}
 
-	}, [u, data, selection, targetFields]);
+	}, [u, action, data, selection, targetFields]);
 	const handleRef = useRef(handleCorrection);
 	useEffect(() => { handleRef.current = handleCorrection; }, [handleCorrection]);
 	useEffect(() => {
@@ -286,7 +286,7 @@ export default function Editor({ data, fields, targetFields }) {
 					}}>(in zoom)</div>}
 			</div>
 			<div style={{ flexShrink: 0, textAlign: 'left' }} >
-				{corrections?.size && <span style={{ color: 'red' }}>[{corrections.size}]</span>}
+				{corrections?.size > 0 && <span style={{ color: 'red' }}>[{corrections.size}]</span>}
 				<br/>
 				{selection && <>({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
 			</div>
@@ -309,7 +309,7 @@ function Keybinds() {
 	return (
 		<div className="Keybinds">
 			{Object.keys(keys).map(k => (
-				<div className="Keybind"><div className="Key">{k}</div>{keys[k]}</div>
+				<div key={k} className="Keybind"><div className="Key">{k}</div>{keys[k]}</div>
 			))}
 		</div>
 	);

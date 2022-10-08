@@ -11,7 +11,7 @@ const DEFAULTS = () => ({
 	days: DEFAULT_INTERVAL
 });
 
-const dateValue = date => date.toISOString().slice(0, 10);
+const dateValue = date => date && date.toISOString().slice(0, 10);
 
 function IntervalInput({ callback, defaults }) { // returns seconds from epoch
 	const modes = ['recent', 'dates', 'interval'];
@@ -82,7 +82,7 @@ function Selector({ text, options, selected, callback }) {
 
 const epoch = date => date && Math.floor(date.getTime() / 1000);
 
-function EditorWrapper({ device, fields, targetFields, interval }) {
+function EditorWrapper({ device, fields, targetFields, interval, action }) {
 	const query = useQuery(['editor', device, interval], async () => {
 		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
@@ -101,7 +101,9 @@ function EditorWrapper({ device, fields, targetFields, interval }) {
 		return <div className="Graph">LOADING...</div>;
 	if (query.error)
 		return <div className="Graph">ERROR<br/>{query.error.message}</div>;
-	return <Editor data={query.data} fields={fields} targetFields={targetFields}/>;
+	if (!query.data?.rows?.length)
+		return <div className="Graph">NO DATA</div>;
+	return <Editor {...{ data: query.data, fields, targetFields, action }}data={query.data} fields={fields} targetFields={targetFields}/>;
 }
 
 export default function Corrections({ devices }) {
@@ -113,12 +115,12 @@ export default function Corrections({ devices }) {
 	});
 	const settingsCallback = key => value => setSettings(state => ({ ...state, [key]: value }));
 	useEffect(() => window.localStorage.setItem('corrSettings', JSON.stringify(settings)), [settings]);
-
 	const options = {
 		device: Object.keys(devices),
 		mode: ['single', 'counters', 'all'],
 		field: settings.mode !== 'single' ? null :
-			devices[settings.device]?.counters.concat(devices[settings.device]?.fields)
+			devices[settings.device]?.counters.concat(devices[settings.device]?.fields),
+		action: ['remove', 'interpolate']
 	};
 	if (options.field && !options.field.includes(settings.field))
 		settings.field = null;
@@ -132,23 +134,28 @@ export default function Corrections({ devices }) {
 			callback={settingsCallback(key)}
 		/>
 	);
-	const fields = useMemo(() => ({
-		fields: devices[settings.device]?.counters.concat(devices[settings.device]?.fields),
-		targetFields: settings.mode === 'single'
+	const fields = useMemo(() => (
+		devices[settings.device]?.counters.concat(devices[settings.device]?.fields)
+	), [settings.device, devices]);
+	const targetFields = useMemo(() => (
+		settings.mode === 'single'
 			? (settings.field && [settings.field])
 			: devices[settings.device]?.counters
 				.concat(settings.mode === 'all' ? devices[settings.device]?.fields : [])
-	}), [settings, devices]);
+	), [settings, devices]);
 
+	if (settings.dates && (settings.dates[1] <= settings.dates[0]))
+		settings.dates = null;
+	const interval = settings.dates ?? [dateDefaults.start, dateDefaults.end];
 	return (
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
 				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates ?? dateDefaults}/>
 			</div>
-			{fields && fields.targetFields.length
-				? <EditorWrapper device={settings.device} {...fields} interval={settings.dates ?? dateDefaults}/>
-				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>SELECT CHANNEL</div>}
+			{targetFields && targetFields.length && settings.action
+				? <EditorWrapper {...{ device: settings.device, fields, targetFields, interval, action: settings.action }}/>
+				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>INSUFFICIENT PARAMS</div>}
 		</div>
 	);
 }
