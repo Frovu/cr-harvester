@@ -28,7 +28,7 @@ const SERIES = {
 	}
 };
 
-function EditorGraph({ size, data, fields, setU }) {
+function EditorGraph({ size, data, fields, setU, setSelection }) {
 	const [zoom, setZoom] = useState({});
 	const [shown, setShown] = useState(fields.length <= 1 ? fields
 		: fields.filter(f => !Object.keys(SERIES).includes(f)));
@@ -42,19 +42,58 @@ function EditorGraph({ size, data, fields, setU }) {
 	const maxLen = fields.map((f, i) =>
 		Math.max.apply(Math, data[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
 
+	let mouseSelection = false;
 	const options = {
 		...size,
 		padding: [8, 12, 0, 2],
 		cursor: {
+			lock: true,
 			drag: { dist: 12 },
-			points: { size: 6, fill: (self, i) => self.series[i]._stroke }
+			points: { size: 6, fill: (self, i) => self.series[i]._stroke },
+			bind: {
+				mousedown: (u, targ, handler) => {
+					return e => {
+						if (e.button === 0) {
+							handler(e);
+							if (e.ctrlKey || e.shiftKey) {
+								mouseSelection = true;
+							}
+						}
+					};
+				},
+				mouseup: (u, targ, handler) => {
+					return e => {
+						if (e.button === 0) {
+							if (mouseSelection) {
+								const _setScale = u.cursor.drag.setScale, _lock = u.cursor._lock;
+								u.cursor.drag.setScale = false;
+								handler(e);
+								u.cursor.drag.setScale = _setScale;
+								u.cursor._lock = _lock;
+							}
+							else
+								handler(e);
+						}
+					};
+				}
+			}
 		},
 		hooks: {
+			setSelect: [(u) => {
+				if (!mouseSelection)
+					return setSelection(null);
+				setSelection({
+					min: u.posToIdx(u.select.left),
+					max: u.posToIdx(u.select.left+u.select.width)
+				});
+				mouseSelection = false;
+			}],
 			setScale: [(u, key) => {
 				if (key === 'x') {
 					const scale = u.scales[key];
 					if (zoom.min !== scale.min || zoom.max !== scale.max)
 						setZoom({ min: scale.min, max: scale.max });
+					setSelection(null);
 				}
 			}],
 			setSeries: [(u, i, opts) => {
@@ -62,18 +101,6 @@ function EditorGraph({ size, data, fields, setU }) {
 			}],
 			ready: [u => {
 				console.log('PLOT RENDER');
-				let clickX, clickY;
-				u.over.addEventListener('mousedown', e => {
-					clickX = e.clientX;
-					clickY = e.clientY;
-				});
-				u.over.addEventListener('mouseup', e => {
-					if (e.clientX === clickX && e.clientY === clickY) {
-						const dataIdx = u.cursor.idx;
-						if (dataIdx != null)
-							console.log(123);
-					}
-				});
 			}],
 			destroy: [u => {
 				// window.removeEventListener('keydown', keydownHandler(u));
@@ -136,9 +163,9 @@ export default function Editor({ data: rawData, fields }) {
 			u.setSelect({
 				width: u.valToPos(u.data[0][selection.max], 'x') - left,
 				height: u.over.offsetHeight, top: 0, left
-			});
+			}, false);
 		} else {
-			u.setSelect({ width: 0, height: 0 });
+			u.setSelect({ width: 0, height: 0 }, false);
 		}
 	}, [u, selection]);
 	useEffect(() => {
@@ -180,11 +207,10 @@ export default function Editor({ data: rawData, fields }) {
 	}, [u]);
 
 	const graph = useMemo(() => (
-		<EditorGraph {...{ size: graphSize, data, fields, setU }}/>
+		<EditorGraph {...{ size: graphSize, data, fields, setU, setSelection }}/>
 	), [graphSize, data, fields]);
 
 	const interv = [0, data[0].length - 1].map(i => new Date(data[0][i]*1000)?.toISOString().replace(/T.*/, ''));
-	console.log(u.scales.x.min !== data[0][0] || u.scales.x.max !== data[0][data[0].length - 1])
 	return (<>
 		<div className="Graph" ref={graphRef}>
 			{graph}
