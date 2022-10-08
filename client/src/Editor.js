@@ -196,7 +196,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 			u.setSelect({ width: 0, height: 0 }, false);
 		}
 	}, [u, selection]);
-	console.log(action === 'interpolate');
+
 	const handleCorrection = useMemo(() => (e) => {
 		if (e.key === 'j') {
 			const target = selection
@@ -205,6 +205,17 @@ export default function Editor({ data, fields, targetFields, action }) {
 			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
 			const corr = correctSpikes(data.rows.slice(...target), columns, action === 'interpolate');
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
+		} else if (e.key === 'e') {
+			const idx = u.cursor.idx;
+			if (idx && idx > 0 && idx < data.rows.length - 1) {
+				const corr = action === 'remove' ? targetFields.map(f => null)
+					: targetFields.map(f => {
+						const i = data.fields.indexOf(f);
+						const prev = data.rows[idx-1][i], next = data.rows[idx+1][i];
+						return prev == null || next == null ? null : (prev + next) / 2;
+					});
+				setCorrections(oldCorr => new Map([...(oldCorr || []), [data.rows[idx][0], corr]]));
+			}
 		} else if (e.key === 'u') {
 			setCorrections(null);
 		} else {
