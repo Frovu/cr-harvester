@@ -88,7 +88,6 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 				if (key === 'x') {
 					const scale = u.scales[key];
 					setZoom({ min: scale.min, max: scale.max });
-					setSelection(null);
 				}
 			}],
 			setSeries: [(u, i, opts) => {
@@ -275,12 +274,16 @@ export default function Editor({ data, fields, targetFields, action }) {
 			height: graphRef.current.offsetHeight - 32
 		});
 		updateSize();
-		window.addEventListener('resize', updateSize);
-		return () => window.removeEventListener('resize', updateSize);
+		const observer = new ResizeObserver(updateSize);
+		observer.observe(graphRef.current);
+		return () => observer.disconnect();
 	}, []);
+	useEffect(() => {
+		if (u) u.setSize(graphSize);
+	}, [u, graphSize]);
 	const graph = useMemo(() => (
-		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, setSelection, zoom, setZoom, shown, setShown }}/>
-	), [graphSize, fields]); // eslint-disable-line
+		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, selection, setSelection, zoom, setZoom, shown, setShown }}/>
+	), [fields]); // eslint-disable-line
 	const interv = [0, plotData[0].length - 1].map(i => new Date(plotData[0][i]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
 		<div className="Graph" ref={graphRef}>
@@ -299,7 +302,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 			<div style={{ flexShrink: 0, textAlign: 'left' }} >
 				{corrections?.size > 0 && <span style={{ color: 'red' }}>[{corrections.size}]</span>}
 				<br/>
-				{selection && <>({selection.min}, {selection.max}) [{selection.max-selection.min}]</>}
+				{selection && <>({selection.max-selection.min})</>}
 			</div>
 			<div style={{ flex: 1 }}></div>
 			<Keybinds/>
