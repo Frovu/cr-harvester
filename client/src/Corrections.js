@@ -7,32 +7,27 @@ import Editor from './Editor';
 const DAY_MS = 86400000;
 const DEFAULT_INTERVAL = 7; // days
 
+const epoch = date => date && Math.floor(date.getTime() / 1000);
 const dateValue = date => date && date.toISOString().slice(0, 10);
 const ceilEpoch = date => date && Math.ceil(date / DAY_MS) * DAY_MS;
 const TIME_MODES = ['recent', 'dates', 'interval'];
 
-function IntervalInput({ callback, defaults }) { // returns seconds from epoch
+function IntervalInput({ callback, defaults }) {
+	const [state, setState] = useState({ start: defaults[0], end: defaults[1] });
 	const [mode, setMode] = useState(() => (
 		ceilEpoch(Date.now()) === ceilEpoch(defaults[1]) ? 'recent' : 'interval'
 	));
-	const [state, setState] = useState({ start: defaults[0], end: defaults[1] });
-
-	const submit = () => callback([state.start, state.end]);
-
-	const changeMode = newMode => {
-		setMode(newMode);
-		if (newMode === 'recent')
-			setState(st => ({ ...st, end: new Date(ceilEpoch(Date.now())) }));
-		if (newMode === 'dates')
-			setState(st => ({ ...st, end: new Date(ceilEpoch(Date.now())) }));
-	};
+	const days = Math.ceil((state.end - state.start) / DAY_MS);
 	const changeValue = (what) => (e) => {
 		const value = e.target[what === 'days' ? 'valueAsNumber' : 'valueAsDate'];
 		if (value && !isNaN(value)) {
-			setState(st => ({ ...st,
-				...(what === 'days'
-					? { start: new Date(st.end - value * DAY_MS) }
-					: { [what]: value }) }));
+			const newState = {
+				...state, [what]: value,
+				...(mode !== 'dates' && { start: new Date(state.end - value * DAY_MS) }),
+				...(mode === 'recent' && { end: new Date(ceilEpoch(Date.now())) })
+			};
+			setState(newState);
+			callback([newState.start, newState.end]);
 		}
 	};
 	const inputs = {
@@ -42,34 +37,19 @@ function IntervalInput({ callback, defaults }) { // returns seconds from epoch
 			<input type="date" defaultValue={dateValue(state.end)} onChange={changeValue('end')}/>,
 		days:
 			<input type="number" style={{ width: '6ch' }}
-				min="1" max="999" defaultValue={Math.ceil((state.end - state.start) / DAY_MS)}
-				onKeyDown={e => e.key === 'Enter' && submit()} onChange={changeValue('days')}/>
+				min="1" max="999" defaultValue={days} onChange={changeValue('days')}/>
 	};
-	return (
-		<>
-			<Selector text="Time:" selected={mode} options={TIME_MODES} callback={changeMode}/>
-			<div>
-				{ mode === 'dates' &&
-					<>
-						{inputs.start}
-						<span> to </span>
-						{inputs.end}
-					</> }
-				{ mode === 'interval' &&
-					<>
-						{inputs.days}
-						<span> days before </span>
-						{inputs.end}
-					</> }
-				{ mode === 'recent' &&
-					<>
-						<span>last </span>
-						{inputs.days}
-						<span> days</span>
-					</> }
-			</div>
-		</>
-	);
+	return (<>
+		<Selector text="Time:" selected={mode} options={TIME_MODES} callback={setMode}/>
+		<div>
+			{ mode === 'dates' &&
+				<>{inputs.start} <span> to </span> {inputs.end} </> }
+			{ mode === 'interval' &&
+				<>{inputs.days} <span> days before </span> {inputs.end} </> }
+			{ mode === 'recent' &&
+				<> <span>last </span> {inputs.days} <span> days</span> </> }
+		</div>
+	</>);
 }
 
 function Selector({ text, options, selected, callback }) {
@@ -84,9 +64,8 @@ function Selector({ text, options, selected, callback }) {
 	);
 }
 
-const epoch = date => date && Math.floor(date.getTime() / 1000);
-
 function EditorWrapper({ device, fields, targetFields, interval, action }) {
+	return <div className="Graph">{dateValue(interval[0])}<br/>{dateValue(interval[1])}</div>;
 	const query = useQuery(['editor', device, interval], async () => {
 		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
@@ -156,7 +135,7 @@ export default function Corrections({ devices }) {
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
-				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates}/>
+				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates} throttle={500}/>
 			</div>
 			{targetFields && targetFields.length && settings.action
 				? <EditorWrapper {...{
