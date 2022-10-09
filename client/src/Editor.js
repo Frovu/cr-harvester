@@ -139,7 +139,8 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoomTrig }) {
 	return <div style={{ position: 'absolute' }}><UPlotReact {...{ options, data, onCreate: setU }}/></div>;
 }
 
-function correctSpikes(rows, columns, interpolate=false, threshold=.3) {
+function correctSpikes(rows, columns, action, threshold=.3) {
+	const interpolate = action === 'interpolate';
 	const result = new Map();
 	const len = rows.length;
 	for (let i = 2, prev, cur = rows[0], next = rows[1]; i < len; ++i) {
@@ -185,6 +186,7 @@ function doAction(corr, data, selection, targetFields, cursor, act) {
 export default function Editor({ data, fields, targetFields, action }) {
 	const [u, setU] = useState();
 	const [corrections, setCorrections] = useState(null);
+	const [threshold, setThreshold] = useState(.3);
 
 	const plotData = useMemo(() => {
 		const idx = ['time', '_corr'].concat(fields).map(f => data.fields.indexOf(f));
@@ -231,8 +233,8 @@ export default function Editor({ data, fields, targetFields, action }) {
 			const target = selection
 				? [selection.min, selection.max]
 				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
-			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
-			const corr = correctSpikes(data.rows.slice(...target), columns, action === 'interpolate');
+			const columns = targetFields.map(f => data.fields.indexOf(f));
+			const corr = correctSpikes(data.rows.slice(...target), columns, action, threshold);
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
 		} else if (['E', 'Delete', 'R', 'Insert'].includes(key)) {
 			if (selection || u.cursor.idx)
@@ -336,6 +338,11 @@ export default function Editor({ data, fields, targetFields, action }) {
 				{selection && <>({selection.max-selection.min})</>}
 			</div>
 			<div style={{ flex: 1 }}></div>
+			{action === 'interpolate' && <div style={{ color: 'var(--color-text)', paddingBottom: '4px' }}>
+				<span>Threshold: </span>
+				<input type="number" style={{ width: '8ch' }} min=".05" max="10" step=".01"
+					defaultValue={threshold} onChange={e => setThreshold(e.target.value)}/>
+			</div>}
 			<Keybinds handle={handleRef}/>
 		</div>
 	</>);
