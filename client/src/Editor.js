@@ -90,6 +90,10 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 					setZoom({ min: scale.min, max: scale.max });
 				}
 			}],
+			setSize: [(u) => {
+				u.select.height = u.over.offsetHeight;
+				u.setSelect(u.select, false);
+			}],
 			setSeries: [(u, i, opts) => {
 				setShown(st => opts.show ? st.concat(fields[i-2]) : st.filter(f => f !== fields[i-2]));
 			}],
