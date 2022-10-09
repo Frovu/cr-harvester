@@ -266,21 +266,19 @@ export default function Editor({ data, fields, targetFields, action }) {
 			if (moveCur) {
 				const min = u.valToIdx(u.scales.x.min), max = u.valToIdx(u.scales.x.max);
 				const cur = u.cursor.idx || (moveCur < 0 ? max : min);
-				const move = Math.floor(moveCur * (e.ctrlKey ? (max-min) / 100 : 1) * (e.altKey ? (max-min) / 10 : 1));
-				const idx = Math.min(Math.max(cur + move, min), max);
+				const move = moveCur * (e.ctrlKey ? Math.ceil((max - min) / 64) : 1)
+					* (e.altKey ? Math.ceil((max - min) / 16) : 1);
 				setSelection(sel => {
 					if (!e.shiftKey) return null;
-					if (!sel || !(cur !== sel.min ^ cur !== sel.max)) {
-						return {
-							min: Math.min(cur, cur + move),
-							max: Math.max(cur, cur + move)
-						};
-					} else {
-						const newSel = { ...sel };
-						newSel[cur === sel.min ? 'min' : 'max'] += move;
-						return(newSel);
-					}
+					const vals = (!sel || !(cur !== sel.min ^ cur !== sel.max))
+						? [cur, cur + move]
+						: [cur + move, cur !== sel.min ? sel.min : sel.max];
+					return vals[0] === vals[1] ? null : {
+						min: Math.min(...vals),
+						max: Math.max(...vals)
+					};
 				});
+				const idx = Math.min(Math.max(cur + move, min), max);
 				u.setCursor({ left: u.valToPos(u.data[0][idx], 'x'), top: u.cursor.top || 0 });
 			} else if (e.key === 'Home') {
 				u.setCursor({ left: u.valToPos(u.scales.x.min, 'x'), top: u.cursor.top || 0 });
