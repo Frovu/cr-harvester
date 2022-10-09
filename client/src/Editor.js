@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
 
 import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
+import uPlot from 'uplot/dist/uPlot.esm.js';
 import './css/Corrections.css';
 
 const COLOR = 'rgb(0,180,130)';
@@ -43,6 +44,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoomTrig }) {
 	let mouseSelection = false;
 	const options = {
 		...size,
+		tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'UTC'),
 		padding: [8, 12, 0, 2],
 		cursor: {
 			lock: true,
