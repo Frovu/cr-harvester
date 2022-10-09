@@ -17,7 +17,6 @@ function IntervalInput({ callback, defaults }) {
 	const [mode, setMode] = useState(() => (
 		ceilEpoch(Date.now()) === ceilEpoch(defaults[1]) ? 'recent' : 'interval'
 	));
-	console.log(Object.values(state).map(dateValue));
 	const days = Math.ceil((state.end - state.start) / DAY_MS);
 	const changeValue = (what) => (e) => {
 		const value = e.target[what === 'days' ? 'valueAsNumber' : 'valueAsDate'];

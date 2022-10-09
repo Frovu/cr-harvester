@@ -28,7 +28,7 @@ const SERIES = {
 	}
 };
 
-function EditorGraph({ size, data, fields, setU, setSelection }) {
+function EditorGraph({ size, data, fields, setU, setSelection, zoomTrig }) {
 	const shown = fields.length <= 1 ? fields
 		: fields.filter(f => !Object.keys(SERIES).includes(f));
 	const css = window.getComputedStyle(document.body);
@@ -85,6 +85,12 @@ function EditorGraph({ size, data, fields, setU, setSelection }) {
 					max: u.posToIdx(u.select.left+u.select.width)
 				});
 				mouseSelection = false;
+			}],
+			setScale: [(u, key) => {
+				if (key === 'x') {
+					setSelection(null);
+					zoomTrig({});
+				}
 			}],
 			setSize: [(u) => {
 				u.select.height = u.over.offsetHeight;
@@ -221,19 +227,19 @@ export default function Editor({ data, fields, targetFields, action }) {
 
 	const handleCorrection = (key) => {
 		if (!u) return;
-		if (key === 'd') {
+		if (key === 'D') {
 			const target = selection
 				? [selection.min, selection.max]
 				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
 			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
 			const corr = correctSpikes(data.rows.slice(...target), columns, action === 'interpolate');
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
-		} else if (['e', 'Delete', 'r', 'Insert'].includes(key)) {
+		} else if (['E', 'Delete', 'R', 'Insert'].includes(key)) {
 			if (selection || u.cursor.idx)
 				setCorrections(corr =>
 					doAction(corr, data, selection, targetFields, u.cursor.idx,
-						['r', 'Insert'].includes(key) ? 'restore' : action));
-		} else if (key === 'z') {
+						['R', 'Insert'].includes(key) ? 'restore' : action));
+		} else if (key === 'Z') {
 			if (selection) {
 				setSelection(null);
 				u.setScale('x', {
@@ -241,9 +247,9 @@ export default function Editor({ data, fields, targetFields, action }) {
 					max: u.data[0][selection.max]
 				}, false);
 			}
-		} else if (key === 'c') {
+		} else if (key === 'C') {
 			// TODO: commit
-		} else if (key === 'x') {
+		} else if (key === 'X') {
 			setCorrections(null);
 		} else {
 			console.log(key);
@@ -282,13 +288,14 @@ export default function Editor({ data, fields, targetFields, action }) {
 				u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] }, false);
 				setSelection(null);
 			} else {
-				handleRef.current(e.key);
+				handleRef.current(e.code.replace('Key', ''));
 			}
 		};
 		window.addEventListener('keydown', handler);
 		return () => window.removeEventListener('keydown', handler);
 	}, [u]);
 
+	const [, zoomTrig] = useState();
 	const graphRef = useRef();
 	const [graphSize, setGraphSize] = useState({});
 	useLayoutEffect(() => {
@@ -306,7 +313,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 		if (u) u.setSize(graphSize);
 	}, [u, graphSize]);
 	const graph = useMemo(() => (
-		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, selection, setSelection }}/>
+		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, selection, zoomTrig, setSelection }}/>
 	), [fields]); // eslint-disable-line
 	const interv = [0, plotData[0].length - 1].map(i => new Date(plotData[0][i]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
@@ -346,7 +353,7 @@ function Keybinds({ handle }) {
 	return (
 		<div className="Keybinds">
 			{Object.keys(keys).map(k => (
-				<div key={k} className="Keybind" onClick={() => handle.current(k.toLowerCase())}><div className="Key">{k}</div>{keys[k]}</div>
+				<div key={k} className="Keybind" onClick={() => handle.current(k)}><div className="Key">{k}</div>{keys[k]}</div>
 			))}
 		</div>
 	);
