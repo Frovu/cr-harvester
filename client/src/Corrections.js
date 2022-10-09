@@ -4,36 +4,46 @@ import { useQuery } from 'react-query';
 import './css/Corrections.css';
 import Editor from './Editor';
 
+const DAY_MS = 86400000;
 const DEFAULT_INTERVAL = 7; // days
 
 const dateValue = date => date && date.toISOString().slice(0, 10);
+const ceilEpoch = date => date && Math.ceil(date / DAY_MS) * DAY_MS;
 const TIME_MODES = ['recent', 'dates', 'interval'];
 
 function IntervalInput({ callback, defaults }) { // returns seconds from epoch
-	const [mode, setMode] = useState(TIME_MODES[0]);
-	const [state, setState] = useState(defaults);
-	console.log(state);
-	const submit = m => {
-		state.start = m === 'dates'
-			? state.start
-			: new Date(state.end - 86400000 * state.days);
-		callback([state.start, state.end]);
-		setState({ ...state });
-	};
+	const [mode, setMode] = useState(() => (
+		ceilEpoch(Date.now()) === ceilEpoch(defaults[1]) ? 'recent' : 'interval'
+	));
+	const [state, setState] = useState({ start: defaults[0], end: defaults[1] });
+
+	const submit = () => callback([state.start, state.end]);
+
 	const changeMode = newMode => {
 		setMode(newMode);
 		if (newMode === 'recent')
-			state.end = new Date(Math.ceil(Date.now() / 86400000) * 86400000);
-		submit(newMode);
+			setState(st => ({ ...st, end: new Date(ceilEpoch(Date.now())) }));
+		if (newMode === 'dates')
+			setState(st => ({ ...st, end: new Date(ceilEpoch(Date.now())) }));
 	};
-	const eventHandler = (what) => (e) => {
-		if (e.key === 'Enter')
-			return submit(mode);
+	const changeValue = (what) => (e) => {
 		const value = e.target[what === 'days' ? 'valueAsNumber' : 'valueAsDate'];
 		if (value && !isNaN(value)) {
-			state[what] = value;
-			submit(mode);
+			setState(st => ({ ...st,
+				...(what === 'days'
+					? { start: new Date(st.end - value * DAY_MS) }
+					: { [what]: value }) }));
 		}
+	};
+	const inputs = {
+		start:
+			<input type="date" defaultValue={dateValue(state.start)} onChange={changeValue('start')}/>,
+		end:
+			<input type="date" defaultValue={dateValue(state.end)} onChange={changeValue('end')}/>,
+		days:
+			<input type="number" style={{ width: '6ch' }}
+				min="1" max="999" defaultValue={Math.ceil((state.end - state.start) / DAY_MS)}
+				onKeyDown={e => e.key === 'Enter' && submit()} onChange={changeValue('days')}/>
 	};
 	return (
 		<>
@@ -41,22 +51,20 @@ function IntervalInput({ callback, defaults }) { // returns seconds from epoch
 			<div>
 				{ mode === 'dates' &&
 					<>
-						<input type="date" defaultValue={dateValue(state.start)} onChange={eventHandler('start')}/>
+						{inputs.start}
 						<span> to </span>
-						<input type="date" defaultValue={dateValue(state.end)} onChange={eventHandler('end')}/>
+						{inputs.end}
 					</> }
 				{ mode === 'interval' &&
 					<>
-						<input type="number" style={{ width: '6ch' }} min="1" max="999"
-							defaultValue={state.days} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
+						{inputs.days}
 						<span> days before </span>
-						<input type="date" defaultValue={dateValue(state.end)} onChange={eventHandler('end')}/>
+						{inputs.end}
 					</> }
 				{ mode === 'recent' &&
 					<>
 						<span>last </span>
-						<input type="number" style={{ width: '6ch' }} min="1" max="999"
-							defaultValue={state.days} onKeyDown={eventHandler('days')} onChange={eventHandler('days')}/>
+						{inputs.days}
 						<span> days</span>
 					</> }
 			</div>
@@ -108,8 +116,8 @@ export default function Corrections({ devices }) {
 		state.dates = state.dates && state.dates.map(d => new Date(d));
 		if (!state.dates || state.dates[0] >= state.dates[1])
 			state.dates = [
-				new Date(Math.ceil(Date.now() / 86400000 - DEFAULT_INTERVAL) * 86400000),
-				new Date(Math.ceil(Date.now() / 86400000) * 86400000)
+				new Date(ceilEpoch(Date.now()) - DEFAULT_INTERVAL * DAY_MS),
+				new Date(ceilEpoch(Date.now()))
 			];
 		return state;
 	});
