@@ -149,9 +149,9 @@ function correctSpikes(rows, columns, action, threshold=.3) {
 		prev = cur; cur = next; next = rows[i];
 		for (let j = 0; j < columns.length; ++j) {
 			const col = columns[j];
-			const vLeft = Math.abs(prev[col] / cur[col] - 1);
-			const vRight = Math.abs(next[col] / cur[col] - 1);
-			if (vLeft > threshold && vRight > threshold) {
+			const vLeft = prev[col] / cur[col] - 1;
+			const vRight = next[col] / cur[col] - 1;
+			if (vLeft * vRight > 0 && Math.abs(vLeft) > threshold && Math.abs(vRight) > threshold) {
 				result.set(cur[0], !interpolate
 					? columns.map(c => null)
 					: columns.map(c => prev[c] == null || next[c] == null ? null : (prev[c] + next[c]) / 2));
@@ -188,7 +188,7 @@ function doAction(corr, data, selection, targetFields, cursor, act) {
 export default function Editor({ data, fields, targetFields, action }) {
 	const [u, setU] = useState();
 	const [corrections, setCorrections] = useState(null);
-	const [threshold, setThreshold] = useState(.3);
+	const [threshold, setThreshold] = useState(.2);
 
 	const plotData = useMemo(() => {
 		const idx = ['time', '_corr'].concat(fields).map(f => data.fields.indexOf(f));
@@ -340,7 +340,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 			<div style={{ flex: 1 }}></div>
 			{action === 'interpolate' && <div style={{ color: 'var(--color-text)', paddingBottom: '4px' }}>
 				<span>Threshold: </span>
-				<input type="number" style={{ width: '8ch' }} min=".05" max="10" step=".01"
+				<input type="number" style={{ width: '8ch' }} min=".1" max="10" step=".01"
 					defaultValue={threshold} onChange={e => setThreshold(e.target.value)}/>
 			</div>}
 			<Keybinds handle={handleRef}/>
