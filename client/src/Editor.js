@@ -28,7 +28,9 @@ const SERIES = {
 	}
 };
 
-function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, shown, setShown }) {
+function EditorGraph({ size, data, fields, setU, setSelection }) {
+	const shown = fields.length <= 1 ? fields
+		: fields.filter(f => !Object.keys(SERIES).includes(f));
 	const css = window.getComputedStyle(document.body);
 	const style = {
 		bg: css.getPropertyValue('--color-bg'),
@@ -84,18 +86,9 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 				});
 				mouseSelection = false;
 			}],
-			setScale: [(u, key) => {
-				if (key === 'x') {
-					const scale = u.scales[key];
-					setZoom({ min: scale.min, max: scale.max });
-				}
-			}],
 			setSize: [(u) => {
 				u.select.height = u.over.offsetHeight;
 				u.setSelect(u.select, false);
-			}],
-			setSeries: [(u, i, opts) => {
-				setShown(st => opts.show ? st.concat(fields[i-2]) : st.filter(f => f !== fields[i-2]));
 			}],
 			init: [u => {
 				console.log('PLOT RENDER');
@@ -106,7 +99,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoom, setZoom, sh
 				});
 			}],
 		},
-		scales: { x: { ...zoom }, _corr: { range: [1, 2] } },
+		scales: { x: {  }, _corr: { range: [1, 2] } },
 		series: [
 			{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke },
 			{
@@ -228,20 +221,29 @@ export default function Editor({ data, fields, targetFields, action }) {
 
 	const handleCorrection = (key) => {
 		if (!u) return;
-		if (key === 'j') {
+		if (key === 'd') {
 			const target = selection
 				? [selection.min, selection.max]
 				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
 			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
 			const corr = correctSpikes(data.rows.slice(...target), columns, action === 'interpolate');
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
-		} else if (['e', 'Delete', 'Insert'].includes(key)) {
+		} else if (['e', 'Delete', 'r', 'Insert'].includes(key)) {
 			if (selection || u.cursor.idx)
 				setCorrections(corr =>
 					doAction(corr, data, selection, targetFields, u.cursor.idx,
-						key === 'Insert' ? 'restore' : action));
-		} else if (key === 'Insert') {
-		} else if (key === 'u') {
+						['r', 'Insert'].includes(key) ? 'restore' : action));
+		} else if (key === 'z') {
+			if (selection) {
+				setSelection(null);
+				u.setScale('x', {
+					min: u.data[0][selection.min],
+					max: u.data[0][selection.max]
+				}, false);
+			}
+		} else if (key === 'c') {
+			// TODO: commit
+		} else if (key === 'x') {
 			setCorrections(null);
 		} else {
 			console.log(key);
@@ -277,7 +279,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 			} else if (e.key === 'End') {
 				u.setCursor({ left: u.valToPos(u.scales.x.max, 'x'), top: u.cursor.top || 0 });
 			} else if (e.key === 'Escape') {
-				u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] }, true);
+				u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] }, false);
 				setSelection(null);
 			} else {
 				handleRef.current(e.key);
@@ -289,9 +291,6 @@ export default function Editor({ data, fields, targetFields, action }) {
 
 	const graphRef = useRef();
 	const [graphSize, setGraphSize] = useState({});
-	const [zoom, setZoom] = useState({});
-	const [shown, setShown] = useState(() => fields.length <= 1 ? fields
-		: fields.filter(f => !Object.keys(SERIES).includes(f)));
 	useLayoutEffect(() => {
 		if (!graphRef.current) return;
 		const updateSize = () => setGraphSize({
@@ -307,7 +306,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 		if (u) u.setSize(graphSize);
 	}, [u, graphSize]);
 	const graph = useMemo(() => (
-		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, selection, setSelection, zoom, setZoom, shown, setShown }}/>
+		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, selection, setSelection }}/>
 	), [fields]); // eslint-disable-line
 	const interv = [0, plotData[0].length - 1].map(i => new Date(plotData[0][i]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
@@ -317,7 +316,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 		<div className="Footer">
 			<div style={{ flexShrink: 0, textAlign: 'right', position: 'relative' }}>
 				<p style={{ margin: 0 }}>{interv[0]}</p>to {interv[1]}
-				{u && (zoom.min !== plotData[0][0] || zoom.max !== plotData[0][plotData[0].length - 1])
+				{u && (u.scales.x.min !== plotData[0][0] || u.scales.x.max !== plotData[0][plotData[0].length - 1])
 					&& <div style={{
 						backgroundColor: 'rgba(0,0,0,.7)', fontSize: '16px', gap: '1em',
 						position: 'absolute', top: 0, width: '100%', height: '100%',
@@ -337,12 +336,11 @@ export default function Editor({ data, fields, targetFields, action }) {
 
 function Keybinds({ handle }) {
 	const keys = {
-		'←/→': 'Move cursor',
-		// 'Ctrl/Alt+←/→': 'Move faster',
-		// 'Shift+←/→': 'Select',
 		E: 'Action',
-		J: 'Despike',
-		U: 'Discard',
+		R: 'Restore',
+		Z: 'Zoom',
+		Y: 'Despike',
+		X: 'Discard',
 		C: 'Commit',
 	};
 	return (
@@ -353,5 +351,3 @@ function Keybinds({ handle }) {
 		</div>
 	);
 }
-
-// TODO: despike threshold setting
