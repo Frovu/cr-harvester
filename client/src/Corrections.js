@@ -65,7 +65,6 @@ function Selector({ text, options, selected, callback }) {
 }
 
 function EditorWrapper({ device, fields, targetFields, interval, action }) {
-	return <div className="Graph">{dateValue(interval[0])}<br/>{dateValue(interval[1])}</div>;
 	const query = useQuery(['editor', device, interval], async () => {
 		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
@@ -129,7 +128,13 @@ export default function Corrections({ devices }) {
 			? (settings.field && [settings.field])
 			: devices[settings.device]?.counters
 				.concat(settings.mode === 'all' ? devices[settings.device]?.fields : [])
-	), [settings, devices]);
+	), [settings.mode, settings.device, settings.field, devices]);
+
+	const [debouncedDates, setDebouncedDates] = useState(settings.dates);
+	useEffect(() => {
+		const timeout = setTimeout(() => setDebouncedDates(settings.dates), 500);
+		return () => clearTimeout(timeout);
+	}, [settings.dates]);
 
 	return (
 		<div className="Corrections">
@@ -139,7 +144,7 @@ export default function Corrections({ devices }) {
 			</div>
 			{targetFields && targetFields.length && settings.action
 				? <EditorWrapper {...{
-					device: settings.device, fields, targetFields, interval: settings.dates, action: settings.action
+					device: settings.device, fields, targetFields, interval: debouncedDates, action: settings.action
 				}}/>
 				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>INSUFFICIENT PARAMS</div>}
 		</div>

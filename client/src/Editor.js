@@ -305,7 +305,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 	}, [u, graphSize]);
 	const graph = useMemo(() => (
 		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, selection, setSelection, zoom, setZoom, shown, setShown }}/>
-	), [fields]); // eslint-disable-line
+	), [data, fields]); // eslint-disable-line
 	const interv = [0, plotData[0].length - 1].map(i => new Date(plotData[0][i]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
 		<div className="Graph" ref={graphRef}>
