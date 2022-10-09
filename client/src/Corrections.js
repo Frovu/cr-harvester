@@ -17,15 +17,17 @@ function IntervalInput({ callback, defaults }) {
 	const [mode, setMode] = useState(() => (
 		ceilEpoch(Date.now()) === ceilEpoch(defaults[1]) ? 'recent' : 'interval'
 	));
+	console.log(Object.values(state).map(dateValue));
 	const days = Math.ceil((state.end - state.start) / DAY_MS);
 	const changeValue = (what) => (e) => {
 		const value = e.target[what === 'days' ? 'valueAsNumber' : 'valueAsDate'];
 		if (value && !isNaN(value)) {
-			const newState = {
-				...state, [what]: value,
-				...(mode !== 'dates' && { start: new Date(state.end - value * DAY_MS) }),
-				...(mode === 'recent' && { end: new Date(ceilEpoch(Date.now())) })
-			};
+			const newDays = what === 'days' ? value : days;
+			const newState = { ...state, ...(what !== 'days' && { [what]: value }) };
+			if (mode === 'recent')
+				newState.end = new Date(ceilEpoch(Date.now()));
+			if (mode !== 'dates')
+				newState.start = new Date(newState.end - newDays * DAY_MS);
 			setState(newState);
 			callback([newState.start, newState.end]);
 		}

@@ -208,6 +208,9 @@ export default function Editor({ data, fields, targetFields, action }) {
 		u.setData(plotData, false);
 		u.redraw(false, false);
 	}, [u, plotData]);
+	useEffect(() => {
+		if (u) u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] });
+	}, [u, data]);
 
 	const [selection, setSelection] = useState(null);
 	useEffect(() => {
@@ -305,7 +308,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 	}, [u, graphSize]);
 	const graph = useMemo(() => (
 		<EditorGraph {...{ size: graphSize, data: plotData, fields, setU, selection, setSelection, zoom, setZoom, shown, setShown }}/>
-	), [data, fields]); // eslint-disable-line
+	), [fields]); // eslint-disable-line
 	const interv = [0, plotData[0].length - 1].map(i => new Date(plotData[0][i]*1000)?.toISOString().replace(/T.*/, ''));
 	return (<>
 		<div className="Graph" ref={graphRef}>
