@@ -5,18 +5,14 @@ import './css/Corrections.css';
 import Editor from './Editor';
 
 const DEFAULT_INTERVAL = 7; // days
-const DEFAULTS = () => ({
-	start: new Date(Math.ceil(Date.now() / 86400000 - DEFAULT_INTERVAL) * 86400000),
-	end: new Date(Math.ceil(Date.now() / 86400000) * 86400000),
-	days: DEFAULT_INTERVAL
-});
 
 const dateValue = date => date && date.toISOString().slice(0, 10);
+const TIME_MODES = ['recent', 'dates', 'interval'];
 
 function IntervalInput({ callback, defaults }) { // returns seconds from epoch
-	const modes = ['recent', 'dates', 'interval'];
-	const [mode, setMode] = useState(modes[0]);
+	const [mode, setMode] = useState(TIME_MODES[0]);
 	const [state, setState] = useState(defaults);
+	console.log(state);
 	const submit = m => {
 		state.start = m === 'dates'
 			? state.start
@@ -41,7 +37,7 @@ function IntervalInput({ callback, defaults }) { // returns seconds from epoch
 	};
 	return (
 		<>
-			<Selector text="Time:" selected={mode} options={modes} callback={changeMode}/>
+			<Selector text="Time:" selected={mode} options={TIME_MODES} callback={changeMode}/>
 			<div>
 				{ mode === 'dates' &&
 					<>
@@ -107,10 +103,14 @@ function EditorWrapper({ device, fields, targetFields, interval, action }) {
 }
 
 export default function Corrections({ devices }) {
-	const dateDefaults = DEFAULTS();
 	const [settings, setSettings] = useState(() => {
-		const state = Object.assign({}, JSON.parse(window.localStorage.getItem('corrSettings')));
-		state.dates = state.dates ? state.dates.map(d => new Date(d)) : [dateDefaults.start, dateDefaults.end];
+		const state = JSON.parse(window.localStorage.getItem('corrSettings'));
+		state.dates = state.dates && state.dates.map(d => new Date(d));
+		if (!state.dates || state.dates[0] >= state.dates[1])
+			state.dates = [
+				new Date(Math.ceil(Date.now() / 86400000 - DEFAULT_INTERVAL) * 86400000),
+				new Date(Math.ceil(Date.now() / 86400000) * 86400000)
+			];
 		return state;
 	});
 	const settingsCallback = key => value => setSettings(state => ({ ...state, [key]: value }));
@@ -144,17 +144,16 @@ export default function Corrections({ devices }) {
 				.concat(settings.mode === 'all' ? devices[settings.device]?.fields : [])
 	), [settings, devices]);
 
-	if (settings.dates && (settings.dates[1] <= settings.dates[0]))
-		settings.dates = null;
-	const interval = settings.dates ?? [dateDefaults.start, dateDefaults.end];
 	return (
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
-				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates ?? dateDefaults}/>
+				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates}/>
 			</div>
 			{targetFields && targetFields.length && settings.action
-				? <EditorWrapper {...{ device: settings.device, fields, targetFields, interval, action: settings.action }}/>
+				? <EditorWrapper {...{
+					device: settings.device, fields, targetFields, interval: settings.dates, action: settings.action
+				}}/>
 				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>INSUFFICIENT PARAMS</div>}
 		</div>
 	);
