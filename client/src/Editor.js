@@ -156,6 +156,29 @@ function correctSpikes(rows, columns, interpolate=false, threshold=.3) {
 	return result;
 }
 
+function doAction(corr, data, selection, targetFields, cursor, act) {
+	const time = data.fields.indexOf('time');
+	const newCorr = new Map([...(corr || [])]);
+	if (act === 'interpolate') {
+		if (selection) return corr; // TODO: implement
+		if (cursor < 1 || cursor >= data.rows.length - 1)
+			return corr;
+		const row = targetFields.map(f => {
+			const i = data.fields.indexOf(f);
+			const prev = data.rows[cursor-1][i], next = data.rows[cursor+1][i];
+			return prev == null || next == null ? null : (prev + next) / 2;
+		});
+		return newCorr.set(data.rows[cursor][0], row);
+	}
+	const target = selection ?? { min: cursor, max: cursor };
+	const doAct = act === 'remove'
+		? (i) => newCorr.set(data.rows[i][time], targetFields.map(f => null))
+		: (i) => newCorr.delete(data.rows[i][time]);
+	for (let i = target.min; i <= target.max; ++i)
+		doAct(i);
+	return newCorr;
+}
+
 export default function Editor({ data, fields, targetFields, action }) {
 	const [u, setU] = useState();
 	const [corrections, setCorrections] = useState(null);
@@ -196,34 +219,29 @@ export default function Editor({ data, fields, targetFields, action }) {
 		}
 	}, [u, selection]);
 
-	const handleCorrection = useMemo(() => (e) => {
-		if (e.key === 'j') {
+	const handleCorrection = (key) => {
+		if (!u) return;
+		if (key === 'j') {
 			const target = selection
 				? [selection.min, selection.max]
 				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
 			const columns = targetFields.map(f => data.fields.indexOf(f)); // FIXME
 			const corr = correctSpikes(data.rows.slice(...target), columns, action === 'interpolate');
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
-		} else if (e.key === 'e') {
-			const idx = u.cursor.idx;
-			if (idx && idx > 0 && idx < data.rows.length - 1) {
-				const corr = action === 'remove' ? targetFields.map(f => null)
-					: targetFields.map(f => {
-						const i = data.fields.indexOf(f);
-						const prev = data.rows[idx-1][i], next = data.rows[idx+1][i];
-						return prev == null || next == null ? null : (prev + next) / 2;
-					});
-				setCorrections(oldCorr => new Map([...(oldCorr || []), [data.rows[idx][0], corr]]));
-			}
-		} else if (e.key === 'u') {
+		} else if (['e', 'Delete', 'Insert'].includes(key)) {
+			if (selection || u.cursor.idx)
+				setCorrections(corr =>
+					doAction(corr, data, selection, targetFields, u.cursor.idx,
+						key === 'Insert' ? 'restore' : action));
+		} else if (key === 'Insert') {
+		} else if (key === 'u') {
 			setCorrections(null);
 		} else {
-			console.log(e.key);
+			console.log(key);
 		}
-
-	}, [u, action, data, selection, targetFields]);
+	};
 	const handleRef = useRef(handleCorrection);
-	useEffect(() => { handleRef.current = handleCorrection; }, [handleCorrection]);
+	handleRef.current = handleCorrection;
 	useEffect(() => {
 		if (!u) return;
 		const handler = (e) => {
@@ -255,7 +273,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 				u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] }, true);
 				setSelection(null);
 			} else {
-				handleRef.current(e);
+				handleRef.current(e.key);
 			}
 		};
 		window.addEventListener('keydown', handler);
@@ -305,16 +323,16 @@ export default function Editor({ data, fields, targetFields, action }) {
 				{selection && <>({selection.max-selection.min})</>}
 			</div>
 			<div style={{ flex: 1 }}></div>
-			<Keybinds/>
+			<Keybinds handle={handleRef}/>
 		</div>
 	</>);
 }
 
-function Keybinds() {
+function Keybinds({ handle }) {
 	const keys = {
 		'←/→': 'Move cursor',
-		'Ctrl/Alt+←/→': 'Move faster',
-		'Shift+←/→': 'Select',
+		// 'Ctrl/Alt+←/→': 'Move faster',
+		// 'Shift+←/→': 'Select',
 		E: 'Action',
 		J: 'Despike',
 		U: 'Discard',
@@ -323,8 +341,10 @@ function Keybinds() {
 	return (
 		<div className="Keybinds">
 			{Object.keys(keys).map(k => (
-				<div key={k} className="Keybind"><div className="Key">{k}</div>{keys[k]}</div>
+				<div key={k} className="Keybind" onClick={() => handle.current(k.toLowerCase())}><div className="Key">{k}</div>{keys[k]}</div>
 			))}
 		</div>
 	);
 }
+
+// TODO: despike threshold setting
