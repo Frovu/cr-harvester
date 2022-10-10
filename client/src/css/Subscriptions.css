@@ -1,4 +1,5 @@
 .Subscriptions {
+	text-align: center;
 	max-width: 50vw;
 	padding: 1.5em 2em 1em 2em;
 	border: 2px var(--color-border) solid;
@@ -39,8 +40,4 @@
 
 .AddEmail button {
 	margin-left: 8px;
-}
-
-input.Secret:placeholder-shown {
-	box-shadow: 0 0 16px 2px red;
 }

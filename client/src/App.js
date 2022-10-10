@@ -31,14 +31,20 @@ function App() {
 	if (query.error)
 		return <div className="App" style={{ color: 'red' }}>Failed to load stations config.<br/>{query.error.message}</div>;
 	return (
-		<>
-			<Menu activeTab={activeTab} onChange={e => setActiveTab(e.target.value)}/>
-			<div className="App">
+		<div className="App">
+			<div className="Header">
+				<Menu activeTab={activeTab} onChange={e => setActiveTab(e.target.value)}/>
+				{activeTab !== 'Status' && <div className="Secret">
+					<span>Secret key: </span>
+					<input style={{ maxWidth: '8em' }} type="password"/>
+				</div>}
+			</div>
+			<div className="AppBody">
 				{activeTab === 'Status' ? <StatusTab /> :
 					activeTab === 'Corrections' ? <Corrections devices={query.data.devices}/> :
 						<Subscriptions stations={query.data.stations}/>}
 			</div>
-		</>
+		</div>
 	);
 };
 

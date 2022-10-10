@@ -65,10 +65,10 @@ router.post('/corrections', async (req, res) => {
 });
 
 router.delete('/corrections', async (req, res) => {
-	const dev = req.query.dev;
-	const from = new Date(parseInt(req.query.from) * 1000);
-	const to   = new Date(parseInt(req.query.to) * 1000);
-	if (!req.query.secret || !stations.authorize(req.query.secret))
+	const dev = req.body.dev;
+	const from = new Date(parseInt(req.body.from) * 1000);
+	const to   = new Date(parseInt(req.body.to) * 1000);
+	if (!req.body.secret || !stations.authorize(req.body.secret))
 		return res.sendStatus(401);
 	if (!dev || !stations.list().devices[dev] || isNaN(from) || isNaN(to) || to <= from)
 		return res.sendStatus(400);

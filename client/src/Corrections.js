@@ -80,13 +80,19 @@ function EditorWrapper({ device, fields, targetFields, interval, action }) {
 		return data;
 	});
 
+	// const correct = useMutation((dev, corrections, actFields) => {
+	//
+	// }, {
+	//
+	// });
+
 	if (query.isLoading)
 		return <div className="Graph">LOADING...</div>;
 	if (query.error)
 		return <div className="Graph">ERROR<br/>{query.error.message}</div>;
 	if (!query.data?.rows?.length)
 		return <div className="Graph">NO DATA</div>;
-	return <Editor {...{ data: query.data, fields, targetFields, action }}data={query.data} fields={fields} targetFields={targetFields}/>;
+	return <Editor {...{ data: query.data, fields, targetFields, action }}/>;
 }
 
 export default function Corrections({ devices }) {

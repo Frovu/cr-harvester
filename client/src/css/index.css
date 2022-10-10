@@ -10,17 +10,14 @@
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 
-	margin: 0;
-
 	background-color: var(--color-bg);
 	color: var(--color-text);
 	color-scheme: dark;
 }
 
-/* ::selection, ::-moz-selection {
-	color: red;
-	background: yellow;
-} */
+body {
+	margin: 0;
+}
 
 .u-series, .u-value, .u-title {
 	font-family: 'Roboto Mono', monospace;

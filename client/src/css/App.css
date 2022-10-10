@@ -1,21 +1,43 @@
 .App {
+	-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+	-moz-box-sizing: border-box;    /* Firefox, other Gecko */
+	box-sizing: border-box;         /* Opera/IE 8+ */
+	height: 100vh;
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+}
+
+.AppBody {
+	flex: 1;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
-	margin: 0 auto;
-	text-align: center;
-	width: fit-content;
-	min-height: 80vh;
-	gap: 16px;
+	align-items: center;
+	/* gap: 16px; */
+}
+
+.Header {
+	gap: 4px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
 }
 
 .Menu {
+	/* margin-right: auto; */
 	display: flex;
 	gap: 4px;
-	margin: 8px auto 8px;
-	padding: 4px;
-	width: fit-content;
 	user-select: none;
+	margin: 4px 0 8px 0;
+}
+
+.Secret {
+	text-align: right;
+	width: 16em;
+	/* display: none; */
+	/* flex: 1; */
+	/* margin-left: auto; */
 }
 
 .MenuButton input {
