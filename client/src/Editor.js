@@ -212,7 +212,7 @@ export default function Editor({ data, fields, targetFields, action }) {
 		u.redraw(false, false);
 	}, [u, plotData]);
 	useEffect(() => {
-		if (u) u.setScale('x', { min: u.data[0][0], max: u.data[0][u.data[0].length-1] });
+		if (u) u.setScale('x', { min: data.rows[0][0], max: data.rows[data.rows.length-1][0] });
 	}, [u, data]);
 
 	const [selection, setSelection] = useState(null);
@@ -353,7 +353,7 @@ function Keybinds({ handle }) {
 		E: 'Action',
 		R: 'Restore',
 		Z: 'Zoom',
-		Y: 'Despike',
+		D: 'Despike',
 		X: 'Discard',
 		C: 'Commit',
 	};
