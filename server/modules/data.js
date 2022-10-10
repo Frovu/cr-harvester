@@ -6,6 +6,8 @@ pg.types.setTypeParser(1114, function(stringValue) {
 	return new Date(stringValue + '+0000'); // interpret pg 'timestamp without time zone' as utc
 });
 
+const STUB_VALUE = -9999;
+
 const SHORT_NAMES = {
 	key: 'k',
 	time: 'dt',
@@ -89,12 +91,32 @@ async function unsubscribe(station, email) {
 async function select(device, where, limit, serverTime=false) {
 	const dev = config.devices[device];
 	const fields = (dev.counters || []).concat(dev.fields || []);
-	const sel = fields.map(f => `COALESCE(c.${f}, r.${f}) as ${f}`).join(', ');
+	const sel = fields.map(f =>
+		`CASE WHEN c.${f} IS NULL THEN r.${f} WHEN c.${f} = ${STUB_VALUE}` +
+		`THEN NULL ELSE c.${f} END as ${f}`).join(', ');
 	const text = `SELECT * FROM (SELECT
 		${serverTime ? 'EXTRACT(EPOCH FROM r.server_time)::integer as server_time, ':''}EXTRACT(EPOCH FROM r.time)::integer as time,
 		${sel}, uptime, info FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
 		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) rev ORDER BY time`;
 	return await pool.query({ text, rowMode: 'array' });
+}
+
+async function deleteCorrections(device, from, to) {
+	const text = `DELETE FROM ${tableCorr(device)} WHERE
+		time >= to_timestamp(${(from/1000).toFixed()}) AND time <= to_timestamp(${(to/1000).toFixed()})`;
+	return await pool.query(text);
+}
+
+async function insertCorrections(device, corrs, rawFields) {
+	const dev = config.devices[device];
+	const fields = rawFields.filter(f => dev.counters.includes(f) || dev.fields.includes(f));
+	const values = corrs.map(row =>
+		`(to_timestamp(${parseInt(row[0])}),${
+			row[1].map(v => v == null ? STUB_VALUE : parseInt(v)).join()})`).join(',\n');
+
+	const text = `INSERT INTO ${tableCorr(device)} (time,${fields.join()}) VALUES\n${values}
+	ON CONFLICT (time) DO UPDATE SET (${fields.join()} = (${fields.map(f=>'EXCLUDED.'+f).join()})`;
+	return await pool.query(text);
 }
 
 async function selectAll(limit) {
@@ -138,10 +160,11 @@ async function insert(body) {
 			continue; // FIXME: log maybe?
 		row[name] = val;
 	}
-	const query = `INSERT INTO ${tableRaw(devId)} (time,${Object.keys(row).join()})
-VALUES (to_timestamp(${(time.getTime()/1000).toFixed()}),${Object.keys(row).map((_,i)=>'$'+(i+1)).join()})
-ON CONFLICT (time) DO UPDATE SET (server_time,${Object.keys(row).join()}
-= (CURRENT_TIMESTAMP,${Object.keys(row).map(c=>'EXCLUDED.'+c).join()})`;
+	const fields = Object.keys(row);
+	const query = `INSERT INTO ${tableRaw(devId)} (time,${fields.join()})
+VALUES (to_timestamp(${(time/1000).toFixed()}),${fields.map((_,i)=>'$'+(i+1)).join()})
+ON CONFLICT (time) DO UPDATE SET (server_time,${fields.join()}
+= (CURRENT_TIMESTAMP,${fields.map(c=>'EXCLUDED.'+c).join()})`;
 	await pool.query(query, Object.values(row));
 	return 200;
 }
@@ -154,5 +177,7 @@ module.exports = {
 	selectAll,
 	selectInterval,
 	select,
-	insert
+	insert,
+	deleteCorrections,
+	insertCorrections
 };
