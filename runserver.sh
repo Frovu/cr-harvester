@@ -1,2 +1,2 @@
 #!/bin/sh
-(cd server; nodemon --exec npm start)
+(cd server; nodemon server.js)

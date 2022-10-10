@@ -8,7 +8,7 @@ router.post('/subscriptions', async (req, res) => {
 	const body = req.body;
 	if (!body || !body.station || !body.email)
 		return badRequest('Bad request!');
-	if (!stations.list()[body.station])
+	if (!stations.list().stations[body.station])
 		return badRequest('Invalid station name!');
 	if (!stations.validate(body.email))
 		return badRequest('Invalid email address!');
@@ -46,6 +46,40 @@ router.get('/status', async (req, res) => {
 
 router.get('/stations', (req, res) => {
 	return res.status(200).json(stations.list());
+});
+
+router.post('/corrections', async (req, res) => {
+	const body = req.body;
+	if (!body.secret || !stations.authorize(body.secret))
+		return res.sendStatus(401);
+	if (!body.fields || !body.corrections || !stations.list().devices[body.device])
+		return res.sendStatus(400);
+	try {
+		await db.insertCorrections(body.device, body.corrections, body.fields);
+		global.log(`Corrections: ${body.device} <= [${body.corrections.length}] ${body.fields.join()}`);
+		return res.sendStatus(200);
+	} catch(e) {
+		global.log(`Exception in corrections: ${e.stack}`);
+		return res.sendStatus(500);
+	}
+});
+
+router.delete('/corrections', async (req, res) => {
+	const dev = req.query.dev;
+	const from = new Date(parseInt(req.query.from) * 1000);
+	const to   = new Date(parseInt(req.query.to) * 1000);
+	if (!req.query.secret || !stations.authorize(req.query.secret))
+		return res.sendStatus(401);
+	if (!dev || !stations.list().devices[dev] || isNaN(from) || isNaN(to) || to <= from)
+		return res.sendStatus(400);
+	try {
+		await db.deleteCorrections(dev, from, to);
+		global.log(`Corrections: ${dev} delete [${[from, to].map(d => d.toISOString().replace(/\..*/,'')).join(', ')}]`);
+		return res.sendStatus(200);
+	} catch(e) {
+		global.log(`Exception in corrections delete: ${e.stack}`);
+		return res.sendStatus(500);
+	}
 });
 
 router.get('/data', async (req, res) => {
