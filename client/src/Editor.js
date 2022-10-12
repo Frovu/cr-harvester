@@ -214,6 +214,7 @@ export default function Editor({ data, commitCorrection, commitErase }) {
 		u.redraw(false, false);
 	}, [u, plotData]);
 	useEffect(() => {
+		setCorrections(null);
 		if (u) u.setScale('x', { min: data.rows[0][0], max: data.rows[data.rows.length-1][0] });
 	}, [u, data]);
 
@@ -254,9 +255,10 @@ export default function Editor({ data, commitCorrection, commitErase }) {
 				}, false);
 			}
 		} else if (key === 'Y') {
-			commitErase(...targetArea);
+			commitErase(...targetArea.map(i => u.data[0][i]));
 		} else if (key === 'C') {
-			// TODO: commit
+			if (corrections)
+				commitCorrection(corrections);
 		} else if (key === 'X') {
 			setCorrections(null);
 		} else {

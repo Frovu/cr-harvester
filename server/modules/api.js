@@ -67,18 +67,18 @@ router.post('/corrections', async (req, res) => {
 });
 
 router.delete('/corrections', async (req, res) => {
-	const dev = req.body.devices;
+	const dev = req.body.device;
 	const from = new Date(parseInt(req.body.from) * 1000);
 	const to   = new Date(parseInt(req.body.to) * 1000);
 	if (!req.body.secret || !stations.authorize(req.body.secret))
 		return res.sendStatus(401);
-	if (!stations.list().devices[dev])
+	if (!dev || !stations.list().devices[dev])
 		return res.sendStatus(404);
-	if (!dev || isNaN(from) || isNaN(to) || to <= from)
+	if (isNaN(from) || isNaN(to) || to <= from)
 		return res.sendStatus(400);
 	try {
 		await db.deleteCorrections(dev, from, to);
-		global.log(`Corrections: ${dev} delete [${[from, to].map(d => d.toISOString().replace(/\..*/,'')).join(', ')}]`);
+		global.log(`Corrections: ${dev} delete [${[from, to].map(d => d.toISOString().replace(/\..*/,'')).join(' ')}]`);
 		return res.sendStatus(200);
 	} catch(e) {
 		global.log(`Exception in corrections delete: ${e.stack}`);

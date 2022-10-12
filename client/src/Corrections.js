@@ -98,24 +98,24 @@ function CorrectionsWrapper({ data }) {
 		}
 	};
 	const correctMutation = useMutation(async (correctionsMap) => {
-		const corrections = correctionsMap.entries();
+		const corrections = [...correctionsMap.entries()];
 		const error = await mutateCorrections('POST', { device, secret, fields, corrections });
 		if (error) throw new Error(error);
 	}, mutationCallbacks);
-	const eraseMutation = useMutation(async (from, to) => {
-		const error = await mutateCorrections('POST', { device, secret, fields, from, to });
+	const eraseMutation = useMutation(async ({ from, to }) => {
+		const error = await mutateCorrections('DELETE', { device, secret, from, to });
 		if (error) throw new Error(error);
 	}, mutationCallbacks);
 
 	const commitCorrection = useCallback((corrections) => {
-		const fieldsList = allFields.length === fields.length ? 'all' : fields.join();
-		const text = `Save total of ${corrections.size} corrections of ${fieldsList}?`;
+		const fieldsList = allFields.length === fields.length ? 'all fields' : fields.join();
+		const text = `Save total of ${corrections.size} corrections for ${fieldsList}?`;
 		setConfirmation({ text, action: () => correctMutation.mutate(corrections) });
 	}, [correctMutation, allFields, fields]);
 	const commitErase = useCallback((from, to) => {
 		const format = tst => new Date(tst * 1e3).toISOString().replace(/\..*/, '').replace('T', ' ');
 		const text = `Erase EVERY correction for time between ${format(from)} and ${format(to)}?`;
-		setConfirmation({ text, action: () => eraseMutation.mutate(from, to) });
+		setConfirmation({ text, action: () => eraseMutation.mutate({ from, to }) });
 	}, [eraseMutation]);
 
 	useEffect(() => {
