@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
 
 import StatusTab from './StatusTab';
@@ -24,6 +24,7 @@ function Menu({ onChange, activeTab }) {
 
 function App() {
 	const [activeTab, setActiveTab] = useState('Corrections'); // FIXME:
+	const secretRef = useRef();
 	const query = useQuery('stations',
 		() => fetch(process.env.REACT_APP_API + '/stations').then(res => res.json()));
 	if (query.isLoading)
@@ -36,13 +37,13 @@ function App() {
 				<Menu activeTab={activeTab} onChange={e => setActiveTab(e.target.value)}/>
 				{activeTab !== 'Status' && <div className="Secret">
 					<span>Secret key: </span>
-					<input style={{ maxWidth: '8em' }} type="password"/>
+					<input style={{ maxWidth: '8em' }} defaultValue={secretRef.current} type="password" ref={secretRef}/>
 				</div>}
 			</div>
 			<div className="AppBody">
 				{activeTab === 'Status' ? <StatusTab /> :
-					activeTab === 'Corrections' ? <Corrections devices={query.data.devices}/> :
-						<Subscriptions stations={query.data.stations}/>}
+					activeTab === 'Corrections' ? <Corrections devices={query.data.devices} secret={secretRef}/> :
+						<Subscriptions stations={query.data.stations} secret={secretRef}/>}
 			</div>
 		</div>
 	);

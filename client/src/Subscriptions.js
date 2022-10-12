@@ -20,7 +20,7 @@ function emailMutation(action, station, secret, email) {
 function AddEmail({ station, secret, callback }) {
 	const queryClient = useQueryClient();
 	const [email, setEmail] = useState();
-	const mutation = useMutation(emailMutation('sub', station, secret, email), {
+	const mutation = useMutation(emailMutation('sub', station, secret.current.value, email), {
 		onError: (error) => callback({ error }),
 		onSuccess: (data) => {
 			queryClient.invalidateQueries(['subs']);
@@ -37,7 +37,7 @@ function AddEmail({ station, secret, callback }) {
 
 function Email({ email, station, secret, callback }) {
 	const queryClient = useQueryClient();
-	const mutation = useMutation(emailMutation('unsub', station, secret, email), {
+	const mutation = useMutation(emailMutation('unsub', station, secret.current.value, email), {
 		onError: (error) => callback({ error }),
 		onSuccess: (data) => {
 			queryClient.invalidateQueries(['subs']);
@@ -52,9 +52,8 @@ function Email({ email, station, secret, callback }) {
 	);
 }
 
-export default function Subscriptions({ stations }) {
+export default function Subscriptions({ stations, secret }) {
 	const [report, setReport] = useState();
-	const [secret, setSecret] = useState();
 	useEffect(() => {
 		setTimeout(() => setReport(null), 3000);
 	}, [report]);
@@ -65,7 +64,6 @@ export default function Subscriptions({ stations }) {
 		return <div className="Subscriptions" style={{ color: 'red' }}>{query.error?.message}</div>;
 	return (
 		<div className="Subscriptions">
-			<input className="Secret" name="secret" type="password" placeholder="Secret" onChange={e => setSecret(e.target.value)}/>
 			{Object.keys(stations).map(s => (
 				<div key={s}>
 					<h4>{stations[s].name}</h4>
