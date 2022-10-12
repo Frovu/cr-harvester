@@ -37,7 +37,8 @@ function App() {
 				<Menu activeTab={activeTab} onChange={e => setActiveTab(e.target.value)}/>
 				{activeTab !== 'Status' && <div className="Secret">
 					<span>Secret key: </span>
-					<input style={{ maxWidth: '8em' }} type="password" ref={secretRef}/>
+					<input style={{ maxWidth: '8em' }} type="password" required pattern=".+"
+						ref={secretRef} onKeyDown={e => e.stopPropagation()}/>
 				</div>}
 			</div>
 			<div className="AppBody">

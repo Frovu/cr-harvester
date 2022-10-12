@@ -29,6 +29,8 @@
 }
 
 .Secret {
+	position: relative;
+	z-index: 129;
 	text-align: right;
 	width: 16em;
 }
