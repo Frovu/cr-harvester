@@ -19,7 +19,7 @@ router.post('/subscriptions', async (req, res) => {
 			await db.unsubscribe(body.station, body.email);
 		else
 			await db.subscribe(body.station, body.email);
-		global.log(`Subscriptions: ${body.station} <= ${body.email} (${body.action})`);
+		global.log(`Subscriptions: ${body.station} ${body.action === 'sub' ? '++' : '--'} ${body.email}`);
 		return res.sendStatus(200);
 	} catch(e) {
 		global.log(`Exception in subscribe: ${e}`);
@@ -52,8 +52,10 @@ router.post('/corrections', async (req, res) => {
 	const body = req.body;
 	if (!body.secret || !stations.authorize(body.secret))
 		return res.sendStatus(401);
-	if (!body.fields || !body.corrections || !stations.list().devices[body.device])
+	if (!body.fields || !body.corrections)
 		return res.sendStatus(400);
+	if (!stations.list().devices[body.device])
+		return res.sendStatus(404);
 	try {
 		await db.insertCorrections(body.device, body.corrections, body.fields);
 		global.log(`Corrections: ${body.device} <= [${body.corrections.length}] ${body.fields.join()}`);
@@ -65,12 +67,14 @@ router.post('/corrections', async (req, res) => {
 });
 
 router.delete('/corrections', async (req, res) => {
-	const dev = req.body.dev;
+	const dev = req.body.devices;
 	const from = new Date(parseInt(req.body.from) * 1000);
 	const to   = new Date(parseInt(req.body.to) * 1000);
 	if (!req.body.secret || !stations.authorize(req.body.secret))
 		return res.sendStatus(401);
-	if (!dev || !stations.list().devices[dev] || isNaN(from) || isNaN(to) || to <= from)
+	if (!stations.list().devices[dev])
+		return res.sendStatus(404);
+	if (!dev || isNaN(from) || isNaN(to) || to <= from)
 		return res.sendStatus(400);
 	try {
 		await db.deleteCorrections(dev, from, to);
@@ -84,10 +88,9 @@ router.delete('/corrections', async (req, res) => {
 
 router.get('/data', async (req, res) => {
 	try {
-		const dev = req.query.dev;
+		const dev = req.query.device || req.query.dev;
 		const from = new Date(parseInt(req.query.from) * 1000);
 		const to   = new Date(parseInt(req.query.to) * 1000);
-
 		if (!dev || !stations.list().devices[dev])
 			return res.sendStatus(404);
 		if (isNaN(from) || isNaN(to) || to <= from)

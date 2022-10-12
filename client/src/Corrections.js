@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useQuery } from 'react-query';
+import React, { useEffect, useState, useMemo, useCallback, useContext } from 'react';
+import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import './css/Corrections.css';
 import Editor from './Editor';
@@ -65,7 +65,57 @@ function Selector({ text, options, selected, callback }) {
 	);
 }
 
-function EditorWrapper({ device, fields, targetFields, interval, action }) {
+const EditorContext = React.createContext();
+
+async function mutateCorrections(action, body) {
+	const res = await fetch(process.env.REACT_APP_API + '/corrections', {
+		method: action,
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body)
+	});
+	if (res.status === 200)
+		return null;
+	if (res.status === 404)
+		return `unknown device: ${body.device}`;
+	if (res.status === 401)
+		return 'wrong secret key';
+	if (res.status === 400)
+		return 'bad request';
+	return 'HTTP ' + res.status;
+}
+
+function CorrectionsWrapper({ data }) {
+	const queryClient = useQueryClient();
+	const { device, secret, targetFields: fields } = useContext(EditorContext);
+	const [report, setReport] = useState();
+	const mutationCallbacks = {
+		onError: (error) => setReport(`Error: ${error}`),
+		onSuccess: () => queryClient.invalidateQueries(['editor'])
+	};
+	const correctMutation = useMutation(async (corrections) => {
+		const error = mutateCorrections('POST', { device, secret, fields, corrections });
+		if (error) setReport(`Error: ${error}`);
+	}, mutationCallbacks);
+	const eraseMutation = useMutation(async (from, to) => {
+		const error = mutateCorrections('POST', { device, secret, fields, from, to });
+		if (error) setReport(`Error: ${error}`);
+	}, mutationCallbacks);
+
+	const commitCorrection = useCallback((corrections) => {
+
+	}, [correctMutation]);
+	const commitErase = useCallback((corrections) => {
+
+	}, [eraseMutation]);
+
+	return (<>
+
+		<Editor {...{ data, commitCorrection, commitErase }}/>
+	</>);
+}
+
+function EditorWrapper() {
+	const { device, interval } = useContext(EditorContext);
 	const query = useQuery(['editor', device, interval], async () => {
 		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
@@ -80,22 +130,16 @@ function EditorWrapper({ device, fields, targetFields, interval, action }) {
 		return data;
 	});
 
-	// const correct = useMutation((dev, corrections, actFields) => {
-	//
-	// }, {
-	//
-	// });
-
 	if (query.isLoading)
 		return <div className="Graph">LOADING...</div>;
 	if (query.error)
 		return <div className="Graph">ERROR<br/>{query.error.message}</div>;
 	if (!query.data?.rows?.length)
 		return <div className="Graph">NO DATA</div>;
-	return <Editor {...{ data: query.data, fields, targetFields, action }}/>;
+	return <CorrectionsWrapper data={query.data}/>;
 }
 
-export default function Corrections({ devices }) {
+export default function Corrections({ devices, secret }) {
 	const [settings, setSettings] = useState(() => {
 		const state = JSON.parse(window.localStorage.getItem('corrSettings'));
 		state.dates = state.dates && state.dates.map(d => new Date(d));
@@ -143,17 +187,23 @@ export default function Corrections({ devices }) {
 		return () => clearTimeout(timeout);
 	}, [settings.dates]);
 
+	const context = {
+		device: settings.device,
+		action: settings.action,
+		interval: debouncedDates,
+		fields, targetFields, secret,
+	};
 	return (
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
 				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates} throttle={500}/>
 			</div>
-			{targetFields && targetFields.length && settings.action
-				? <EditorWrapper {...{
-					device: settings.device, fields, targetFields, interval: debouncedDates, action: settings.action
-				}}/>
-				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>INSUFFICIENT PARAMS</div>}
+			<EditorContext.Provider value={context}>
+				{targetFields && targetFields.length && settings.action
+					? <EditorWrapper/>
+					: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>INSUFFICIENT PARAMS</div>}
+			</EditorContext.Provider>
 		</div>
 	);
 }
