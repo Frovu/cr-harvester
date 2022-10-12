@@ -86,7 +86,7 @@ async function mutateCorrections(action, body) {
 function CorrectionsWrapper({ data }) {
 	const queryClient = useQueryClient();
 	const { device, secret: secretRef, targetFields: fields, fields: allFields } = useContext(EditorContext);
-	const secret = secretRef.current.value;
+	const secret = secretRef.current?.value;
 	const [report, setReport] = useState();
 	const [confirmation, setConfirmation] = useState();
 

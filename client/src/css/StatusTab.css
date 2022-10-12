@@ -4,6 +4,7 @@
 	border: 2px var(--color-border) solid;
 	display: flex;
 	align-items: center;
+	min-width: calc(148px + 12em);
 }
 
 .DeviceStatus {
