@@ -71,6 +71,7 @@ export default function DevicePane(props) {
 	const time = props.data.columns[fields.indexOf('time')];
 	const uptime = props.data.columns[fields.indexOf('uptime')];
 	const online = Date.now()/1000 - time[time.length-1] < 3 * period;
+	const maxWidth = `min(calc(144px * ${Math.min(toDraw.length, 7)} - 8px), calc(100vw - 16em))`;
 	return (
 		<div className="DevicePane">
 			<div className="DeviceStatus">
@@ -82,11 +83,11 @@ export default function DevicePane(props) {
 				</p>
 				<p style={{ fontSize: '12px' }}>
 					{new Date(time[time.length-1]*1000).toISOString().replace(/\..*/,'').replace('T',' ')}<br/>
-					UPT: {intervalToString(uptime[uptime.length-1]*period)}<br/>
+					UPT: {uptime ? (intervalToString(uptime[uptime.length-1]*period)) : 'N/A'}<br/>
 					IP: {props.data.ip || 'N/A'}
 				</p>
 			</div>
-			<div className="StatusPlots" style={{ opacity: online ? 1 : .5 }}>
+			<div className="StatusPlots" style={{ maxWidth, opacity: online ? 1 : .5 }}>
 				{toDraw.map(i => [i, fields[i]]).map(([i, f]) => (
 					<StatusPlot
 						key={f} title={f.split('_')[0]}

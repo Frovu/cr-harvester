@@ -14,10 +14,10 @@
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	/* gap: 16px; */
 }
 
 .Header {
+	z-index: 1;
 	gap: 4px;
 	display: flex;
 	flex-wrap: wrap;
@@ -25,7 +25,6 @@
 }
 
 .Menu {
-	/* margin-right: auto; */
 	display: flex;
 	gap: 4px;
 	user-select: none;
@@ -35,9 +34,6 @@
 .Secret {
 	text-align: right;
 	width: 16em;
-	/* display: none; */
-	/* flex: 1; */
-	/* margin-left: auto; */
 }
 
 .MenuButton input {

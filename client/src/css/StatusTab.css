@@ -1,4 +1,5 @@
 .DevicePane {
+	margin: 8px .5em .5em 0;
 	text-align: center;
 	border: 2px var(--color-border) solid;
 	display: flex;
@@ -6,7 +7,8 @@
 }
 
 .DeviceStatus {
-	padding: 0 24px 0 32px;
+	flex-shrink: 0;
+	min-width: 12em;
 }
 
 .DeviceStatus p {
@@ -15,15 +17,15 @@
 
 .StatusPlots {
 	margin: 8px;
+	margin-left: 0;
 	gap: 8px;
-	display: inline-flex;
-	flex-wrap: wrap;
-	justify-content: left;
+	display: inline-grid;
+	grid-template-columns: repeat(auto-fill, 136px);
 }
 
 .StatusPlot {
+	display: inline-block;
 	position: relative;
-	/* margin: 8px 8px 8px 0; */
 	padding: 2px;
 	border: 2px var(--color-border) solid;
 }
@@ -40,9 +42,10 @@
 }
 
 .Info {
+	z-index: 0;
 	text-align: center;
 	position: absolute;
 	color: var(--color-border);
-	bottom: 8px;
-	left: 8px;
+	top: 8px;
+	right: 8px;
 }

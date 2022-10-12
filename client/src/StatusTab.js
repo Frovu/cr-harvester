@@ -64,9 +64,9 @@ export default function StatusTab(props) {
 					key={id}
 					id={id}
 					data={query.data[id]}
-					updatedAt={query.dataUpdatedAt}
 				/>
 			)) : ''}
 		</>
 	);
 }
+// <StatusPane id={'stub'} data={{fields: [ "server_time", "time", "c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "pressure" ], rows: [1], columns: [[1662560940], [1662560880]].concat(Array(14).fill().map(a=>[1]))}}/>
