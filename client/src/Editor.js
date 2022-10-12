@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useMemo, useContext } from 'react';
 
+import { EditorContext } from './Corrections.js';
 import UPlotReact from 'uplot-react';
 import 'uplot/dist/uPlot.min.css';
 import uPlot from 'uplot/dist/uPlot.esm.js';
@@ -185,7 +186,8 @@ function doAction(corr, data, selection, targetFields, cursor, act) {
 	return newCorr;
 }
 
-export default function Editor({ data, fields, targetFields, action }) {
+export default function Editor({ data, commitCorrection, commitErase }) {
+	const { fields, targetFields, action } = useContext(EditorContext);
 	const [u, setU] = useState();
 	const [corrections, setCorrections] = useState(null);
 	const [threshold, setThreshold] = useState(.2);
@@ -231,12 +233,12 @@ export default function Editor({ data, fields, targetFields, action }) {
 
 	const handleCorrection = (key) => {
 		if (!u) return;
+		const targetArea = selection
+			? [selection.min, selection.max]
+			: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
 		if (key === 'D') {
-			const target = selection
-				? [selection.min, selection.max]
-				: [u.valToIdx(u.scales.x.min), u.valToIdx(u.scales.x.max)];
 			const columns = targetFields.map(f => data.fields.indexOf(f));
-			const corr = correctSpikes(data.rows.slice(...target), columns, action, threshold);
+			const corr = correctSpikes(data.rows.slice(...targetArea), columns, action, threshold);
 			setCorrections(oldCorr => new Map([...(oldCorr || []), ...corr]));
 		} else if (['E', 'Delete', 'R', 'Insert'].includes(key)) {
 			if (selection || u.cursor.idx)
@@ -251,6 +253,8 @@ export default function Editor({ data, fields, targetFields, action }) {
 					max: u.data[0][selection.max]
 				}, false);
 			}
+		} else if (key === 'Y') {
+			commitErase(...targetArea);
 		} else if (key === 'C') {
 			// TODO: commit
 		} else if (key === 'X') {
@@ -351,9 +355,10 @@ export default function Editor({ data, fields, targetFields, action }) {
 function Keybinds({ handle }) {
 	const keys = {
 		E: 'Action',
-		R: 'Restore',
+		R: 'Undo',
 		Z: 'Zoom',
 		D: 'Despike',
+		Y: 'Clean',
 		X: 'Discard',
 		C: 'Commit',
 	};

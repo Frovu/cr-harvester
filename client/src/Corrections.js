@@ -3,6 +3,7 @@ import { useQueryClient, useQuery, useMutation } from 'react-query';
 
 import './css/Corrections.css';
 import Editor from './Editor';
+export const EditorContext = React.createContext();
 
 const DAY_MS = 86400000;
 const DEFAULT_INTERVAL = 7; // days
@@ -65,8 +66,6 @@ function Selector({ text, options, selected, callback }) {
 	);
 }
 
-const EditorContext = React.createContext();
-
 async function mutateCorrections(action, body) {
 	const res = await fetch(process.env.REACT_APP_API + '/corrections', {
 		method: action,
@@ -86,30 +85,65 @@ async function mutateCorrections(action, body) {
 
 function CorrectionsWrapper({ data }) {
 	const queryClient = useQueryClient();
-	const { device, secret, targetFields: fields } = useContext(EditorContext);
+	const { device, secret: secretRef, targetFields: fields, fields: allFields } = useContext(EditorContext);
+	const secret = secretRef.current.value;
 	const [report, setReport] = useState();
+	const [confirmation, setConfirmation] = useState();
+
 	const mutationCallbacks = {
-		onError: (error) => setReport(`Error: ${error}`),
-		onSuccess: () => queryClient.invalidateQueries(['editor'])
+		onError: (error) => setReport(error.toString()),
+		onSuccess: () => {
+			queryClient.invalidateQueries(['editor']);
+			setConfirmation(null);
+		}
 	};
-	const correctMutation = useMutation(async (corrections) => {
-		const error = mutateCorrections('POST', { device, secret, fields, corrections });
-		if (error) setReport(`Error: ${error}`);
+	const correctMutation = useMutation(async (correctionsMap) => {
+		const corrections = correctionsMap.entries();
+		const error = await mutateCorrections('POST', { device, secret, fields, corrections });
+		if (error) throw new Error(error);
 	}, mutationCallbacks);
 	const eraseMutation = useMutation(async (from, to) => {
-		const error = mutateCorrections('POST', { device, secret, fields, from, to });
-		if (error) setReport(`Error: ${error}`);
+		const error = await mutateCorrections('POST', { device, secret, fields, from, to });
+		if (error) throw new Error(error);
 	}, mutationCallbacks);
 
 	const commitCorrection = useCallback((corrections) => {
-
-	}, [correctMutation]);
-	const commitErase = useCallback((corrections) => {
-
+		const fieldsList = allFields.length === fields.length ? 'all' : fields.join();
+		const text = `Save total of ${corrections.size} corrections of ${fieldsList}?`;
+		setConfirmation({ text, action: () => correctMutation.mutate(corrections) });
+	}, [correctMutation, allFields, fields]);
+	const commitErase = useCallback((from, to) => {
+		const format = tst => new Date(tst * 1e3).toISOString().replace(/\..*/, '').replace('T', ' ');
+		const text = `Erase EVERY correction for time between ${format(from)} and ${format(to)}?`;
+		setConfirmation({ text, action: () => eraseMutation.mutate(from, to) });
 	}, [eraseMutation]);
 
-	return (<>
+	useEffect(() => {
+		if (!confirmation) return;
+		const handler = (e) => {
+			if (e.key === 'Enter')
+				confirmation.action();
+			if (e.key === 'Escape')
+				setConfirmation(null);
+		};
+		window.addEventListener('keydown', handler);
+		return () => window.removeEventListener('keydown', handler);
+	}, [confirmation]);
+	useEffect(() => {
+		const timeout = setTimeout(() => setReport(null), 2000);
+		return () => clearTimeout(timeout);
+	}, [report]);
 
+	return (<>
+		{confirmation && <><div className="ConfirmationWrapper"/>
+			<div className="Confirmation">
+				<h3>Confirmation required</h3>
+				<p>{confirmation.text}</p>
+				<p style={{ color: 'red' }}>{report}</p>
+				<button onClick={confirmation.action}>Procced</button>
+				<button onClick={() => setConfirmation(null)}>Cancel</button>
+			</div>
+		</>}
 		<Editor {...{ data, commitCorrection, commitErase }}/>
 	</>);
 }

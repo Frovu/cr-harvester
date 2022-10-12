@@ -37,7 +37,7 @@ function App() {
 				<Menu activeTab={activeTab} onChange={e => setActiveTab(e.target.value)}/>
 				{activeTab !== 'Status' && <div className="Secret">
 					<span>Secret key: </span>
-					<input style={{ maxWidth: '8em' }} defaultValue={secretRef.current} type="password" ref={secretRef}/>
+					<input style={{ maxWidth: '8em' }} type="password" ref={secretRef}/>
 				</div>}
 			</div>
 			<div className="AppBody">
