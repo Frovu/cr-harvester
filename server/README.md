@@ -1,23 +1,3 @@
-## Server part of system
-
-### Backend features
-+ connect to sql database
-+ accept data from section devices along with identifier
-+ store data in one sql table but keeping device relation
-+ serve data and devices list publicly
-
-### Frontend features
-TBD
-
-### Detailed API description
-
-##### `GET /api/data`
-
-##### `POST /api/data`
-
-refer to root README
-
-##### `GET /api/sections`
 
 ### `.env` file example
 ```py
@@ -35,42 +15,23 @@ SMTP_PASS=
 ADMIN_SECERT=1234
 ```
 
-### Postgres tables description
-
-```sql
-CREATE ROLE nm LOGIN PASSWORD '';
-CREATE DATABASE nm;
-
-CREATE TABLE devices (
-	id SERIAL PRIMARY KEY,
-	key TEXT NOT NULL,
-	channels INTEGER,
-	description TEXT,
-	type TEXT NOT NULL DEFAULT 'nm'
-);
-
-INSERT INTO devices (key, channels, description)
-VALUES ('anon', 12, 'An unregistered or deconfigured device');
-```
-
-### stations.json content example
+### config.json content example
 
 ```json
 {
-	"Moscow Neutron Monitor": {
-		"description": "Neutron monitor located at IZMIRAN, has 5 sections, 6 channels in each. <link>",
-		"devices": [""],
-		"mailing": {
-			"events": ["sfrovis@gmail.com"],
-			"issues": ["sfrovis@gmail.com"]
+	"devices": {
+		"device_id": {
+			"description": "text",
+			"counters": ["c1", "c2", "c3", "c4"],
+			"fields": ["temperature"],
+			"secret": "1234"
 		}
 	},
-	"Muon Pioneer": {
-		"description": "Single direction muon telescope. <link>",
-		"devices": ["muon-anon"],
-		"mailing": {
-			"events": ["sfrovis@gmail.com"],
-			"issues": ["sfrovis@gmail.com"]
+	"stations": {
+		"station_id": {
+			"name": "",
+			"description": "text",
+			"devices": ["device_id"]
 		}
 	}
 }

@@ -1,0 +1,52 @@
+.DevicePane {
+	margin: 8px .5em .5em 0;
+	text-align: center;
+	border: 2px var(--color-border) solid;
+	display: flex;
+	align-items: center;
+	min-width: calc(148px + 12em);
+}
+
+.DeviceStatus {
+	flex-shrink: 0;
+	min-width: 12em;
+}
+
+.DeviceStatus p {
+	margin: 1em;
+}
+
+.StatusPlots {
+	margin: 8px;
+	margin-left: 0;
+	gap: 8px;
+	display: inline-grid;
+	grid-template-columns: repeat(auto-fill, 136px);
+}
+
+.StatusPlot {
+	display: inline-block;
+	position: relative;
+	padding: 2px;
+	border: 2px var(--color-border) solid;
+}
+
+.StatusPlotTitle {
+	color: var(--color-text-dark);
+	user-select: none;
+	z-index: 2;
+	position: absolute;
+	top: 2px;
+	right: -2px;
+	width: 100%;
+	text-align: center;
+}
+
+.Info {
+	z-index: 0;
+	text-align: center;
+	position: absolute;
+	color: var(--color-border);
+	top: 8px;
+	right: 8px;
+}

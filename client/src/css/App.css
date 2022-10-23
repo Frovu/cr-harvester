@@ -1,0 +1,56 @@
+.App {
+	height: 100vh;
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+}
+
+.AppBody {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+.Header {
+	z-index: 1;
+	gap: 4px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+
+.Menu {
+	display: flex;
+	gap: 4px;
+	user-select: none;
+	margin: 4px 0 8px 0;
+}
+
+.Secret {
+	position: relative;
+	z-index: 129;
+	text-align: right;
+	width: 16em;
+}
+
+.MenuButton input {
+	display: none;
+}
+
+.MenuButton label {
+	cursor: pointer;
+	padding: 2px 8px 2px 8px;
+	border: 2px var(--color-border) solid;
+}
+
+.MenuButton input[type="radio"]:not(:checked) + label:hover {
+	background-color: var(--color-border);
+}
+
+.MenuButton input[type="radio"]:checked + label {
+	color: var(--color-text);
+	border: 2px var(--color-text) solid;
+	font-weight: bold;
+}

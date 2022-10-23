@@ -1,6 +1,6 @@
 {
-  "name": "neutron-monitor",
-  "version": "1.0.0",
+  "name": "cr-harvester",
+  "version": "2.0.0",
   "description": "Backend for embedded system",
   "main": "server.js",
   "scripts": {
@@ -8,23 +8,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Frovu/neutron-monitor.git"
+    "url": "git+https://github.com/Frovu/cr-harvester.git"
   },
   "author": "Frovy",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Frovu/neutron-monitor/issues"
+    "url": "https://github.com/Frovu/cr-harvester/issues"
   },
-  "homepage": "https://github.com/Frovu/neutron-monitor#readme",
+  "homepage": "https://github.com/Frovu/cr-harvester#readme",
   "dependencies": {
     "dotenv": "^8.2.0",
     "email-validator": "^2.0.4",
     "express": "^4.17.1",
     "nodemailer": "^6.7.2",
     "pg": "^8.5.1"
-  },
-  "devDependencies": {
-    "jest": "^26.6.3",
-    "supertest": "^6.1.3"
   }
 }
