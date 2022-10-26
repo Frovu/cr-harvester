@@ -26,7 +26,7 @@ function App() {
 	const [activeTab, setActiveTab] = useState('Corrections'); // FIXME:
 	const secretRef = useRef();
 	const query = useQuery('stations',
-		() => fetch(process.env.REACT_APP_API + '/stations').then(res => res.json()));
+		() => fetch((process.env.REACT_APP_API || '') + 'api/stations').then(res => res.json()));
 	if (query.isLoading)
 		return <div className="App">Loading...</div>;
 	if (query.error)

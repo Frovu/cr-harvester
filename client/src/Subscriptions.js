@@ -5,7 +5,7 @@ import './css/Subscriptions.css';
 
 function emailMutation(action, station, secret, email) {
 	return async () => {
-		const res = await fetch(process.env.REACT_APP_API + '/subscriptions', {
+		const res = await fetch((process.env.REACT_APP_API || '') + 'api/subscriptions', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ action, station, secret, email })
@@ -58,7 +58,7 @@ export default function Subscriptions({ stations, secret }) {
 		setTimeout(() => setReport(null), 3000);
 	}, [report]);
 	const query = useQuery(['subs'], () =>
-		fetch(process.env.REACT_APP_API + '/subscriptions').then(res => res.json()));
+		fetch((process.env.REACT_APP_API || '') + 'api/subscriptions').then(res => res.json()));
 	if (query.isLoading) return;
 	if (query.error)
 		return <div className="Subscriptions" style={{ color: 'red' }}>{query.error?.message}</div>;

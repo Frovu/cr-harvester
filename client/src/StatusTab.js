@@ -42,7 +42,7 @@ function StatusInfo(props) {
 export default function StatusTab(props) {
 	const query = useQuery('stats', async () => {
 		const para = new URLSearchParams({ limit: props.rowLimit || DEFAULT_LIMIT }).toString();
-		const resp = await fetch(process.env.REACT_APP_API + '/status?' + para);
+		const resp = await fetch((process.env.REACT_APP_API || '') + 'api/status?' + para);
 		const data = await resp.json();
 		for (const dev in data) {
 			const len = data[dev].rows.length, colLen = data[dev].fields.length, rows = data[dev].rows;

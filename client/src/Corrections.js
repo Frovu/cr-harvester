@@ -67,7 +67,7 @@ function Selector({ text, options, selected, callback }) {
 }
 
 async function mutateCorrections(action, body) {
-	const res = await fetch(process.env.REACT_APP_API + '/corrections', {
+	const res = await fetch((process.env.REACT_APP_API || '') + 'api/corrections', {
 		method: action,
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(body)
@@ -151,7 +151,7 @@ function CorrectionsWrapper({ data }) {
 function EditorWrapper() {
 	const { device, interval } = useContext(EditorContext);
 	const query = useQuery(['editor', device, interval], async () => {
-		const resp = await fetch(process.env.REACT_APP_API + '/data?' + new URLSearchParams({
+		const resp = await fetch((process.env.REACT_APP_API || '') + 'api/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
 			to: epoch(interval[1]),
 			dev: device
