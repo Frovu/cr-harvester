@@ -47,8 +47,8 @@ function intervalToString(seconds) {
 	const days = Math.floor(seconds / 86400);
 	const hours = Math.floor(seconds / 3600);
 	const minutes = Math.floor(seconds / 60);
-	const n = days || hours || minutes || seconds.toFixed(0);
-	return `${n} ${days ? 'day' : hours ? 'hour' : minutes ? 'minute' : 'second'}${n!=1?'s':''}`;
+	const n = days || hours || minutes || Math.floor(seconds);
+	return `${n} ${days ? 'day' : hours ? 'hour' : minutes ? 'minute' : 'second'}${n!==1?'s':''}`;
 }
 
 const COLORS = {
@@ -69,7 +69,8 @@ export default function DevicePane(props) {
 		(f === 'temperature' && fields.includes('temperature_ext')) ? null : i
 	)).filter(i => i != null);
 	const time = props.data.columns[fields.indexOf('time')];
-	const uptime = props.data.columns[fields.indexOf('uptime')];
+	const uptimes = props.data.columns[fields.indexOf('uptime')];
+	const uptime = uptimes[uptimes.length-1] * period;
 	const online = Date.now()/1000 - time[time.length-1] < 3 * period;
 	const maxWidth = `min(calc(144px * ${Math.min(toDraw.length, 7)} - 8px), calc(100vw - 16em))`;
 	return (
@@ -83,7 +84,7 @@ export default function DevicePane(props) {
 				</p>
 				<p style={{ fontSize: '12px' }}>
 					{new Date(time[time.length-1]*1000).toISOString().replace(/\..*/,'').replace('T',' ')}<br/>
-					UPT: {uptime ? (intervalToString(uptime[uptime.length-1]*period)) : 'N/A'}<br/>
+					UPT: {uptime ? intervalToString(uptime) : 'N/A'}<br/>
 					IP: {props.data.ip || 'N/A'}
 				</p>
 			</div>
