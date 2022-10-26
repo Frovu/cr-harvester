@@ -156,7 +156,7 @@ async function insert(body) {
 	}
 	for (const name of dev.fields.concat(['uptime', 'info'])) {
 		let val = body[SHORT_NAMES[name]] ?? body[name];
-		if (val == undefined || !dev.fields.includes(name))
+		if (val == undefined)
 			continue;
 		if (TYPES[name] === 'int')
 			val = parseInt(val);
@@ -166,7 +166,6 @@ async function insert(body) {
 			continue; // FIXME: log maybe?
 		row[name] = val;
 	}
-	console.log(row)
 	const fields = Object.keys(row);
 	const query = `INSERT INTO ${tableRaw(devId)} (time,${fields.join()})
 VALUES (to_timestamp(${(time/1000).toFixed()}),${fields.map((_,i)=>'$'+(i+1)).join()})
