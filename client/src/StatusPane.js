@@ -48,7 +48,7 @@ function intervalToString(seconds) {
 	const hours = Math.floor(seconds / 3600);
 	const minutes = Math.floor(seconds / 60);
 	const n = days || hours || minutes || seconds.toFixed(0);
-	return `${n} ${days ? 'day' : hours ? 'hour' : minutes ? 'minute' : 'second'}${n>1?'s':''}`;
+	return `${n} ${days ? 'day' : hours ? 'hour' : minutes ? 'minute' : 'second'}${n!=1?'s':''}`;
 }
 
 const COLORS = {

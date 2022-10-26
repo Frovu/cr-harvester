@@ -154,7 +154,7 @@ async function insert(body) {
 		if (!isNaN(val))
 			row[name] = val;
 	}
-	for (const name of dev.fields) {
+	for (const name of dev.fields.concat(['uptime', 'info'])) {
 		let val = body[SHORT_NAMES[name]] ?? body[name];
 		if (val == undefined || !dev.fields.includes(name))
 			continue;
