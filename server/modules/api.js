@@ -106,9 +106,9 @@ router.post('/data', async (req, res) => {
 	const from = req.headers['x-forwarded-for'];
 	try {
 		const status = await db.insert(req.body);
-		res.sendStatus(status);
 		stations.gotData(req.body.k, from);
 		global.log(`[${status}] (${from}) ${JSON.stringify(req.body)}`);
+		res.sendStatus(status);
 	} catch(e) {
 		global.log(`Exception inserting data: ${e}`);
 		global.log(`[500] (${from}) ${JSON.stringify(req.body)}`);

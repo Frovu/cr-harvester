@@ -140,15 +140,21 @@ async function insert(body) {
 	const devId = body.k ?? body.key;
 	const dt = body.dt ?? body.time;
 	const dev = config.devices[devId];
+	const counts = body.counts ?? body[SHORT_NAMES.counts]
 	const time = new Date(dt?.toString().includes('T') ? dt : parseInt(dt) * 1000);
 	if (dev == undefined)
 		return 404;
-	if (isNaN(time) || time == undefined || devId == undefined)
+	if (!counts || isNaN(time) || time == undefined || devId == undefined)
 		return 400;
 	if (dev.secret && (body.s ?? body.secret) !== dev.secret)
 		return 403;
 	const row = {};
-	for (const name in TYPES) {
+	for (const [i, name] of dev.counters.entries()) {
+		const val = parseInt(counts[i])
+		if (!isNaN(val))
+			row[name] = val;
+	}
+	for (const name of dev.fields) {
 		let val = body[SHORT_NAMES[name]] ?? body[name];
 		if (val == undefined || !dev.fields.includes(name))
 			continue;
@@ -160,6 +166,7 @@ async function insert(body) {
 			continue; // FIXME: log maybe?
 		row[name] = val;
 	}
+	console.log(row)
 	const fields = Object.keys(row);
 	const query = `INSERT INTO ${tableRaw(devId)} (time,${fields.join()})
 VALUES (to_timestamp(${(time/1000).toFixed()}),${fields.map((_,i)=>'$'+(i+1)).join()})

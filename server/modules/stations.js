@@ -39,7 +39,7 @@ function gotData(devId, ipAddr) {
 	ipCache[devId] = ipAddr;
 	const dev = config.devices[devId];
 	clearInterval(watchdogs[devId]);
-	if (!dev.watchdog) return;
+	if (!dev?.watchdog) return;
 	const timeout = dev.watchdog === 'default' ? DEFAULT_WATCHDOG_MS : parseInt(dev.watchdog) * 60000;
 	if (isNaN(timeout))
 		return global.log(`Invalid watchdog value for ${devId}: \`${dev.watchdog}\``);
