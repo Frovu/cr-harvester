@@ -163,7 +163,7 @@ async function insert(body) {
 	const fields = Object.keys(row);
 	const query = `INSERT INTO ${tableRaw(devId)} (time,${fields.join()})
 VALUES (to_timestamp(${(time/1000).toFixed()}),${fields.map((_,i)=>'$'+(i+1)).join()})
-ON CONFLICT (time) DO UPDATE SET (server_time,${fields.join()}
+ON CONFLICT (time) DO UPDATE SET (server_time,${fields.join()})
 = (CURRENT_TIMESTAMP,${fields.map(c=>'EXCLUDED.'+c).join()})`;
 	await pool.query(query, Object.values(row));
 	return 200;
