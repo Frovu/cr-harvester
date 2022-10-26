@@ -23,7 +23,7 @@ function Menu({ onChange, activeTab }) {
 }
 
 function App() {
-	const [activeTab, setActiveTab] = useState('Corrections'); // FIXME:
+	const [activeTab, setActiveTab] = useState('Status');
 	const secretRef = useRef();
 	const query = useQuery('stations',
 		() => fetch((process.env.REACT_APP_API || '') + 'api/stations').then(res => res.json()));
