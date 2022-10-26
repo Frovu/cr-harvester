@@ -175,7 +175,7 @@ function EditorWrapper() {
 
 export default function Corrections({ devices, secret }) {
 	const [settings, setSettings] = useState(() => {
-		const state = JSON.parse(window.localStorage.getItem('corrSettings'));
+		const state = JSON.parse(window.localStorage.getItem('harvesterCorrSettings')) || {};
 		state.dates = state.dates && state.dates.map(d => new Date(d));
 		if (!state.dates || state.dates[0] >= state.dates[1])
 			state.dates = [
@@ -185,7 +185,7 @@ export default function Corrections({ devices, secret }) {
 		return state;
 	});
 	const settingsCallback = key => value => setSettings(state => ({ ...state, [key]: value }));
-	useEffect(() => window.localStorage.setItem('corrSettings', JSON.stringify(settings)), [settings]);
+	useEffect(() => window.localStorage.setItem('harvesterCorrSettings', JSON.stringify(settings)), [settings]);
 	const options = {
 		device: Object.keys(devices),
 		mode: ['single', 'counters', 'all'],
