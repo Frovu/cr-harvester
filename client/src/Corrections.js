@@ -154,6 +154,7 @@ function EditorWrapper() {
 		const resp = await fetch((process.env.REACT_APP_API || '') + 'api/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
 			to: epoch(interval[1]),
+			period: 60,
 			dev: device
 		}).toString());
 		if (resp.status === 404)
