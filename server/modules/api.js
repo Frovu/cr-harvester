@@ -89,14 +89,17 @@ router.delete('/corrections', async (req, res) => {
 router.get('/data', async (req, res) => {
 	try {
 		const dev = req.query.device || req.query.dev;
-		const from = new Date(parseInt(req.query.from) * 1000);
-		const to   = new Date(parseInt(req.query.to) * 1000);
+		const from = parseInt(req.query.from);
+		const to   = parseInt(req.query.to);
+		const period = req.query.period ? parseInt(req.query.period) : 3600;
 		const fields = (req.query.fields ?? req.query.what)?.split(',');
+		if (![60, 300, 3600, 86400].includes(period))
+			return res.status(400).send('Supported periods are 60, 300, 3600, 86400');
 		if (!dev || !stations.list().devices[dev])
-			return res.sendStatus(404);
-		if (isNaN(from) || isNaN(to) || to <= from)
-			return res.sendStatus(400);
-		return res.status(200).json(await db.selectInterval(dev, from, to, fields));
+			return res.status(404).send('Device not found');
+		if (isNaN(from) || isNaN(to) || to - from < period)
+			return res.status(400).send('Bad period');
+		return res.status(200).json(await db.selectInterval(dev, from, to, period, fields));
 	} catch(e) {
 		global.log(`Exception in get data: ${e.stack}`);
 		return res.sendStatus(500);

@@ -88,17 +88,17 @@ async function unsubscribe(station, email) {
 	await pool.query(text, [station, email]);
 }
 
-async function select(device, what=null, where=null, limit=null, serverTime=false) {
+async function select({device, fields: what=null, limit=null, serverTime=false, from, to}) {
 	const dev = config.devices[device];
-	const fields = what ?? (dev.counters || []).concat(dev.fields || []);
+	const fields = (dev.counters || []).concat(dev.fields || []).filter(f => !what || what.includes(f));
 	const sel = fields.map(f =>
-		`CASE WHEN c.${f} IS NULL THEN r.${f} WHEN c.${f} = ${STUB_VALUE}` +
+		`CASE WHEN c.${f} IS NULL THEN r.${f} WHEN c.${f} = ${STUB_VALUE} ` +
 		`THEN NULL ELSE c.${f} END as ${f}`).join(', ') + (what ? '' : ', uptime, info');
-	const text = `SELECT * FROM (SELECT
-		${serverTime ? 'EXTRACT(EPOCH FROM r.server_time)::integer as server_time, ':''}EXTRACT(EPOCH FROM r.time)::integer as time,
+	const where = (from && to) ? `r.time >= to_timestamp(${from}) AND r.time <= to_timestamp(${to})` : null;
+	const corrected = `SELECT ${serverTime ? 'EXTRACT(EPOCH FROM r.server_time)::integer as server_time, ':''}EXTRACT(EPOCH FROM r.time)::integer as time,
 		${sel} FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
-		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) rev ORDER BY time`;
-	return await pool.query({ text, rowMode: 'array' });
+		${where ? 'WHERE '+where : ''} ${limit ? 'ORDER BY time DESC LIMIT '+limit : ''}`;
+	return await pool.query({ text: `SELECT * FROM (${corrected}) corr ORDER BY time`, rowMode: 'array' });
 }
 
 async function deleteCorrections(device, from, to) {
@@ -124,16 +124,37 @@ async function selectAll(limit) {
 		limit = 60;
 	const result = {};
 	for (const dev in config.devices) {
-		const res = await select(dev, null, null, limit, true);
+		const res = await select({ device: dev, limit, serverTime: true});
 		result[dev] = { rows: res.rows, fields: res.fields.map(f => f.name) };
 	}
 	return result;
 }
 
-async function selectInterval(device, from, to, fields) {
-	const where = `r.time >= to_timestamp(${(from/1000).toFixed()}) AND r.time <= to_timestamp(${(to/1000).toFixed()})`;
-	const res = await select(device, fields, where);
-	return { rows: res.rows, fields: res.fields.map(f => f.name) };
+async function selectInterval(device, dfrom, dto, period, fields) {
+	const from = Math.floor(dfrom/period) * period;
+	const to = Math.ceil(dto/period) * period;
+	const res = await select({ device, fields, from, to });
+	const rows = period === 60 ? res.rows : Array(Math.ceil((to-from)/period)).fill().map(() => Array(res.fields.length + 1).fill());
+	if (period !== 60) {
+		const data = res.rows, flen = res.fields.length;
+		const acc = Array(flen);
+		let cursor = 0;
+		for (let i=0; i < rows.length; ++i) {
+			const time = from + period * i;
+			rows[i][0] = time;
+			acc.fill(0);
+			while(cursor < data.length && data[cursor][0] < time + period) {
+				for (let fi=1; fi < flen; ++fi)
+					acc[fi] += data[cursor][fi];
+				++acc[0];
+				++cursor;
+			}
+			for (let fi=1; fi < flen; ++fi)
+				rows[i][fi] = acc[0] > 0 ? Math.round(acc[fi] / acc[0] * 1000) / 1000 : null;
+			rows[i][flen] = acc[0];
+		}
+	}
+	return { rows, fields: res.fields.map(f => f.name).concat('count') };
 }
 
 async function insert(body) {
