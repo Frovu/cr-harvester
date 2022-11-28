@@ -88,15 +88,15 @@ async function unsubscribe(station, email) {
 	await pool.query(text, [station, email]);
 }
 
-async function select(device, where, limit, serverTime=false) {
+async function select(device, what=null, where=null, limit=null, serverTime=false) {
 	const dev = config.devices[device];
-	const fields = (dev.counters || []).concat(dev.fields || []);
+	const fields = what ?? (dev.counters || []).concat(dev.fields || []);
 	const sel = fields.map(f =>
 		`CASE WHEN c.${f} IS NULL THEN r.${f} WHEN c.${f} = ${STUB_VALUE}` +
-		`THEN NULL ELSE c.${f} END as ${f}`).join(', ');
+		`THEN NULL ELSE c.${f} END as ${f}`).join(', ') + (what ? '' : ', uptime, info');
 	const text = `SELECT * FROM (SELECT
 		${serverTime ? 'EXTRACT(EPOCH FROM r.server_time)::integer as server_time, ':''}EXTRACT(EPOCH FROM r.time)::integer as time,
-		${sel}, uptime, info FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
+		${sel} FROM ${tableRaw(device)} r LEFT OUTER JOIN ${tableCorr(device)} c ON c.time = r.time
 		${where ? 'WHERE '+where : ''} ORDER BY time DESC ${limit ? 'LIMIT '+limit : ''}) rev ORDER BY time`;
 	return await pool.query({ text, rowMode: 'array' });
 }
@@ -124,15 +124,15 @@ async function selectAll(limit) {
 		limit = 60;
 	const result = {};
 	for (const dev in config.devices) {
-		const res = await select(dev, null, limit, true);
+		const res = await select(dev, null, null, limit, true);
 		result[dev] = { rows: res.rows, fields: res.fields.map(f => f.name) };
 	}
 	return result;
 }
 
-async function selectInterval(device, from, to) {
+async function selectInterval(device, from, to, fields) {
 	const where = `r.time >= to_timestamp(${(from/1000).toFixed()}) AND r.time <= to_timestamp(${(to/1000).toFixed()})`;
-	const res = await select(device, where);
+	const res = await select(device, fields, where);
 	return { rows: res.rows, fields: res.fields.map(f => f.name) };
 }
 
@@ -140,7 +140,7 @@ async function insert(body) {
 	const devId = body.k ?? body.key;
 	const dt = body.dt ?? body.time;
 	const dev = config.devices[devId];
-	const counts = body.counts ?? body[SHORT_NAMES.counts]
+	const counts = body.counts ?? body[SHORT_NAMES.counts];
 	const time = new Date(dt?.toString().includes('T') ? dt : parseInt(dt) * 1000);
 	if (dev == undefined)
 		return 404;
@@ -150,7 +150,7 @@ async function insert(body) {
 		return 403;
 	const row = {};
 	for (const [i, name] of dev.counters.entries()) {
-		const val = parseInt(counts[i])
+		const val = parseInt(counts[i]);
 		if (!isNaN(val))
 			row[name] = val;
 	}

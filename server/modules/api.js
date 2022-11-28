@@ -91,11 +91,12 @@ router.get('/data', async (req, res) => {
 		const dev = req.query.device || req.query.dev;
 		const from = new Date(parseInt(req.query.from) * 1000);
 		const to   = new Date(parseInt(req.query.to) * 1000);
+		const fields = (req.query.fields ?? req.query.what)?.split(',');
 		if (!dev || !stations.list().devices[dev])
 			return res.sendStatus(404);
 		if (isNaN(from) || isNaN(to) || to <= from)
 			return res.sendStatus(400);
-		return res.status(200).json(await db.selectInterval(dev, from, to));
+		return res.status(200).json(await db.selectInterval(dev, from, to, fields));
 	} catch(e) {
 		global.log(`Exception in get data: ${e.stack}`);
 		return res.sendStatus(500);
