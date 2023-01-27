@@ -24,20 +24,20 @@ if __name__ == '__main__':
     print('\n' + '\n'.join([f'{l} -> {r}' for l, r in zip(parse, columns)]))
 
     data = []
-    src = (SRC + 'Result_Pre_Final/') if datetime.now().year % 100 == year and datetime.now().month == month else SRC
-    print(src, year, month)
+    src = SRC if datetime.now().year % 100 == year and datetime.now().month == month else (SRC + 'Result_Pre_Final/')
     fn = f'{src}{(year%100):02d}{month:02d}FCRL_Result.01u.txt'
     print('reading', fn)
     with open(fn) as f:
         lines = f.readlines()
-    indexes = [lines[0].split().index(c) for c in columns]
+    indexes = [lines[0].split().index(c) for c in parse]
     for line in lines[2:]:
         sp = line.split()
         time = sp[0]+' '+sp[1]
         data.append([time] + [sp[i] for i in indexes])
-    print(f'\ninserting {len(data)} rows')
+    table = dev.replace(' ', '_').replace('-', '_') + '_raw'
+    print(f'\n {table} <- [{len(data)}]')
     with pg_conn.cursor() as cursor:
-        q = f'INSERT INTO {dev}_raw (time, {", ".join(columns)}) VALUES %s ON CONFLICT(time) DO NOTHING'
+        q = f'INSERT INTO {table} (time, {", ".join(columns)}) VALUES %s ON CONFLICT(time) DO NOTHING'
         psycopg2.extras.execute_values(cursor, q, data)
     if input('done! commit? [y/n]: ').lower() == 'y':
         pg_conn.commit()
