@@ -73,7 +73,7 @@ void debug_printf(const char * fmt, ...);
 #define LED_DATA_GPIO_Port GPIOA
 #define LED_ERROR_Pin GPIO_PIN_15
 #define LED_ERROR_GPIO_Port GPIOA
-#define BUTTON_RESET_Pin GPIO_PIN_3
+#define BUTTON_RESET_Pin GPIO_PIN_4
 #define BUTTON_RESET_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 #define LED_ON(led) \

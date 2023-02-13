@@ -81,30 +81,28 @@ typedef enum {
 #define TIME_TRUST_PERIOD          720 // how long is time accounted as trusted after ntp sync
 
 #define BASE_EVENT_WATCHDOG_MS   (BASE_PERIOD_LEN_MS + 10000)
-#define CHANNELS_COUNT           12
-// if and only if more than DATA_BUFFER_LEN lines fail to send external flash memory is used
+#define CHANNELS_COUNT           6
 #define DATA_BUFFER_LEN          64
 
 #define GPIO_RTC_IRQ    GPIO_PIN_1
 
-#define GPIO_CH_0       GPIO_PIN_12
-#define GPIO_CH_1       GPIO_PIN_13
-#define GPIO_CH_2       GPIO_PIN_14
-#define GPIO_CH_3       GPIO_PIN_15
-#define GPIO_CH_4       GPIO_PIN_8
-#define GPIO_CH_5       GPIO_PIN_9
-#define GPIO_CH_6       GPIO_PIN_10
-#define GPIO_CH_7       GPIO_PIN_11
-#define GPIO_CH_8       GPIO_PIN_4
-#define GPIO_CH_9       GPIO_PIN_5
-#define GPIO_CH_10      GPIO_PIN_6
-#define GPIO_CH_11      GPIO_PIN_7
+#define GPIO_CH_0       GPIO_PIN_11
+#define GPIO_CH_1       GPIO_PIN_10
+#define GPIO_CH_2       GPIO_PIN_9
+#define GPIO_CH_3       GPIO_PIN_8
+#define GPIO_CH_4       GPIO_PIN_15
+#define GPIO_CH_5       GPIO_PIN_14
+// #define GPIO_CH_6       GPIO_PIN_10
+// #define GPIO_CH_7       GPIO_PIN_11
+// #define GPIO_CH_8       GPIO_PIN_3
+// #define GPIO_CH_9       GPIO_PIN_5
+// #define GPIO_CH_10      GPIO_PIN_6
+// #define GPIO_CH_11      GPIO_PIN_7
 
 static const uint16_t CHANNELS_GPIO_LIST[CHANNELS_COUNT] =
 {
-  GPIO_CH_0, GPIO_CH_1, GPIO_CH_2, GPIO_CH_3,
-  GPIO_CH_4, GPIO_CH_5, GPIO_CH_6, GPIO_CH_7,
-  GPIO_CH_8, GPIO_CH_9, GPIO_CH_10, GPIO_CH_11
+  GPIO_CH_0, GPIO_CH_1, GPIO_CH_2, GPIO_CH_3, GPIO_CH_4, GPIO_CH_5 //,
+  // GPIO_CH_6, GPIO_CH_7, GPIO_CH_8, GPIO_CH_9, GPIO_CH_10, GPIO_CH_11
 };
 
 #define GPIO_TO_N(gpio) (__builtin_ctz(gpio))
