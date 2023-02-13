@@ -94,7 +94,7 @@ void counter_init()
   if (IS_SET(FLAG_FLASH_OK)) {
     /* Set and save default settings if RESET button is pressed */
     if (HAL_GPIO_ReadPin(BUTTON_RESET_GPIO_Port, BUTTON_RESET_Pin) == GPIO_PIN_RESET) {
-      debug_printf("INIT DEFAULT CONFIG\r\n");
+      debug_printf("init: RESET CONFIG\r\n");
       config_set_default();
       config_save();
       for(uint16_t i=0; i<16; ++i) {
