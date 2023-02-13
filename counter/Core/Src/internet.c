@@ -3,7 +3,7 @@
 
 extern SPI_HandleTypeDef hspi1;
 wiz_NetInfo netinfo = {
-  .mac = {0x00, 0x08, 0xdc, 0x7b, 0xa3, 0xdf},
+  .mac = {0x00, 0x08, 0xdc, 0x7b, 0xa3, 0xde},
   .dhcp = NETINFO_DHCP
 };
 
@@ -71,6 +71,9 @@ uint8_t W5500_Init()
   // wizchip_getnetinfo(&netinfo);
   if (cfg->dhcp_mode == NETINFO_DHCP)
     DHCP_init(DHCP_SOCKET, dhcp_buf);
+  else
+    debug_printf("init: static ip: %d.%d.%d.%d\r\n",
+        netinfo.ip[0], netinfo.ip[1], netinfo.ip[2], netinfo.ip[3]);
   DNS_init(DNS_SOCKET, dns_buf);
   return 1;
 }
