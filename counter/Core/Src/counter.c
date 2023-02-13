@@ -256,12 +256,19 @@ void event_loop() {
     /* ********************* DHCP / DNS RUN SECTION *********************** */
     if (IS_SET(FLAG_W5500_OK)) {
       if (IS_SET(FLAG_DHCP_RUN))
-      { /* The DHCP client is ran repeatedly when corresponding flag is set */
-        int8_t dhcr = W5500_RunDHCP();
-        if (dhcr > 0) {
+      {
+        if (cfg->dhcp_mode == NETINFO_DHCP)
+        { /* The DHCP client is ran repeatedly when corresponding flag is set */
+          int8_t dhcr = W5500_RunDHCP();
+          if (dhcr > 0) {
+            TOGGLE(FLAG_DHCP_RUN);
+          } else if (dhcr < 0) {
+            TOGGLE(FLAG_W5500_OK);
+          }
+        }
+        else
+        {
           TOGGLE(FLAG_DHCP_RUN);
-        } else if (dhcr < 0) {
-          TOGGLE(FLAG_W5500_OK);
         }
       }
       if (IS_SET(FLAG_DNS_RUN) && NOT_SET(FLAG_DHCP_RUN) &&  (HAL_GetTick()-last_dns_attempt > 500))
@@ -269,6 +276,7 @@ void event_loop() {
         if (run_dns_queries()) {
           TOGGLE(FLAG_DNS_RUN);
         } else {
+          TOGGLE(FLAG_W5500_OK);
           last_dns_attempt = HAL_GetTick();
         }
       }
