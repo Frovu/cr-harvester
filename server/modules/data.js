@@ -39,8 +39,8 @@ const pool = module.exports.pool = new pg.Pool({
 	port: process.env.DB_PORT,
 });
 
-const tableRaw = (id) => id.replace(' ', '_').replace('-', '_') + '_raw';
-const tableCorr = (id) => id.replace(' ', '_').replace('-', '_') + '_corr';
+const tableRaw = (id) => id.replace(/\s|-/g, '_') + '_raw';
+const tableCorr = (id) => id.replace(/\s|-/g, '_') + '_corr';
 
 async function initTables() {
 	if (!config.devices || !Object.keys(config.devices).length)
