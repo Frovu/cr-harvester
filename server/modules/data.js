@@ -134,27 +134,27 @@ async function selectInterval(device, dfrom, dto, period, fields) {
 	const from = Math.floor(dfrom/period) * period;
 	const to = Math.ceil(dto/period) * period;
 	const res = await select({ device, fields, from, to });
-	const rows = period === 60 ? res.rows : Array(Math.ceil((to-from)/period)).fill().map(() => Array(res.fields.length + 1).fill());
+	const rows = period === 60 ? res.rows : Array(Math.ceil((to-from)/period)).fill().map(() => Array(res.fields.length).fill());
 	if (period !== 60) {
 		const data = res.rows, flen = res.fields.length;
-		const acc = Array(flen);
-		let cursor = 0;
-		for (let i=0; i < rows.length; ++i) {
-			const time = from + period * i;
-			rows[i][0] = time;
-			acc.fill(0);
-			while(cursor < data.length && data[cursor][0] < time + period) {
-				for (let fi=1; fi < flen; ++fi)
-					acc[fi] += data[cursor][fi];
-				++acc[0];
-				++cursor;
+		for (let columnIdx = 1; columnIdx < flen; ++columnIdx) {
+			let cursor = 0, accum = 0, count = 0;
+			for (let rowIdx=0; rowIdx < rows.length; ++rowIdx) {
+				const time = from + period * rowIdx;
+				rows[rowIdx][0] = time;
+				while(cursor < data.length && data[cursor][0] < time + period) {
+					if (data[cursor][columnIdx] != null) {
+						accum += data[cursor][columnIdx];
+						++count;
+					}
+					++cursor;
+				}
+				rows[rowIdx][columnIdx] = count > 0 ? Math.round(accum / count * 1000) / 1000 : null;
 			}
-			for (let fi=1; fi < flen; ++fi)
-				rows[i][fi] = acc[0] > 0 ? Math.round(acc[fi] / acc[0] * 1000) / 1000 : null;
-			rows[i][flen] = acc[0];
+
 		}
 	}
-	return { rows, fields: res.fields.map(f => f.name).concat('count') };
+	return { rows, fields: res.fields.map(f => f.name) };
 }
 
 async function insert(body) {
