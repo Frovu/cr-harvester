@@ -92,9 +92,9 @@ router.get('/data', async (req, res) => {
 		const from = parseInt(req.query.from);
 		const to   = parseInt(req.query.to);
 		const period = req.query.period ? parseInt(req.query.period) : 3600;
-		const fields = (req.query.fields ?? req.query.what)?.split(',');
-		if (![60, 300, 3600, 86400].includes(period))
-			return res.status(400).send('Supported periods are 60, 300, 3600, 86400');
+		const fields = (req.query.fields ?? req.query.what)?.split(',') ?? ['upper', 'lower', 'vertical', 'pressure', 'temperature_ext', 'voltage'];
+		if (![60, 300, 600, 3600, 86400].includes(period))
+			return res.status(400).send('Supported periods are 60, 300, 600, 3600, 86400');
 		if (!dev || !stations.list().devices[dev])
 			return res.status(404).send('Device not found');
 		if (isNaN(from) || isNaN(to) || to - from < period)
