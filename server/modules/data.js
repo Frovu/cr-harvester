@@ -138,8 +138,9 @@ async function selectInterval(device, dfrom, dto, period, fields) {
 	if (period !== 60) {
 		const data = res.rows, flen = res.fields.length;
 		for (let columnIdx = 1; columnIdx < flen; ++columnIdx) {
-			let cursor = 0, accum = 0, count = 0;
+			let cursor = 0;
 			for (let rowIdx=0; rowIdx < rows.length; ++rowIdx) {
+				let accum = 0, count = 0;
 				const time = from + period * rowIdx;
 				rows[rowIdx][0] = time;
 				while(cursor < data.length && data[cursor][0] < time + period) {
@@ -149,6 +150,7 @@ async function selectInterval(device, dfrom, dto, period, fields) {
 					}
 					++cursor;
 				}
+				console.log(columnIdx, cursor, count)
 				rows[rowIdx][columnIdx] = count > 0 ? Math.round(accum / count * 1000) / 1000 : null;
 			}
 
