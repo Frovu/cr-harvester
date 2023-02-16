@@ -198,7 +198,7 @@ export default function Editor({ data, commitCorrection, commitErase }) {
 		const columns = Array(fields.length + 2).fill().map(_ => Array(data.rows.length));
 		for (let i = 0; i < data.rows.length; ++i) {
 			for (let j = 0; j < idx.length; ++j)
-				columns[j][i] = data.rows[i][idx[j]] || null;
+				columns[j][i] = data.rows[i][idx[j]];
 			const corr = corrections?.get(columns[0][i]);
 			if (corr) {
 				for (let t = 0; t < targetIdx.length; ++t)
