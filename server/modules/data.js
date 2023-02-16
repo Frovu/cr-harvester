@@ -115,7 +115,7 @@ async function insertCorrections(device, corrs, rawFields) {
 			row[1].map(v => v == null ? STUB_VALUE : parseInt(v)).join()})`).join(',\n');
 
 	const text = `INSERT INTO ${tableCorr(device)} (time,${fields.join()}) VALUES\n${values}
-	ON CONFLICT (time) DO UPDATE SET (${fields.join()}) = (${fields.map(f=>'EXCLUDED.'+f).join()})`;
+	ON CONFLICT (time) DO UPDATE SET (server_time,${fields.join()}) = (CURRENT_TIMESTAMP,${fields.map(f=>'EXCLUDED.'+f).join()})`;
 	return await pool.query(text);
 }
 
@@ -150,7 +150,6 @@ async function selectInterval(device, dfrom, dto, period, fields) {
 					}
 					++cursor;
 				}
-				console.log(columnIdx, cursor, count)
 				rows[rowIdx][columnIdx] = count > 0 ? Math.round(accum / count * 1000) / 1000 : null;
 			}
 
