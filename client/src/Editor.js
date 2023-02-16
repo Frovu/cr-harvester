@@ -41,7 +41,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoomTrig }) {
 		grid: css.getPropertyValue('--color-border'),
 	};
 	const maxLen = fields.map((f, i) =>
-		Math.max.apply(Math, data[i+1]).toFixed(SERIES[f]?.precision ?? 0).length);
+		Math.max.apply(Math, data[i+2]).toFixed(SERIES[f]?.precision ?? 0).length);
 	let mouseSelection = false;
 	const options = {
 		...size,
