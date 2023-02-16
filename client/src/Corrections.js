@@ -149,19 +149,21 @@ function CorrectionsWrapper({ data }) {
 }
 
 function EditorWrapper() {
-	const { device, interval } = useContext(EditorContext);
+	const { device, fields, interval } = useContext(EditorContext);
 	const query = useQuery(['editor', device, interval], async () => {
 		const resp = await fetch((process.env.REACT_APP_API || '') + 'api/data?' + new URLSearchParams({
 			from: epoch(interval[0]),
 			to: epoch(interval[1]),
 			period: 60,
-			dev: device
+			dev: device,
+			fields: fields.join()
 		}).toString());
 		if (resp.status === 404)
 			throw new Error('DEVICE NOT FOUND');
 		if (resp.status === 400)
 			throw new Error('BAD REQUEST');
 		const data = await resp.json();
+		console.log('editor data:', data);
 		return data;
 	});
 
