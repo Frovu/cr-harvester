@@ -21,7 +21,6 @@
 	margin-left: 0;
 	gap: 8px;
 	display: inline-grid;
-	grid-template-columns: repeat(auto-fill, 136px);
 }
 
 .StatusPlot {

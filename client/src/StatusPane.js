@@ -72,7 +72,8 @@ export default function DevicePane(props) {
 	const uptimes = props.data.columns[fields.indexOf('uptime')];
 	const uptime = uptimes[uptimes.length-1] * period;
 	const online = Date.now()/1000 - time[time.length-1] < 3 * period;
-	const maxWidth = `min(calc(144px * ${Math.min(toDraw.length, 7)} - 8px), calc(100vw - 16em))`;
+	const colAvailable = Math.floor((document.body.offsetWidth - 240) / 136);
+	const columns = toDraw.length <= colAvailable ? toDraw.length : Math.min(Math.ceil(toDraw.length / 2), colAvailable);
 	return (
 		<div className="DevicePane">
 			<div className="DeviceStatus">
@@ -88,7 +89,7 @@ export default function DevicePane(props) {
 					IP: {props.data.ip || 'N/A'}
 				</p>
 			</div>
-			<div className="StatusPlots" style={{ maxWidth, opacity: online ? 1 : .5 }}>
+			<div className="StatusPlots" style={{ gridTemplateColumns: `repeat(${columns}, 136px)`, opacity: online ? 1 : .5 }}>
 				{toDraw.map(i => [i, fields[i]]).map(([i, f]) => (
 					<StatusPlot
 						key={f} title={f.split('_')[0]}
