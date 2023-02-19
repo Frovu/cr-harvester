@@ -29,7 +29,7 @@ async function alertDeviceLost(devId) {
 		global.log(`Sending '${devId}' alerts to: ${addresses}`);
 		await stations.sendDeviceAlert(devId, );
 		await mailer.send(addresses, 'device lost', `<h3>Warning!</h3>
-We've stopped receiving data from the <b>${devId}</b>.`);
+We've stopped receiving data from the <b>${devId}</b> device.`);
 	} catch(e) {
 		global.log(`Exception in alertDeviceLost: ${e}`);
 	}
@@ -43,7 +43,7 @@ function gotData(devId, ipAddr) {
 	const timeout = dev.watchdog === 'default' ? DEFAULT_WATCHDOG_MS : parseInt(dev.watchdog) * 60000;
 	if (isNaN(timeout))
 		return global.log(`Invalid watchdog value for ${devId}: \`${dev.watchdog}\``);
-	watchdogs[devId] = setTimeout(() => alertDeviceLost(devId));
+	watchdogs[devId] = setTimeout(() => alertDeviceLost(devId), timeout);
 }
 
 function list() {
