@@ -22,6 +22,7 @@ function switchFiles() {
 			else fs.unlinkSync(path(file));
 		});
 	});
+	return writeStream;
 }
 switchFiles();
 
