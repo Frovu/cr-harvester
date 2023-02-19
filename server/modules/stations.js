@@ -37,12 +37,12 @@ We've stopped receiving data from the <b>${devId}</b> device.`);
 
 function gotData(devId, ipAddr) {
 	ipCache[devId] = ipAddr;
-	const dev = config.devices[devId];
+	const watchdog = config.devices[devId].watchdog;
+	if (watchdog === 'disable') return;
 	clearInterval(watchdogs[devId]);
-	if (!dev?.watchdog) return;
-	const timeout = dev.watchdog === 'default' ? DEFAULT_WATCHDOG_MS : parseInt(dev.watchdog) * 60000;
+	const timeout = watchdog ? parseInt(watchdog) * 1000 : DEFAULT_WATCHDOG_MS;
 	if (isNaN(timeout))
-		return global.log(`Invalid watchdog value for ${devId}: \`${dev.watchdog}\``);
+		return global.log(`Invalid watchdog value for ${devId}: \`${watchdog}\``);
 	watchdogs[devId] = setTimeout(() => alertDeviceLost(devId), timeout);
 }
 
