@@ -27,7 +27,6 @@ async function alertDeviceLost(devId) {
 		if (lastAlert && lastAlert - new Date() < ALERTS_DELAY_MS)
 			return global.log(`Alert's too soon from '${devId}'`);
 		global.log(`Sending '${devId}' alerts to: ${addresses}`);
-		await stations.sendDeviceAlert(devId, );
 		await mailer.send(addresses, 'device lost', `<h3>Warning!</h3>
 We've stopped receiving data from the <b>${devId}</b> device.`);
 	} catch(e) {
