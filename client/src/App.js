@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
 
-import StatusTab from './StatusTab';
+import Status from './Status';
 import Subscriptions from './Subscriptions';
 import Corrections from './Corrections';
 
@@ -42,7 +42,7 @@ function App() {
 				</div>}
 			</div>
 			<div className="AppBody">
-				{activeTab === 'Status' ? <StatusTab /> :
+				{activeTab === 'Status' ? <Status /> :
 					activeTab === 'Corrections' ? <Corrections devices={query.data.devices} secret={secretRef}/> :
 						<Subscriptions stations={query.data.stations} secret={secretRef}/>}
 			</div>

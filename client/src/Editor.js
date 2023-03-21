@@ -129,7 +129,7 @@ function EditorGraph({ size, data, fields, setU, setSelection, zoomTrig }) {
 		axes: ['time', 'corr', 'count'].concat(Object.keys(SERIES)).map((f, i) => ( f === 'corr' ? { show: false, scale: '_corr' } : {
 			...(f !== 'time' && {
 				values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
-				size: 8 + 9 * maxLen[i-1],
+				size: 8 + 12 * maxLen[i-1],
 				scale: Object.keys(SERIES).includes(f) ? f : 'count',
 			}),
 			show: ['time', 'count'].includes(f),
