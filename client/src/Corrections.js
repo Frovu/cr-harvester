@@ -13,7 +13,7 @@ const dateValue = date => date && date.toISOString().slice(0, 10);
 const ceilEpoch = date => date && Math.ceil(date / DAY_MS) * DAY_MS;
 const TIME_MODES = ['recent', 'dates', 'interval'];
 
-function IntervalInput({ callback, defaults }) {
+export function IntervalInput({ callback, defaults }) {
 	const [state, setState] = useState({ start: defaults[0], end: defaults[1] });
 	const [mode, setMode] = useState(() => (
 		ceilEpoch(Date.now()) === ceilEpoch(defaults[1]) ? 'recent' : 'interval'
@@ -54,7 +54,7 @@ function IntervalInput({ callback, defaults }) {
 	</>);
 }
 
-function Selector({ text, options, selected, callback }) {
+export function Selector({ text, options, selected, callback }) {
 	return (
 		<div className="Selector">
 			<span>{text}</span>
@@ -234,7 +234,7 @@ export default function Corrections({ devices, secret }) {
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
-				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates} throttle={500}/>
+				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates}/>
 			</div>
 			<EditorContext.Provider value={context}>
 				{targetFields && targetFields.length && settings.action
