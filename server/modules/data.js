@@ -130,16 +130,19 @@ async function selectAll(limit) {
 	return result;
 }
 
-async function selectInterval(device, dfrom, dto, period, fields) {
-	const from = Math.floor(dfrom/period) * period;
-	const to = Math.ceil(dto/period) * period;
+// this whole thing is kind of weird
+async function selectInterval(device, from, to, period, fields) {
 	const res = await select({ device, fields, from, to });
-	const rows = period === 60 ? res.rows : Array(Math.ceil((to-from)/period)).fill().map(() => Array(res.fields.length).fill());
-	if (period !== 60) {
+	if (period === 60) {
+		return { rows: res.rows, fields: res.fields.map(f => f.name) };
+	} else {
+		const from = Math.floor(res.rows[0][0] / period) * period;
+		const to = Math.ceil(res.rows[res.rows.length-1][0] / period) * period;
+		const rows = Array(Math.ceil((to-from)/period)).fill().map(() => Array(res.fields.length).fill());
 		const data = res.rows, flen = res.fields.length;
 		for (let columnIdx = 1; columnIdx < flen; ++columnIdx) {
 			let cursor = 0;
-			for (let rowIdx=0; rowIdx < rows.length; ++rowIdx) {
+			for (let rowIdx = 0; rowIdx < rows.length; ++rowIdx) {
 				let accum = 0, count = 0;
 				const time = from + period * rowIdx;
 				rows[rowIdx][0] = time;
@@ -154,8 +157,8 @@ async function selectInterval(device, dfrom, dto, period, fields) {
 			}
 
 		}
+		return { rows, fields: res.fields.map(f => f.name) };
 	}
-	return { rows, fields: res.fields.map(f => f.name) };
 }
 
 async function insert(body) {
