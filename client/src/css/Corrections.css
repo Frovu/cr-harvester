@@ -27,7 +27,7 @@
 	background-color: var(--color-bg);
 	border: 2px var(--color-border) solid;
 	text-align: center;
-	max-width: 24em;
+	max-width: 25em;
 	z-index: 129;
 }
 

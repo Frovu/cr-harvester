@@ -90,7 +90,35 @@ export function plotOptions(data, fields, withCorr=false) {
 	};
 }
 
-function DataPlot({ data: { rows, fields } }) {
+function DataExport({ rows, fields, setShowExport, station, resolution }) {
+	const padded = row => row.map(a => a.toString().padStart(13)).join(' ');
+	let text = '     ' + padded(fields) + '\r\n';
+	for (const row of rows) {
+		const date = new Date(row[0] * 1e3).toISOString().replace(/\..*/, '');
+		text += date + padded(row.slice(1)) + '\r\n';
+	};
+
+	const jsonDataUrl = URL.createObjectURL(new Blob([JSON.stringify({ rows, fields }, null, 2)], { type: 'application/json' }));
+	const textDataUrl = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+	return (
+		<>
+			<div className="ConfirmationWrapper" onClick={() => setShowExport(false)} onKeyDown={() => setShowExport(false)}/>
+			<div className="Confirmation" style={{ padding: '.5em 0 1.5em 3em', maxWidth: '64em', textAlign: 'left', top: '15vh' }}>
+				<h2>Download data</h2>
+				<p><b>Station:</b> {station}</p>
+				<p><b>Columns:</b> {fields.join(', ')}</p>
+				<p><b>From:</b> {new Date(rows[0][0] * 1e3).toISOString().replace('T', ' ').replace(/\..*/, '')}</p>
+				<p><b>&nbsp;&nbsp;To:</b> {new Date(rows[rows.length-1][0] * 1e3).toISOString().replace('T', ' ').replace(/\..*/, '')}</p>
+				<p><b>Resolution:</b> {resolution}</p>
+				<p><a href={textDataUrl} download={station+'_data.txt'}> Download .txt file</a></p>
+				<p><a href={jsonDataUrl} download={station+'_data.json'}> Download .json file</a></p>
+				
+			</div>
+		</>
+	);
+}
+
+function DataPlot({ data: { rows, fields }, showExport, setShowExport, station, resolution }) {
 	const data = useMemo(() => {
 		const idx = fields.map(f => fields.indexOf(f));
 		const columns = Array(fields.length).fill().map(_ => Array(rows.length));
@@ -116,22 +144,25 @@ function DataPlot({ data: { rows, fields } }) {
 	}, []);
 
 	return (
-		<div className='Graph' ref={ref}>
-			<div style={{ position: 'absolute' }}>
-				<UplotReact {...{ options: {
-					...plotOptions(data, fields.slice(1)),
-					...size,
-					cursor: {
-						drag: { dist: 12 },
-						points: { size: 6, fill: (self, i) => self.series[i]._stroke },
-					}
-				}, data }}/>
+		<>
+			{showExport && <DataExport {...{ rows, fields, setShowExport, station, resolution }}/>}
+			<div className='Graph' ref={ref}>
+				<div style={{ position: 'absolute' }}>
+					<UplotReact {...{ options: {
+						...plotOptions(data, fields.slice(1)),
+						...size,
+						cursor: {
+							drag: { dist: 12 },
+							points: { size: 6, fill: (self, i) => self.series[i]._stroke },
+						}
+					}, data }}/>
+				</div>
 			</div>
-		</div>
+		</>
 	);
 }
 
-function DataWrapper({ station, interval, resolution }) {
+function DataWrapper({ station, interval, resolution, showExport, setShowExport }) {
 	const query = useQuery(['data', station, interval, resolution], async () => {
 		const resp = await fetch((process.env.REACT_APP_API || '') + 'api/data/product?' + new URLSearchParams({
 			from: Math.floor(interval[0].getTime() / 1000),
@@ -154,10 +185,11 @@ function DataWrapper({ station, interval, resolution }) {
 		return <div className="Graph">ERROR<br/>{query.error.message}</div>;
 	if (!query.data?.rows?.length)
 		return <div className="Graph">NO DATA</div>;
-	return <DataPlot data={query.data}/>;
+	return <DataPlot {...{ data: query.data, showExport, setShowExport, station, resolution }}/>;
 }
 
 export default function DataTab({ stations }) {
+	const [showExport, setShowExport] = useState(false);
 	const [settings, setSettings] = useState(() => {
 		const state = JSON.parse(window.localStorage.getItem('harvesterDataSettings')) || {
 			resolution: '1 hour'
@@ -197,10 +229,11 @@ export default function DataTab({ stations }) {
 		<div className="Corrections">
 			<div className="Settings">
 				{selectors}
-				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates} throttle={500}/>
+				<IntervalInput callback={settingsCallback('dates')} defaults={settings.dates}/>
+				<button style={{ marginLeft: '.5em', borderColor: 'var(--color-text-dark)' }} onClick={()=>setShowExport(true)}>Download data</button>
 			</div>
 			{settings.station
-				? <DataWrapper station={settings.station} interval={debouncedDates} resolution={settings.resolution}/>
+				? <DataWrapper {...{ ...settings, interval: debouncedDates, showExport, setShowExport }}/>
 				: <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)' }}>INSUFFICIENT PARAMS</div>}
 		</div>
 	);
