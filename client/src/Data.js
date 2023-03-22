@@ -171,7 +171,7 @@ export default function DataTab({ stations }) {
 		return state;
 	});
 	const settingsCallback = key => value => setSettings(state => ({ ...state, [key]: value }));
-	useEffect(() => window.localStorage.setItem('harvesterCorrSettings', JSON.stringify(settings)), [settings]);
+	useEffect(() => window.localStorage.setItem('harvesterDataSettings', JSON.stringify(settings)), [settings]);
 	const options = {
 		station: Object.keys(stations),
 		resolution: Object.keys(RESOLUTION)

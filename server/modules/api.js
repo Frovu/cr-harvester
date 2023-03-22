@@ -118,10 +118,10 @@ router.get('/data/product', async (req, res) => {
 			return res.status(404).send('Station not found');
 		if (isNaN(from) || isNaN(to) || to - from < period)
 			return res.status(400).send('Bad period');
-		if (station.nm) {
+		/* if (station.nm) {
 			console.log('Not implemented');
 			return res.sendStatus(500);
-		} else if (station.devices.length === 1) {
+		} else */ if (station.devices.length === 1) {
 			const devKey = station.devices[0];
 			const dev = stations.list().devices[devKey];
 			const fields = dev.counters.concat(dev.fields);
