@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from 'react-query';
 
 import { Selector, IntervalInput } from './Corrections';
 import uPlot from 'uplot/dist/uPlot.esm.js';
 
 import './css/Corrections.css';
+import UplotReact from 'uplot-react';
 
 const DAY_MS = 86400000;
 const DEFAULT_INTERVAL = 7; // days
@@ -44,7 +45,7 @@ export function plotOptions(data, fields, withCorr=false) {
 	const shown = fields.length <= 1 ? fields
 		: fields.filter(f => !Object.keys(SERIES).includes(f));
 	const maxLen = fields.map((f, i) =>
-		Math.max.apply(Math, data[i+2]).toFixed(SERIES[f]?.precision ?? 0).length);
+		Math.max.apply(Math, data[i + (withCorr ? 2 : 1)]).toFixed(SERIES[f]?.precision ?? 0).length);
 	const css = window.getComputedStyle(document.body);
 	const style = {
 		bg: css.getPropertyValue('--color-bg'),
@@ -89,9 +90,45 @@ export function plotOptions(data, fields, withCorr=false) {
 	};
 }
 
-function DataPlot() {
+function DataPlot({ data: { rows, fields } }) {
+	const data = useMemo(() => {
+		const idx = fields.map(f => fields.indexOf(f));
+		const columns = Array(fields.length).fill().map(_ => Array(rows.length));
+		for (let i = 0; i < rows.length; ++i) {
+			for (let j = 0; j < idx.length; ++j)
+				columns[j][i] = rows[i][idx[j]];
+		}
+		return columns;
+	}, [rows, fields]);
 
-	return null;
+	const ref = useRef();
+	const [size, setPlotSize] = useState({});
+	useLayoutEffect(() => {
+		if (!ref.current) return;
+		const updateSize = () => setPlotSize({
+			width: ref.current.offsetWidth,
+			height: ref.current.offsetHeight - 32
+		});
+		updateSize();
+		const observer = new ResizeObserver(updateSize);
+		observer.observe(ref.current);
+		return () => observer.disconnect();
+	}, []);
+
+	return (
+		<div className='Graph' ref={ref}>
+			<div style={{ position: 'absolute' }}>
+				<UplotReact {...{ options: {
+					...plotOptions(data, fields.slice(1)),
+					...size,
+					cursor: {
+						drag: { dist: 12 },
+						points: { size: 6, fill: (self, i) => self.series[i]._stroke },
+					}
+				}, data }}/>
+			</div>
+		</div>
+	);
 }
 
 function DataWrapper({ station, interval, resolution }) {
