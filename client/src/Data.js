@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
 
 import { Selector, IntervalInput } from './Corrections';
+import uPlot from 'uplot/dist/uPlot.esm.js';
 
 import './css/Corrections.css';
 
@@ -15,8 +16,77 @@ const RESOLUTION = {
 	'1 day': 86400
 };
 
-function plotOptions() {
+const COLOR = 'rgb(0,180,130)';
+const SERIES = {
+	voltage: {
+		color: 'yellow',
+		alias: 'v',
+		precision: 2
+	},
+	temperature_ext: { // eslint-disable-line
+		color: 'cyan',
+		alias: 't_ext',
+		precision: 1
+	},
+	temperature: {
+		color: 'cyan',
+		alias: 'temp',
+		precision: 1
+	},
+	pressure: {
+		color: 'magenta',
+		alias: 'pres',
+		precision: 1
+	}
+};
 
+export function plotOptions(data, fields, withCorr=false) {
+	const shown = fields.length <= 1 ? fields
+		: fields.filter(f => !Object.keys(SERIES).includes(f));
+	const maxLen = fields.map((f, i) =>
+		Math.max.apply(Math, data[i+2]).toFixed(SERIES[f]?.precision ?? 0).length);
+	const css = window.getComputedStyle(document.body);
+	const style = {
+		bg: css.getPropertyValue('--color-bg'),
+		font: (px) => css.font.replace('16px', px+'px'),
+		stroke: css.getPropertyValue('--color-text-dark'),
+		grid: css.getPropertyValue('--color-border'),
+	};
+	
+	return {
+		tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), 'UTC'),
+		padding: [8, 12, 0, 2],
+		scales: { x: {  }, _corr: { range: [1, 2] } },
+		series: [
+			{ value: '{YYYY}-{MM}-{DD} {HH}:{mm}', stroke: style.stroke }
+		].concat(
+			withCorr ? {
+				label: '_corr', _hide: true, scale: '_corr',
+				points: { show: true, fill: style.bg, stroke: 'red' }
+			} : []
+		).concat(fields.map((f, i) => ({
+			label: (fields.length > 6 ? SERIES[f]?.alias : f) || f,
+			show: shown.includes(f),
+			scale: Object.keys(SERIES).includes(f) ? f : 'count',
+			stroke: SERIES[f]?.color ?? COLOR,
+			grid: { stroke: style.grid, width: 1 },
+			points: { fill: style.bg, stroke: SERIES[f]?.color ?? COLOR },
+			value: (u, v) => v === null ? '-'
+				: v.toFixed(SERIES[f]?.precision ?? 0).padEnd(SERIES[f]?.precision ? maxLen[i] : 0, 0)
+		}))),
+		axes: (withCorr ? ['time', 'corr', 'count'] : ['time', 'count']).concat(Object.keys(SERIES)).map((f, i) => ( f === 'corr' ? { show: false, scale: '_corr' } : {
+			...(f !== 'time' && {
+				values: (u, vals) => vals.map(v => v.toFixed(SERIES[f]?.precision ?? 0)),
+				size: 8 + 12 * maxLen[i-1],
+				scale: Object.keys(SERIES).includes(f) ? f : 'count',
+			}),
+			show: ['time', 'count'].includes(f),
+			font: style.font(14),
+			ticks: { stroke: style.grid, width: 1, size: 2 },
+			grid: { stroke: style.grid, width: 1 },
+			stroke: style.stroke,
+		})),
+	};
 }
 
 function DataPlot() {
