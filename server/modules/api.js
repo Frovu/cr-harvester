@@ -106,6 +106,35 @@ router.get('/data', async (req, res) => {
 	}
 });
 
+router.get('/data/product', async (req, res) => {
+	try {
+		const station = stations.list().stations[req.query.station];
+		const from = parseInt(req.query.from);
+		const to   = parseInt(req.query.to);
+		const period = req.query.period ? parseInt(req.query.period) : 3600;
+		if (![60, 300, 600, 3600, 86400].includes(period))
+			return res.status(400).send('Supported periods are 60, 300, 600, 3600, 86400');
+		if (!station)
+			return res.status(404).send('Station not found');
+		if (isNaN(from) || isNaN(to) || to - from < period)
+			return res.status(400).send('Bad period');
+		if (station.nm) {
+			console.log('Not implemented');
+			return res.sendStatus(500);
+		} else if (station.devices.length === 1) {
+			const devKey = station.devices[0];
+			const dev = stations.list().devices[devKey];
+			const fields = dev.counters.concat(dev.fields);
+			return res.status(200).json(await db.selectInterval(devKey, from, to, period, fields));
+		} else {
+			return res.status(500).send('Station configuration error');
+		}
+	} catch(e) {
+		global.log(`Exception in get data: ${e.stack}`);
+		return res.sendStatus(500);
+	}
+});
+
 router.post('/data', async (req, res) => {
 	const from = req.headers['x-forwarded-for'];
 	try {
